@@ -5,7 +5,7 @@ name: Build XECKernelPro
 #   1. 把本仓库推送到你自己的 GitHub 仓库
 #   2. Actions -> Build XECKernelPro -> Run workflow
 #   3. 跑完后在 "Artifacts" 里下载打好的 XECkernelPro 管理器 APK
-# 无需配置任何 secrets（用仓库内临时生成的自签名 key.jks）
+# 无需配置任何 secrets（用仓库内固定的自签名 xecpro-key.jks）
 
 on:
   workflow_dispatch:
@@ -29,22 +29,13 @@ jobs:
       key_password: ${{ steps.gen.outputs.key_password }}
       keystore: ${{ steps.gen.outputs.keystore }}
     steps:
-      - name: Generate temporary keystore
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Export fixed keystore
         id: gen
         run: |
-          KEYSTORE_PASSWORD=$(openssl rand -hex 32)
-          KEY_PASSWORD=$(openssl rand -hex 32)
-          echo "keystore_password=$KEYSTORE_PASSWORD" >> $GITHUB_OUTPUT
-          echo "key_password=$KEY_PASSWORD" >> $GITHUB_OUTPUT
-          keytool -genkeypair \
-            -alias xecpro-key \
-            -keyalg RSA -keysize 2048 \
-            -validity 3650 \
-            -storepass "$KEYSTORE_PASSWORD" \
-            -keypass "$KEY_PASSWORD" \
-            -dname "CN=XECKernelPro" \
-            -storetype JKS \
-            -keystore xecpro-key.jks
+          echo "keystore_password=xecproKernel2026" >> $GITHUB_OUTPUT
+          echo "key_password=xecproKernel2026" >> $GITHUB_OUTPUT
           echo "keystore=$(base64 -w 0 xecpro-key.jks)" >> $GITHUB_OUTPUT
 
   build-lkm:
