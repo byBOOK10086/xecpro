@@ -17,7 +17,6 @@ permissions:
   contents: read
 
 env:
-  SIGN_KEYSTORE_FILE: key.jks
   SIGN_KEY_ALIAS: xecpro-key
   BRAND_PACKAGE: com.xecpro.kernel
   BRAND_NAME: XECKernelPro
@@ -28,6 +27,7 @@ jobs:
     outputs:
       keystore_password: ${{ steps.gen.outputs.keystore_password }}
       key_password: ${{ steps.gen.outputs.key_password }}
+      keystore: ${{ steps.gen.outputs.keystore }}
     steps:
       - name: Generate temporary keystore
         id: gen
@@ -45,6 +45,7 @@ jobs:
             -dname "CN=XECKernelPro" \
             -storetype JKS \
             -keystore xecpro-key.jks
+          echo "keystore=$(base64 -w 0 xecpro-key.jks)" >> $GITHUB_OUTPUT
 
   build-lkm:
     needs: generate-key
@@ -86,8 +87,9 @@ jobs:
         env:
           KEYSTORE_PASSWORD: ${{ needs.generate-key.outputs.keystore_password }}
           KEY_PASSWORD: ${{ needs.generate-key.outputs.key_password }}
+          KEYSTORE_B64: ${{ needs.generate-key.outputs.keystore }}
         run: |
-          cp ../xecpro-key.jks . || true
+          echo "$KEYSTORE_B64" | base64 -d > xecpro-key.jks
           {
             echo KEYSTORE_PASSWORD="$KEYSTORE_PASSWORD"
             echo KEY_ALIAS='xecpro-key'
@@ -108,9 +110,6 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Build branded manager
-        env:
-          KEYSTORE_PASSWORD: ${{ needs.generate-key.outputs.keystore_password }}
-          KEY_PASSWORD: ${{ needs.generate-key.outputs.key_password }}
         run: |
           ./gradlew clean assembleRelease \
             -PKSU_PACKAGE_NAME=${{ env.BRAND_PACKAGE }} \
@@ -170,7 +169,9 @@ jobs:
         env:
           KEYSTORE_PASSWORD: ${{ needs.generate-key.outputs.keystore_password }}
           KEY_PASSWORD: ${{ needs.generate-key.outputs.key_password }}
+          KEYSTORE_B64: ${{ needs.generate-key.outputs.keystore }}
         run: |
+          echo "$KEYSTORE_B64" | base64 -d > xecpro-key.jks
           python3 repack_apk.py repack \
             -b release \
             -t release \
