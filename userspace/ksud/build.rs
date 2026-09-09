@@ -42,6 +42,7 @@ fn configure_bindgen() {
         // bindings for.
         .header("src/ksu_uapi.h")
         .clang_args(["-x", "c++", "-I../../"])
+        .clang_arg("-D__user=")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))

@@ -43,4 +43,16 @@ config KSU_X86_PATCH_SYSCALL_DISPATCHER
 	  Dynamically patch x64's hardened syscall dispatcher to support syscall hooks. This is a
 	  replacement for a kernel source code patch, and is useful for x86_64 LKM mode.
 
+config KPM
+	bool "Enable XEC KPM"
+	depends on KSU && 64BIT
+	default n
+	help
+	  Enabling this option will activate the KPM (Kernel Patch Module) bridge
+	  of XECKernel Pro, which hosts the kernel-side command routing for SUSFS.
+	  Suitable for scenarios where KernelPatch-backed KPM modules are deployed.
+	  It may affect system stability.
+	select KALLSYMS
+	select KALLSYMS_ALL
+
 endmenu

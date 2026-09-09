@@ -7,7 +7,8 @@
     clippy::cast_precision_loss,
     clippy::doc_markdown,
     clippy::too_many_lines,
-    clippy::cast_possible_wrap
+    clippy::cast_possible_wrap,
+    clippy::large_enum_variant
 )]
 
 mod apk_sign;
@@ -24,6 +25,8 @@ mod defs;
 mod feature;
 #[cfg(target_os = "android")]
 mod init_event;
+#[cfg(target_arch = "aarch64")]
+mod kpm;
 #[cfg(target_os = "android")]
 mod ksucalls;
 #[cfg(target_os = "android")]
@@ -50,6 +53,12 @@ mod sepolicy;
 mod su;
 #[cfg(target_os = "android")]
 mod sulog;
+#[cfg(target_arch = "aarch64")]
+mod susfs;
+#[cfg(target_arch = "aarch64")]
+mod susfs_config;
+#[cfg(target_arch = "aarch64")]
+mod susfs_module;
 #[cfg(target_os = "android")]
 mod unload;
 #[cfg(target_os = "android")]
