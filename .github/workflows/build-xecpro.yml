@@ -179,3 +179,68 @@ jobs:
         with:
           name: XECkernelPro-manager
           path: dist/*.apk
+
+  # 发布 GitHub Release，让老版本的“检查更新”能发现新版本。
+  # 关键点：release APK 文件名末尾必须带 _<versionCode>，checkNewVersion() 用它做版本比较。
+  release:
+    needs: [repack, build-ksud, build-ksuinit]
+    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download branded APK
+        uses: actions/download-artifact@v8
+        with:
+          name: XECkernelPro-manager
+          path: artifacts/manager
+
+      - name: Download ksud (arm64)
+        uses: actions/download-artifact@v8
+        with:
+          name: ksud-aarch64-linux-android
+          path: artifacts/ksud-aarch64
+      - name: Download ksud (x86_64)
+        uses: actions/download-artifact@v8
+        with:
+          name: ksud-x86_64-linux-android
+          path: artifacts/ksud-x86_64
+
+      - name: Download ksuinit (arm64)
+        uses: actions/download-artifact@v8
+        with:
+          name: ksuinit-aarch64
+          path: artifacts/ksuinit-aarch64
+      - name: Download ksuinit (x86_64)
+        uses: actions/download-artifact@v8
+        with:
+          name: ksuinit-x86_64
+          path: artifacts/ksuinit-x86_64
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "tag_name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            VCODE=$((30000 + $(git rev-list --count HEAD)))
+            SHA=$(git rev-parse --short=8 HEAD)
+            echo "tag_name=v${VCODE}-${SHA}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.tag.outputs.tag_name }}
+          generate_release_notes: true
+          files: |
+            artifacts/manager/*.apk
+            artifacts/ksud-aarch64/*
+            artifacts/ksud-x86_64/*
+            artifacts/ksuinit-aarch64/*
+            artifacts/ksuinit-x86_64/*

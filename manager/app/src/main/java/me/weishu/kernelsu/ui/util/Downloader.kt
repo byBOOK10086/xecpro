@@ -59,10 +59,11 @@ fun checkNewVersion(): LatestVersionInfo {
                         continue
                     }
 
-                    val regex = Regex("v(.+?)_(\\d+)-")
+                    // 兼容 XECKernelPro_<versionName>_<versionCode>-release.apk 以及
+                    // 上游 KernelSU_v<ver>_<versionCode>-release.apk 等命名，只取文件名末尾的版本号
+                    val regex = Regex("_(\\d+)(?:-release|-debug)?\\.apk$")
                     val matchResult = regex.find(name) ?: continue
-                    matchResult.groupValues[1]
-                    val versionCode = matchResult.groupValues[2].toInt()
+                    val versionCode = matchResult.groupValues[1].toInt()
                     val downloadUrl = asset.getString("browser_download_url")
 
                     return LatestVersionInfo(
