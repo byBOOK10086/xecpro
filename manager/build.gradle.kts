@@ -31,5 +31,8 @@ fun getVersionCode(): Int {
 }
 
 fun getVersionName(): String {
-    return getGitDescribe()
+    // 必须带 v 前缀，让 APK 文件名形如 XECKernelPro_v<ver>_<code>-release.apk，
+    // 以同时兼容旧版 checkNewVersion 的正则 v(.+?)_(\d+)- 与新版 _( \d+)-release.apk 两种解析。
+    val desc = getGitDescribe()
+    return if (desc.startsWith("v")) desc else "v$desc"
 }
