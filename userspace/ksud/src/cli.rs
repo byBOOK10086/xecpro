@@ -7,6 +7,8 @@ use log::{LevelFilter, error, info};
 
 use crate::boot_patch::{BootPatchArgs, BootRestoreArgs};
 use crate::lkm_image::BootPatchV2Args;
+#[cfg(target_arch = "aarch64")]
+use crate::kpm_patch::BootPatchKpmArgs;
 use crate::module::regenerate_preinit_rc;
 #[cfg(target_arch = "aarch64")]
 use crate::susfs;
@@ -125,6 +127,10 @@ enum Commands {
     ///
     /// Always operates on a boot image; never selects init_boot or vendor_boot.
     BootPatchV2(BootPatchV2Args),
+
+    /// Patch the boot image kernel (kernel module engine)
+    #[cfg(target_arch = "aarch64")]
+    BootPatchKpm(BootPatchKpmArgs),
 
     /// Show boot information
     BootInfo {
@@ -986,6 +992,8 @@ pub fn run() -> Result<()> {
         },
         Commands::BootRestore(boot_restore) => crate::boot_patch::restore(boot_restore),
         Commands::BootPatchV2(patch) => crate::lkm_image::patch_boot(&patch),
+        #[cfg(target_arch = "aarch64")]
+        Commands::BootPatchKpm(args) => crate::kpm_patch::patch_kpm(&args),
         Commands::Resetprop { args } => {
             let mut full_args = vec!["resetprop".to_string()];
             full_args.extend(args);

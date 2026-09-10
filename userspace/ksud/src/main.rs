@@ -27,6 +27,8 @@ mod feature;
 mod init_event;
 #[cfg(target_arch = "aarch64")]
 mod kpm;
+#[cfg(target_arch = "aarch64")]
+mod kpm_patch;
 #[cfg(target_os = "android")]
 mod ksucalls;
 #[cfg(target_os = "android")]
