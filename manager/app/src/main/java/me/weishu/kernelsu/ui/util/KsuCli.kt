@@ -220,6 +220,41 @@ fun flashModule(
     }
 }
 
+suspend fun kpmVersion(): String = withContext(Dispatchers.IO) {
+    val shell = getRootShell()
+    val out = shell.newJob()
+        .add("${getKsuDaemonPath()} kpm version").to(ArrayList<String>(), null).exec().out
+    out.firstOrNull()?.trim().orEmpty()
+}
+
+suspend fun kpmList(): String = withContext(Dispatchers.IO) {
+    val shell = getRootShell()
+    val out = shell.newJob()
+        .add("${getKsuDaemonPath()} kpm list").to(ArrayList<String>(), null).exec().out
+    out.joinToString("\n")
+}
+
+fun flashKpmModule(
+    uri: Uri,
+    onStdout: (String) -> Unit,
+    onStderr: (String) -> Unit
+): FlashResult {
+    val resolver = ksuApp.contentResolver
+    with(resolver.openInputStream(uri)) {
+        val file = File(ksuApp.cacheDir, "kpm-module.kpm")
+        file.outputStream().use { output ->
+            this?.copyTo(output)
+        }
+        val cmd = "mkdir -p /data/adb/kpm && cp ${file.absolutePath} /data/adb/kpm/ && ${getKsuDaemonPath()} kpm load ${file.absolutePath}"
+        val result = flashWithIO(cmd, onStdout, onStderr)
+        Log.i("KernelSU", "flash kpm module $uri result: $result")
+
+        file.delete()
+
+        return FlashResult(result)
+    }
+}
+
 fun runModuleAction(
     moduleId: String, onStdout: (String) -> Unit, onStderr: (String) -> Unit
 ): Boolean {
@@ -324,6 +359,10 @@ fun installBoot(
     }
     cmd += bootPatchFlags(allowShell, enableAdb, forceBackup)
 
+    if (bootFile != null) {
+        cmd += " --kpm"
+    }
+
     if (ota) {
         cmd += " -u"
     }
@@ -423,6 +462,7 @@ fun downloadBoot(
 
     var cmd = "${getKsuDaemonPath()} boot-patch -b ${bootFile.absolutePath}"
     cmd += bootPatchFlags(allowShell, enableAdb, forceBackup)
+    cmd += " --kpm"
 
     val lkmFile = writeLkmFile(lkm)
     if (lkmFile != null) {

@@ -18,6 +18,9 @@ use regex_lite::Regex;
 
 use crate::assets;
 
+#[cfg(target_arch = "aarch64")]
+use crate::kpm_patch::{BootPatchKpmArgs, patch_kpm};
+
 #[cfg(target_os = "android")]
 mod android {
     use super::Result;
@@ -512,6 +515,11 @@ pub struct BootPatchArgs {
     /// Patching ramdisk instead of boot image. This is used for AVD ramdisk
     #[arg(long, default_value = "false")]
     ramdisk: bool,
+
+    /// Also apply the KPatch-Next (KPM) kernel patch on top of the patched image
+    #[cfg(target_arch = "aarch64")]
+    #[arg(long, default_value = "false")]
+    kpm: bool,
 }
 
 pub fn patch(args: BootPatchArgs) -> Result<()> {
@@ -541,6 +549,8 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             #[cfg(not(target_os = "android"))]
             arch,
             ramdisk,
+            #[cfg(target_arch = "aarch64")]
+            kpm,
         } = args;
 
         println!(include_str!("banner"));
@@ -814,6 +824,11 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
         drop(boot_image);
         drop(boot_image_data);
 
+        #[cfg(target_arch = "aarch64")]
+        if kpm && flash {
+            bail!("--kpm requires a boot image file to patch and cannot be combined with --flash");
+        }
+
         #[cfg(target_os = "android")]
         if flash {
             println!("- Flashing new boot image");
@@ -837,6 +852,17 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             });
             let output_image = output_dir.join(name);
             std::fs::write(&output_image, &new_boot_bytes).context("write out new boot failed")?;
+
+            #[cfg(target_arch = "aarch64")]
+            if kpm {
+                println!("- Applying KPM kernel patch");
+                patch_kpm(&BootPatchKpmArgs {
+                    boot: output_image.clone(),
+                    output: output_image.clone(),
+                    force: true,
+                })?;
+            }
+
             println!("- Output file is written to");
             println!("- {}", output_image.display().to_string().trim_matches('"'));
         }

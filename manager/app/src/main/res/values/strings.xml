@@ -42,6 +42,13 @@
     <string name="module">Module</string>
     <string name="kpm_empty">No kernel patch module installed</string>
     <string name="kpm">KPM</string>
+    <string name="kpm_activated">KPM activated</string>
+    <string name="kpm_not_activated">KPM not activated</string>
+    <string name="kpm_not_activated_hint">Enable CONFIG_KPM in your kernel and reboot to use kernel patch modules</string>
+    <string name="kpm_version">KPM version: %s</string>
+    <string name="kpm_flash">Flash KPM module</string>
+    <string name="kpm_flash_success">KPM module flashed successfully</string>
+    <string name="kpm_flash_failed">Failed to flash KPM module</string>
     <string name="module_install_prompt_with_name">The following modules will be installed: %1$s</string>
     <string name="module_sort_action_first">Action first</string>
     <string name="module_sort_enabled_first">Enabled first</string>
