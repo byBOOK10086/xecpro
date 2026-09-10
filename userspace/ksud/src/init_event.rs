@@ -69,6 +69,11 @@ pub fn on_post_data_fs() -> Result<()> {
         return Ok(());
     }
 
+    // Provision bundled built-in modules before any module enumeration/execution.
+    if let Err(e) = crate::module::ensure_builtin_modules() {
+        warn!("ensure built-in modules failed: {e}");
+    }
+
     if let Err(e) = handle_updated_modules() {
         warn!("handle updated modules failed: {e}");
     }

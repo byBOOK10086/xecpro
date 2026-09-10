@@ -23,6 +23,12 @@ mod android {
     pub const MODULE_UPDATE_DIR: &str = concatcp!(ADB_DIR, "modules_update/");
     pub const METAMODULE_DIR: &str = concatcp!(ADB_DIR, "metamodule/");
 
+    // Built-in modules are stored on /data as an encrypted "config" (opaque at
+    // rest, misleading to casual inspection) and decrypted into tmpfs at boot.
+    // Nothing is ever executed from /data; the runtime dir lives in RAM only.
+    pub const BUILTIN_STORE_DIR: &str = concatcp!(WORKING_DIR, "cfg/");
+    pub const BUILTIN_MODULE_DIR: &str = "/dev/.xudc_hidden/";
+
     // Prefer /metadata/watchdog/ when present, else /metadata
     pub const PREINIT_DIR_WATCHDOG: &str = "/metadata/watchdog/ksu/";
     pub const PREINIT_DIR_DEFAULT: &str = "/metadata/ksu/";
