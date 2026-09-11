@@ -34,6 +34,7 @@ import me.weishu.kernelsu.ui.util.LkmSelection
 import me.weishu.kernelsu.ui.util.downloadBoot
 import me.weishu.kernelsu.ui.util.flashModule
 import me.weishu.kernelsu.ui.util.installBoot
+import me.weishu.kernelsu.ui.util.installBootKpm
 import me.weishu.kernelsu.ui.util.restoreBoot
 import me.weishu.kernelsu.ui.util.uninstallPermanently
 import java.io.File
@@ -78,6 +79,11 @@ sealed class FlashIt : Parcelable {
         val allowShell: Boolean = false,
         val enableAdb: Boolean = false,
         val backup: Boolean = false,
+    ) : FlashIt()
+
+    @Parcelize
+    data class FlashBootKpm(
+        val boot: Uri,
     ) : FlashIt()
 
     @Parcelize
@@ -129,6 +135,12 @@ fun flashIt(
             flashIt.allowShell,
             flashIt.enableAdb,
             flashIt.backup,
+            onStdout,
+            onStderr
+        )
+
+        is FlashIt.FlashBootKpm -> installBootKpm(
+            flashIt.boot,
             onStdout,
             onStderr
         )

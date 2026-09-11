@@ -69,19 +69,32 @@ fun MiuixKernelSUTheme(
     MiuixTheme(
         controller = controller,
         content = {
-            LaunchedEffect(darkTheme) {
-                val window = (context as? Activity)?.window ?: return@LaunchedEffect
-                WindowInsetsControllerCompat(window, window.decorView).apply {
-                    isAppearanceLightStatusBars = !darkTheme
-                    isAppearanceLightNavigationBars = !darkTheme
+            val scheme = MiuixTheme.colorScheme
+            MiuixTheme(
+                colors = scheme.copy(
+                    background = scheme.background.copy(alpha = 0.72f),
+                    surface = scheme.surface.copy(alpha = 0.72f),
+                    surfaceVariant = scheme.surfaceVariant.copy(alpha = 0.72f),
+                    surfaceContainer = scheme.surfaceContainer.copy(alpha = 0.72f),
+                    surfaceContainerHigh = scheme.surfaceContainerHigh.copy(alpha = 0.72f),
+                    surfaceContainerHighest = scheme.surfaceContainerHighest.copy(alpha = 0.72f),
+                ),
+                content = {
+                    LaunchedEffect(darkTheme) {
+                        val window = (context as? Activity)?.window ?: return@LaunchedEffect
+                        WindowInsetsControllerCompat(window, window.decorView).apply {
+                            isAppearanceLightStatusBars = !darkTheme
+                            isAppearanceLightNavigationBars = !darkTheme
+                        }
+                    }
+                    MonetColorsProvider.UpdateCss()
+                    CompositionLocalProvider(
+                        LocalContentColor provides MiuixTheme.colorScheme.onBackground,
+                    ) {
+                        content()
+                    }
                 }
-            }
-            MonetColorsProvider.UpdateCss()
-            CompositionLocalProvider(
-                LocalContentColor provides MiuixTheme.colorScheme.onBackground,
-            ) {
-                content()
-            }
+            )
         }
     )
 }

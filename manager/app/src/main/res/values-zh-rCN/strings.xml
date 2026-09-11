@@ -148,7 +148,9 @@
     <string name="enable_web_debugging">WebView 调试</string>
     <string name="enable_web_debugging_summary">可用于调试 WebUI，请仅在需要时启用</string>
     <string name="direct_install">直接安装（推荐）</string>
-    <string name="select_file">选择文件并修补</string>
+    <string name="select_file">选择文件并修补KMI</string>
+    <string name="select_file_kpm">选择文件并修补KPM</string>
+    <string name="select_file_kpm_tip">修补 boot 分区内核以启用 KPM</string>
     <string name="download_file">下载文件并修补</string>
     <string name="download_dialog_title">输入链接</string>
     <string name="download_dialog_msg">完整 OTA 镜像或 factory 镜像</string>

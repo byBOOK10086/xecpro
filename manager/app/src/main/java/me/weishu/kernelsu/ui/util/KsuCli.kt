@@ -359,10 +359,6 @@ fun installBoot(
     }
     cmd += bootPatchFlags(allowShell, enableAdb, forceBackup)
 
-    if (bootFile != null) {
-        cmd += " --kpm"
-    }
-
     if (ota) {
         cmd += " -u"
     }
@@ -396,6 +392,29 @@ fun installBoot(
         install() // install ksud here
     }
     return FlashResult(result, showReboot)
+}
+
+fun installBootKpm(
+    bootUri: Uri,
+    onStdout: (String) -> Unit,
+    onStderr: (String) -> Unit,
+): FlashResult {
+    val resolver = ksuApp.contentResolver
+    val bootFile = with(resolver.openInputStream(bootUri)) {
+        val file = File(ksuApp.cacheDir, "kpm-boot.img")
+        file.outputStream().use { output -> this?.copyTo(output) }
+        file
+    }
+
+    val downloadsDir =
+        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+    val outFile = File(downloadsDir, "XECKernelPro_KPM_patched_${System.currentTimeMillis()}.img")
+    val cmd = "${getKsuDaemonPath()} boot-patch-kpm -b ${bootFile.absolutePath} -o ${outFile.absolutePath} --force"
+    val result = flashWithIO(cmd, onStdout, onStderr)
+    Log.i("KernelSU", "install kpm result: ${result.isSuccess}")
+
+    bootFile.delete()
+    return FlashResult(result)
 }
 
 fun downloadBoot(
@@ -462,7 +481,6 @@ fun downloadBoot(
 
     var cmd = "${getKsuDaemonPath()} boot-patch -b ${bootFile.absolutePath}"
     cmd += bootPatchFlags(allowShell, enableAdb, forceBackup)
-    cmd += " --kpm"
 
     val lkmFile = writeLkmFile(lkm)
     if (lkmFile != null) {

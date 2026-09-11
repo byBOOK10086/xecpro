@@ -84,10 +84,10 @@ pub fn patch_kpm(args: &BootPatchKpmArgs) -> Result<()> {
     let boot_data = fs::read(&args.boot)
         .with_context(|| format!("cannot read boot image {}", args.boot.display()))?;
     let boot_image = BootImage::parse(&boot_data).context("cannot parse boot image")?;
-    let kernel = boot_image
-        .get_blocks()
-        .get_kernel()
-        .context("boot image does not contain a kernel")?;
+    let Some(kernel) = boot_image.get_blocks().get_kernel() else {
+        println!("- KPM: image has no kernel (e.g. init_boot/vendor_boot), skip kernel patch");
+        return Ok(());
+    };
 
     println!("- Decompressing kernel");
     let mut raw_kernel = Vec::new();

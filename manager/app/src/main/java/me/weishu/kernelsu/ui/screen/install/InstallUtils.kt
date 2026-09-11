@@ -17,6 +17,12 @@ internal sealed class InstallMethod : Parcelable {
         override val summary: String?
     ) : InstallMethod()
 
+    data class SelectFileForKpm(
+        val uri: Uri? = null,
+        @get:StringRes override val label: Int = R.string.select_file_kpm,
+        override val summary: String?
+    ) : InstallMethod()
+
     data class DownloadFile(
         val url: String? = null,
         val partition: String? = null,

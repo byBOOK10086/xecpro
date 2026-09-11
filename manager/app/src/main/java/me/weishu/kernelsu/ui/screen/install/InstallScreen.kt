@@ -76,10 +76,12 @@ fun InstallScreen() {
 
     val selectFileTip = stringResource(id = R.string.select_file_tip, defaultPartition)
     val selectFileTipNoGki = stringResource(id = R.string.select_file_tip_nogki)
+    val selectFileKpmTip = stringResource(id = R.string.select_file_kpm_tip)
     val downloadFileMsg = stringResource(id = R.string.download_dialog_msg)
-    val installMethodOptions = remember(rootAvailable, isAbDevice, isGkiDevice, selectFileTip, selectFileTipNoGki, downloadFileMsg) {
+    val installMethodOptions = remember(rootAvailable, isAbDevice, isGkiDevice, selectFileTip, selectFileTipNoGki, selectFileKpmTip, downloadFileMsg) {
         buildList {
             add(InstallMethod.SelectFile(summary = if (isGkiDevice) selectFileTip else selectFileTipNoGki))
+            add(InstallMethod.SelectFileForKpm(summary = selectFileKpmTip))
             add(InstallMethod.DownloadFile(summary = downloadFileMsg))
             if (rootAvailable && isGkiDevice) {
                 add(InstallMethod.DirectInstall)
@@ -132,6 +134,9 @@ fun InstallScreen() {
                             allowShell = allowShell,
                             enableAdb = enableAdb,
                             backup = forceBackup
+                        )
+                        is InstallMethod.SelectFileForKpm -> FlashIt.FlashBootKpm(
+                            boot = method.uri ?: return@let
                         )
                         else -> FlashIt.FlashBoot(
                             boot = if (method is InstallMethod.SelectFile) method.uri else null,
@@ -217,6 +222,15 @@ fun InstallScreen() {
             }
         }
     }
+    val selectKpmImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            it.data?.data?.let { uri ->
+                installMethod = InstallMethod.SelectFileForKpm(uri, summary = selectFileKpmTip)
+            }
+        }
+    }
 
     val state = InstallUiState(
         installMethod = installMethod,
@@ -244,6 +258,9 @@ fun InstallScreen() {
         onSelectBootImage = {
             selectImageLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/octet-stream" })
         },
+        onSelectBootImageForKpm = {
+            selectKpmImageLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/octet-stream" })
+        },
         onUploadLkm = {
             selectLkmLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/octet-stream" })
         },
@@ -266,6 +283,7 @@ fun InstallScreen() {
                 // selection needed.
                 is InstallMethod.DownloadFile -> false
                 is InstallMethod.SelectFile -> true
+                is InstallMethod.SelectFileForKpm -> false
                 else -> isKmiUnknown
             }
             if (!isLkmSelected && isKmiUnresolved) {
