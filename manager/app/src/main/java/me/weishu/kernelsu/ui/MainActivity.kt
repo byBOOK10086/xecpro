@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -231,12 +230,6 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                         )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.18f))
-                        )
-
                         when (uiMode) {
                             UiMode.Material -> androidx.compose.material3.Scaffold(
                                 containerColor = Color.Transparent

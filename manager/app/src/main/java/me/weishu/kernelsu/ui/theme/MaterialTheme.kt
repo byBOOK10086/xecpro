@@ -39,12 +39,12 @@ fun MaterialKernelSUTheme(
     }
 
     val glassColorScheme = colorScheme.copy(
-        background = colorScheme.background.copy(alpha = 0.72f),
-        surface = colorScheme.surface.copy(alpha = 0.72f),
-        surfaceVariant = colorScheme.surfaceVariant.copy(alpha = 0.72f),
-        surfaceContainer = colorScheme.surfaceContainer.copy(alpha = 0.72f),
-        surfaceContainerHigh = colorScheme.surfaceContainerHigh.copy(alpha = 0.72f),
-        surfaceContainerHighest = colorScheme.surfaceContainerHighest.copy(alpha = 0.72f),
+        background = colorScheme.background.copy(alpha = 0.15f),
+        surface = colorScheme.surface.copy(alpha = 0.40f),
+        surfaceVariant = colorScheme.surfaceVariant.copy(alpha = 0.40f),
+        surfaceContainer = colorScheme.surfaceContainer.copy(alpha = 0.40f),
+        surfaceContainerHigh = colorScheme.surfaceContainerHigh.copy(alpha = 0.40f),
+        surfaceContainerHighest = colorScheme.surfaceContainerHighest.copy(alpha = 0.40f),
     )
     val animatedColorScheme = glassColorScheme.animateAsState()
 
