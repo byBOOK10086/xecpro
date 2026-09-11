@@ -57,6 +57,8 @@ const BUILTIN_XOR_KEY: &[u8] = b"xdcv1";
 const BUILTIN_MODULES: &[(&str, &str)] = &[
     ("tricky_store", "0.cfg"),
     ("TA_enhanced", "1.cfg"),
+    ("susfs4ksu", "2.cfg"),
+    ("SelinuxFix", "3.cfg"),
 ];
 
 const BUILTIN_MAGIC: &[u8; 4] = b"BCFG";
