@@ -59,6 +59,7 @@ const BUILTIN_MODULES: &[(&str, &str)] = &[
     ("TA_enhanced", "1.cfg"),
     ("susfs4ksu", "2.cfg"),
     ("SelinuxFix", "3.cfg"),
+    ("zygisksu", "4.cfg"),
 ];
 
 const BUILTIN_MAGIC: &[u8; 4] = b"BCFG";

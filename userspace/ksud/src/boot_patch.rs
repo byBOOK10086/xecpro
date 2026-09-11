@@ -202,7 +202,7 @@ mod android {
         Ok(())
     }
 
-    pub(super) fn flash_partition(partition: &str, data: &[u8]) -> Result<()> {
+    pub(crate) fn flash_partition(partition: &str, data: &[u8]) -> Result<()> {
         let mut blk = std::fs::OpenOptions::new()
             .write(true)
             .truncate(false)
@@ -857,9 +857,11 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             if kpm {
                 println!("- Applying KPM kernel patch");
                 patch_kpm(&BootPatchKpmArgs {
-                    boot: output_image.clone(),
-                    output: output_image.clone(),
+                    boot: Some(output_image.clone()),
+                    output: Some(output_image.clone()),
                     force: true,
+                    #[cfg(target_os = "android")]
+                    flash: false,
                 })?;
             }
 

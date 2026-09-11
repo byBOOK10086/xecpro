@@ -38,6 +38,8 @@
     <string name="kpm_flash">刷入 KPM 模块</string>
     <string name="kpm_flash_success">KPM 模块刷入成功</string>
     <string name="kpm_flash_failed">KPM 模块刷入失败</string>
+    <string name="kpm_embed">嵌入 KPM 引擎</string>
+    <string name="kpm_embed_hint">对当前 boot 分区打 KPatch-Next 补丁并写回，完成后需重启生效，无需 fastboot</string>
     <string name="module_sort_action_first">可执行优先</string>
     <string name="module_sort_enabled_first">已启用优先</string>
     <string name="module_repos">模块仓库</string>

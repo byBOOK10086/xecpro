@@ -49,6 +49,8 @@
     <string name="kpm_flash">Flash KPM module</string>
     <string name="kpm_flash_success">KPM module flashed successfully</string>
     <string name="kpm_flash_failed">Failed to flash KPM module</string>
+    <string name="kpm_embed">Embed KPM engine</string>
+    <string name="kpm_embed_hint">Patch the current boot partition with KPatch-Next and flash it back. A reboot is required afterwards — no fastboot needed.</string>
     <string name="module_install_prompt_with_name">The following modules will be installed: %1$s</string>
     <string name="module_sort_action_first">Action first</string>
     <string name="module_sort_enabled_first">Enabled first</string>

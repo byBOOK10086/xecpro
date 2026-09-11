@@ -61,6 +61,9 @@ import me.weishu.kernelsu.ui.component.material.SegmentedColumn
 import me.weishu.kernelsu.ui.component.material.SegmentedListItem
 import me.weishu.kernelsu.ui.component.material.SnackBarHost as MaterialSnackBarHost
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
+import me.weishu.kernelsu.ui.navigation3.LocalNavigator
+import me.weishu.kernelsu.ui.navigation3.Route
+import me.weishu.kernelsu.ui.screen.flash.FlashIt
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
@@ -117,11 +120,17 @@ fun KpmPager(
         uri?.let(viewModel::flash)
     }
 
+    val navigator = LocalNavigator.current
+    val onEmbed = {
+        navigator.push(Route.Flash(FlashIt.FlashBootKpmEmbed))
+    }
+
     when (uiMode) {
         UiMode.Miuix -> KpmPagerMiuix(
             uiState = uiState,
             snackbarHostState = miuixSnackbarHostState,
             onFlash = { pickKpmLauncher.launch("*/*") },
+            onEmbed = onEmbed,
             bottomInnerPadding = bottomInnerPadding,
         )
 
@@ -129,6 +138,7 @@ fun KpmPager(
             uiState = uiState,
             snackbarHostState = materialSnackbarHostState,
             onFlash = { pickKpmLauncher.launch("*/*") },
+            onEmbed = onEmbed,
             bottomInnerPadding = bottomInnerPadding,
         )
     }
@@ -139,6 +149,7 @@ private fun KpmPagerMiuix(
     uiState: KpmUiState,
     snackbarHostState: MiuixSnackbarHostState,
     onFlash: () -> Unit,
+    onEmbed: () -> Unit,
     bottomInnerPadding: Dp,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
@@ -184,6 +195,21 @@ private fun KpmPagerMiuix(
                 ) {
                     KpmStatusCardMiuix(uiState)
                     KpmModuleListMiuix(uiState.modules)
+                    if (!uiState.active) {
+                        Card(onClick = onEmbed) {
+                            BasicComponent(
+                                title = stringResource(R.string.kpm_embed),
+                                summary = stringResource(R.string.kpm_embed_hint),
+                                startAction = {
+                                    MiuixIcon(
+                                        imageVector = Icons.Rounded.Memory,
+                                        contentDescription = null,
+                                        tint = colorScheme.primary,
+                                    )
+                                },
+                            )
+                        }
+                    }
                     Card(onClick = onFlash) {
                         BasicComponent(
                             title = stringResource(R.string.kpm_flash),
@@ -270,6 +296,7 @@ private fun KpmPagerMaterial(
     uiState: KpmUiState,
     snackbarHostState: SnackbarHostState,
     onFlash: () -> Unit,
+    onEmbed: () -> Unit,
     bottomInnerPadding: Dp,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
@@ -305,6 +332,20 @@ private fun KpmPagerMaterial(
         ) {
             KpmStatusCardMaterial(uiState)
             KpmModuleListMaterial(uiState.modules)
+            if (!uiState.active) {
+                Button(
+                    onClick = onEmbed,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Memory,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.kpm_embed))
+                }
+            }
             Button(
                 onClick = onFlash,
                 modifier = Modifier.fillMaxWidth(),

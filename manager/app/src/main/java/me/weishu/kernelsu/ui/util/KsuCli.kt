@@ -417,6 +417,17 @@ fun installBootKpm(
     return FlashResult(result)
 }
 
+fun embedKpm(
+    onStdout: (String) -> Unit,
+    onStderr: (String) -> Unit,
+): FlashResult {
+    // 一键嵌入：对当前 boot 分区直接打 KPatch-Next 补丁并写回，无需外部 boot 文件或 fastboot。
+    val cmd = "${getKsuDaemonPath()} boot-patch-kpm --flash"
+    val result = flashWithIO(cmd, onStdout, onStderr)
+    Log.i("KernelSU", "embed kpm result: ${result.isSuccess}")
+    return FlashResult(result)
+}
+
 fun downloadBoot(
     url: String,
     partition: String,

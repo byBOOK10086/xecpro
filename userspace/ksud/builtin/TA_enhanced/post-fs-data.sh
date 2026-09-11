@@ -16,14 +16,16 @@ _pfd_log() {
 
 _pfd_log "post-fs-data started"
 
-# Wait for modules directory -- 9s cap (KSU/APatch hard 10s limit)
+# Wait for the built-in TrickyStore engine dir. Built-in modules are
+# materialized under /dev/.xudc_hidden BEFORE this stage runs, so this
+# normally returns immediately; short cap just in case.
 _wait_count=0
-while [ -z "$(ls -A /data/adb/modules/ 2>/dev/null)" ]; do
+while [ ! -d "$TS" ]; do
     _wait_count=$((_wait_count + 1))
-    [ "$_wait_count" -ge 18 ] && break
-    sleep 0.5
+    [ "$_wait_count" -ge 10 ] && break
+    sleep 0.2
 done
-_pfd_log "Modules directory ready (waited ${_wait_count} iterations)"
+_pfd_log "TrickyStore engine dir ready (waited ${_wait_count} iterations)"
 
 # Self-removal if TrickyStore missing
 if [ ! -d "$TS" ] || [ -f "$TS/remove" ]; then
