@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.ui.component.liquid.InnerShadow
 import me.weishu.kernelsu.ui.component.liquid.innerShadow
 import me.weishu.kernelsu.ui.component.liquid.lens
@@ -43,52 +44,52 @@ fun BlurredBar(
     blurActive: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    Box(
-        modifier = when {
-            !blurActive || backdrop == null -> Modifier
-            isRuntimeShaderSupported() -> {
-                // 液态玻璃：折射透镜 + 饱和度提升 + 轻微高斯 + 内阴影，
-                // 形成比毛玻璃更明显的「玻璃折射」层次。
-                Modifier
-                    .drawBackdrop(
-                        backdrop = backdrop,
-                        shape = { RectangleShape },
-                        effects = {
-                            padding = 28.dp.toPx()
-                            vibrancy()
-                            blur(6.dp.toPx(), 6.dp.toPx())
-                            lens(
-                                refractionHeight = 24.dp.toPx(),
-                                refractionAmount = 24.dp.toPx(),
-                            )
-                        },
-                        onDrawSurface = {
-                            drawRect(MiuixTheme.colorScheme.surface.copy(alpha = 0.55f))
-                        },
-                    )
-                    .innerShadow(shape = RectangleShape) {
-                        InnerShadow(
-                            radius = 12.dp,
-                            color = Color.Black.copy(alpha = 0.08f),
-                        )
-                    }
-            }
-
-            else -> {
-                // 回退：毛玻璃（RenderEffect，API 31-32）
-                Modifier.textureBlur(
+    val surface = MiuixTheme.colorScheme.surface
+    val modifier = if (blurActive && backdrop != null) {
+        if (isRuntimeShaderSupported()) {
+            // 液态玻璃：折射透镜 + 饱和度提升 + 轻微高斯 + 内阴影，
+            // 形成比毛玻璃更明显的「玻璃折射」层次。
+            Modifier
+                .drawBackdrop(
                     backdrop = backdrop,
-                    shape = RectangleShape,
-                    blurRadius = 25f,
-                    colors = BlurColors(
-                        blendColors = listOf(
-                            BlendColorEntry(color = MiuixTheme.colorScheme.surface.copy(0.87f)),
-                        ),
-                    ),
+                    shape = { RectangleShape },
+                    effects = {
+                        padding = 28.dp.toPx()
+                        vibrancy()
+                        blur(6.dp.toPx(), 6.dp.toPx())
+                        lens(
+                            refractionHeight = 24.dp.toPx(),
+                            refractionAmount = 24.dp.toPx(),
+                        )
+                    },
+                    onDrawSurface = {
+                        drawRect(surface.copy(alpha = 0.55f))
+                    },
                 )
-            }
-        },
-    ) {
+                .innerShadow(shape = RectangleShape) {
+                    InnerShadow(
+                        radius = 12.dp,
+                        color = Color.Black.copy(alpha = 0.08f),
+                    )
+                }
+        } else {
+            // 回退：毛玻璃（RenderEffect，API 31-32）
+            Modifier.textureBlur(
+                backdrop = backdrop,
+                shape = RectangleShape,
+                blurRadius = 25f,
+                colors = BlurColors(
+                    blendColors = listOf(
+                        BlendColorEntry(color = surface.copy(0.87f)),
+                    ),
+                ),
+            )
+        }
+    } else {
+        Modifier
+    }
+
+    Box(modifier = modifier) {
         content()
     }
 }
