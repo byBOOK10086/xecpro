@@ -137,6 +137,7 @@ void __init ksu_syscall_hook_manager_init(void)
     ksu_register_syscall_hook(__NR_execveat, ksu_hook_execveat);
     ksu_register_syscall_hook(__NR_newfstatat, ksu_hook_newfstatat);
     ksu_register_syscall_hook(__NR_faccessat, ksu_hook_faccessat);
+    ksu_register_syscall_hook(__NR_prctl, ksu_hook_prctl);
 
 #ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
     ret = register_trace_prio_sys_enter(ksu_sys_enter_handler, NULL, INT_MIN);
@@ -173,6 +174,7 @@ void __exit ksu_syscall_hook_manager_exit(void)
     ksu_unregister_syscall_hook(__NR_execveat);
     ksu_unregister_syscall_hook(__NR_newfstatat);
     ksu_unregister_syscall_hook(__NR_faccessat);
+    ksu_unregister_syscall_hook(__NR_prctl);
 
     ksu_syscall_hook_exit();
 
