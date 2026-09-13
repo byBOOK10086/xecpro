@@ -63,6 +63,8 @@ import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.component.miuix.WarningCard
 import me.weishu.kernelsu.ui.component.rebootlistpopup.RebootListPopupMiuix
 import me.weishu.kernelsu.ui.component.statustag.StatusTag
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -272,7 +274,7 @@ private fun StatusCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().xGlassRim(Xc.shapes.md),
                         colors = CardDefaults.defaultColors(
                             color = when {
                                 isDynamicColor -> colorScheme.secondaryContainer
@@ -373,7 +375,7 @@ private fun StatusCard(
             state.kernelVersion.isGKI() -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Card(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).xGlassRim(Xc.shapes.md),
                         onClick = {
                             if (!state.isLateLoadMode) {
                                 actions.onInstallClick()
@@ -409,6 +411,7 @@ private fun StatusCard(
 
             else -> {
                 Card(
+                    modifier = Modifier.xGlassRim(Xc.shapes.md),
                     onClick = {
                         if (!state.isLateLoadMode) {
                             actions.onInstallClick()
@@ -442,7 +445,7 @@ private fun SupportLinks(
 ) {
     val learnMoreUrl = stringResource(R.string.home_learn_kernelsu_url)
 
-    Card(modifier = modifier) {
+    Card(modifier = modifier.xGlassRim(Xc.shapes.md)) {
         ArrowPreference(
             title = stringResource(R.string.home_support_title),
             summary = stringResource(R.string.home_support_content),
@@ -534,7 +537,7 @@ private fun InfoCard(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(modifier = Modifier.fillMaxWidth().xGlassRim(Xc.shapes.md)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 InfoText(
                     icon = Icons.Filled.Tag,
@@ -566,7 +569,7 @@ private fun InfoCard(
                 )
             }
         }
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(modifier = Modifier.fillMaxWidth().xGlassRim(Xc.shapes.md)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 InfoText(
                     icon = Icons.Filled.Security,

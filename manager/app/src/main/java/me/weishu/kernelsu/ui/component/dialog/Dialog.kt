@@ -3,6 +3,7 @@ package me.weishu.kernelsu.ui.component.dialog
 import android.os.Parcelable
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,8 +23,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.parcelize.Parcelize
-import me.weishu.kernelsu.ui.LocalUiMode
-import me.weishu.kernelsu.ui.UiMode
 import kotlin.coroutines.resume
 
 private const val TAG = "DialogComponent"
@@ -299,10 +298,16 @@ private class ConfirmDialogHandleImpl(
 fun rememberLoadingDialog(): LoadingDialogHandle {
     val visible = remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    val host = LocalXDialogHost.current
 
-    when (LocalUiMode.current) {
-        UiMode.Miuix -> LoadingDialogMiuix(visible)
-        UiMode.Material -> LoadingDialogMaterial(visible)
+    // 显示请求登记到根层宿主，而不是就地画对话框。原因是玻璃必须取**同一个 window**
+    // 的图层：就地画会被页面布局裁掉（`fillMaxSize` 在页面子树里只等于页面大小），
+    // 换成平台 Dialog 又采不到 backdrop、只剩一块死色。
+    // 用 DisposableEffect 而不是直接写：保证"进组合登记一次、退组合摘掉"，
+    // 否则每次重组都会往列表里塞一份重复登记。
+    DisposableEffect(host, visible) {
+        host.loadingStates.add(visible)
+        onDispose { host.loadingStates.remove(visible) }
     }
 
     return remember {
@@ -319,6 +324,7 @@ private fun rememberConfirmDialog(visuals: ConfirmDialogVisuals, callback: Confi
     val resultChannel = remember {
         Channel<ConfirmResult>()
     }
+    val host = LocalXDialogHost.current
 
     val handle = rememberSaveable(
         saver = ConfirmDialogHandleImpl.Saver(visible, coroutineScope, callback, resultChannel),
@@ -327,20 +333,18 @@ private fun rememberConfirmDialog(visuals: ConfirmDialogVisuals, callback: Confi
         }
     )
 
-    when (LocalUiMode.current) {
-        UiMode.Miuix -> ConfirmDialogMiuix(
-            handle.visuals,
-            confirm = { coroutineScope.launch { resultChannel.send(ConfirmResult.Confirmed) } },
-            dismiss = { coroutineScope.launch { resultChannel.send(ConfirmResult.Canceled) } },
-            showDialog = visible
+    // 同 rememberLoadingDialog：交给根层宿主画。
+    // 两个回调仍然是"往 resultChannel 投一个结果"——handle 内部的收集器收到后会自己
+    // hide()，所以这里不需要再手动改 visible，避免和收集器抢着改同一个状态。
+    DisposableEffect(host, handle) {
+        val registration = ConfirmDialogRegistration(
+            visible = visible,
+            visualsProvider = { handle.visuals },
+            onConfirm = { coroutineScope.launch { resultChannel.send(ConfirmResult.Confirmed) } },
+            onDismiss = { coroutineScope.launch { resultChannel.send(ConfirmResult.Canceled) } },
         )
-
-        UiMode.Material -> ConfirmDialogMaterial(
-            handle.visuals,
-            confirm = { coroutineScope.launch { resultChannel.send(ConfirmResult.Confirmed) } },
-            dismiss = { coroutineScope.launch { resultChannel.send(ConfirmResult.Canceled) } },
-            showDialog = visible
-        )
+        host.confirmStates.add(registration)
+        onDispose { host.confirmStates.remove(registration) }
     }
 
     return handle

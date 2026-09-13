@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import me.weishu.kernelsu.ui.component.WarningLevel
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -28,7 +30,11 @@ fun WarningCard(
     action: (@Composable () -> Unit)? = null,
 ) {
     Card(
-        modifier = modifier,
+        // 告警卡是全 App 复用最广的容器（首页 7 处、日志页 3 处）。
+        // 容器色由 level 决定、不能替换成玻璃表面（会丢掉红/橙的语义色），
+        // 所以这里只补那一圈共用的玻璃边：和顶栏、卡片群落在同一个材质里，
+        // 同时让卡片在近乎纯白的背景图上有一圈明确的轮廓。
+        modifier = modifier.xGlassRim(Xc.shapes.md),
         onClick = { onClick?.invoke() },
         colors = CardDefaults.defaultColors(
             color = level.containerColor(),

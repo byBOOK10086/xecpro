@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.miuix.EditText
 import me.weishu.kernelsu.ui.component.profile.RootProfileConfig
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
@@ -104,7 +106,8 @@ fun TemplateEditorScreenMiuix(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
+                            .padding(12.dp)
+                            .xGlassRim(Xc.shapes.md),
                     ) {
                         TextEdit(
                             label = stringResource(id = R.string.app_profile_template_name),

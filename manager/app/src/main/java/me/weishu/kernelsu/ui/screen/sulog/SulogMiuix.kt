@@ -70,6 +70,8 @@ import me.weishu.kernelsu.ui.component.miuix.SearchBox
 import me.weishu.kernelsu.ui.component.miuix.SearchPager
 import me.weishu.kernelsu.ui.component.miuix.WarningCard
 import me.weishu.kernelsu.ui.component.statustag.StatusTag
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.SulogEntry
@@ -322,7 +324,8 @@ fun SulogScreenMiuix(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 12.dp)
-                                    .padding(bottom = 12.dp),
+                                    .padding(bottom = 12.dp)
+                                    .xGlassRim(Xc.shapes.md),
                             ) {
                                 OverlayDropdownPreference(
                                     title = stringResource(R.string.sulog_log_files),
@@ -447,7 +450,8 @@ private fun SulogEntryCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
+            .padding(bottom = 12.dp)
+            .xGlassRim(Xc.shapes.md),
         onClick = onClick,
         showIndication = true,
         insideMargin = PaddingValues(16.dp),

@@ -22,7 +22,6 @@ import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.DeveloperMode
-import androidx.compose.material.icons.rounded.DisplaySettings
 import androidx.compose.material.icons.rounded.FlashOn
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LayersClear
@@ -41,11 +40,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.KsuIsValid
 import me.weishu.kernelsu.ui.component.dialog.rememberLoadingDialog
 import me.weishu.kernelsu.ui.component.miuix.SendLogDialog
 import me.weishu.kernelsu.ui.component.uninstalldialog.UninstallDialog
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
@@ -109,7 +109,8 @@ fun SettingPagerMiuix(
                     Card(
                         modifier = Modifier
                             .padding(top = 12.dp)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .xGlassRim(Xc.shapes.md),
                     ) {
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_check_update),
@@ -146,23 +147,9 @@ fun SettingPagerMiuix(
                     Card(
                         modifier = Modifier
                             .padding(top = 12.dp)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .xGlassRim(Xc.shapes.md),
                     ) {
-                        OverlayDropdownPreference(
-                            title = stringResource(id = R.string.settings_ui_mode),
-                            summary = stringResource(id = R.string.settings_ui_mode_summary),
-                            items = UiMode.entries.map { it.name },
-                            startAction = {
-                                Icon(
-                                    Icons.Rounded.DisplaySettings,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_ui_mode),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            selectedIndex = if (uiState.uiMode == UiMode.Material.value) 1 else 0,
-                            onSelectedIndexChange = actions.onSetUiModeIndex
-                        )
                         ArrowPreference(
                             title = stringResource(id = R.string.settings_theme),
                             summary = stringResource(id = R.string.settings_theme_summary),
@@ -182,7 +169,8 @@ fun SettingPagerMiuix(
                         Card(
                             modifier = Modifier
                                 .padding(top = 12.dp)
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .xGlassRim(Xc.shapes.md),
                         ) {
                             val profileTemplate = stringResource(id = R.string.settings_profile_template)
                             ArrowPreference(
@@ -205,7 +193,8 @@ fun SettingPagerMiuix(
                         Card(
                             modifier = Modifier
                                 .padding(top = 12.dp)
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .xGlassRim(Xc.shapes.md),
                         ) {
                             val suCompatModeItems = listOf(
                                 stringResource(id = R.string.settings_mode_enable_by_default),
@@ -338,7 +327,8 @@ fun SettingPagerMiuix(
                         Card(
                             modifier = Modifier
                                 .padding(top = 12.dp)
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .xGlassRim(Xc.shapes.md),
                         ) {
                             SwitchPreference(
                                 title = stringResource(id = R.string.settings_umount_modules_default),
@@ -391,7 +381,8 @@ fun SettingPagerMiuix(
                         Card(
                             modifier = Modifier
                                 .padding(top = 12.dp)
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .xGlassRim(Xc.shapes.md),
                         ) {
                             val uninstall = stringResource(id = R.string.settings_uninstall)
                             ArrowPreference(
@@ -417,7 +408,8 @@ fun SettingPagerMiuix(
                     Card(
                         modifier = Modifier
                             .padding(vertical = 12.dp)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .xGlassRim(Xc.shapes.md),
                     ) {
                         ArrowPreference(
                             title = stringResource(id = R.string.send_log),

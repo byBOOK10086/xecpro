@@ -41,6 +41,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.LkmSelection
@@ -121,7 +123,7 @@ internal fun InstallScreenMiuix(
             ) {
                 item {
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().xGlassRim(Xc.shapes.md),
                     ) {
                         SelectInstallMethod(
                             state = uiState,
@@ -150,7 +152,8 @@ internal fun InstallScreenMiuix(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 12.dp),
+                                .padding(top = 12.dp)
+                                .xGlassRim(Xc.shapes.md),
                         ) {
                             OverlayDropdownPreference(
                                 items = partitionItems,
@@ -180,7 +183,8 @@ internal fun InstallScreenMiuix(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 12.dp),
+                                .padding(top = 12.dp)
+                                .xGlassRim(Xc.shapes.md),
                         ) {
                             CheckboxPreference(
                                 title = stringResource(id = R.string.install_force_backup),
@@ -193,7 +197,8 @@ internal fun InstallScreenMiuix(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 12.dp),
+                            .padding(top = 12.dp)
+                            .xGlassRim(Xc.shapes.md),
                     ) {
                         BasicComponent(
                             title = stringResource(id = R.string.install_upload_lkm_file),
@@ -239,7 +244,8 @@ internal fun InstallScreenMiuix(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 12.dp),
+                            .padding(top = 12.dp)
+                            .xGlassRim(Xc.shapes.md),
                     ) {
                         BasicComponent(
                             title = stringResource(id = R.string.advanced_options),

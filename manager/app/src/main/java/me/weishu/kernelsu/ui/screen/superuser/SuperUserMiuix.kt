@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -72,6 +71,8 @@ import me.weishu.kernelsu.ui.component.miuix.SearchBarFake
 import me.weishu.kernelsu.ui.component.miuix.SearchBox
 import me.weishu.kernelsu.ui.component.miuix.SearchPager
 import me.weishu.kernelsu.ui.component.statustag.StatusTag
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -499,12 +500,13 @@ private fun SimpleAppItem(
                 .width(6.dp)
                 .height(24.dp)
                 .align(Alignment.CenterVertically)
-                .clip(RoundedCornerShape(16.dp))
+                .clip(Xc.shapes.md)
                 .background(if (matched) colorScheme.primary else colorScheme.primaryContainer)
         )
         Card(
             modifier = Modifier
                 .padding(start = 6.dp, end = 12.dp, bottom = 6.dp)
+                .xGlassRim(Xc.shapes.md)
         ) {
             BasicComponent(
                 title = app.label,
@@ -550,7 +552,8 @@ private fun GroupItem(
     Card(
         modifier = Modifier
             .padding(horizontal = 12.dp)
-            .padding(bottom = 12.dp),
+            .padding(bottom = 12.dp)
+            .xGlassRim(Xc.shapes.md),
         onClick = onClickPrimary,
         onLongPress = if (group.apps.size > 1) onToggleExpand else null,
         showIndication = true,

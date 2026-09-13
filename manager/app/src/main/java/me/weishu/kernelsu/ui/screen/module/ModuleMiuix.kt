@@ -25,7 +25,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,7 +55,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -115,6 +113,9 @@ import me.weishu.kernelsu.ui.component.dialog.rememberLoadingDialog
 import me.weishu.kernelsu.ui.component.miuix.SearchBarFake
 import me.weishu.kernelsu.ui.component.miuix.SearchBox
 import me.weishu.kernelsu.ui.component.miuix.SearchPager
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.liquid.xWaterDropClick
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -599,7 +600,7 @@ private fun ModuleShortcutDialog(
                     modifier = Modifier
                         .padding(vertical = 16.dp)
                         .size(100.dp)
-                        .clip(RoundedCornerShape(25.dp))
+                        .clip(Xc.shapes.xl)
                 ) {
                     val preview = shortcutState.previewIcon
                     if (preview != null) {
@@ -782,7 +783,8 @@ fun ModuleItem(
     Card(
         modifier = Modifier
             .padding(horizontal = 16.dp)
-            .padding(bottom = 16.dp),
+            .padding(bottom = 16.dp)
+            .xGlassRim(Xc.shapes.md),
         insideMargin = PaddingValues(16.dp),
         onClick = {
             if (hasDescription) expanded = !expanded
@@ -810,7 +812,7 @@ fun ModuleItem(
                                 fontSize = 12.sp,
                                 color = updateTint,
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
+                                    .clip(Xc.shapes.xs)
                                     .background(updateBg)
                                     .padding(horizontal = 6.dp, vertical = 2.dp),
                                 fontWeight = FontWeight(750),
@@ -913,9 +915,9 @@ fun ModuleItem(
                                 .widthIn(min = 35.dp)
                                 .clip(CircleShape)
                                 .background(secondaryContainer)
-                                .combinedClickable(
+                                .xWaterDropClick(
+                                    onLongClick = { onAddActionShortcut(ShortcutType.Action) },
                                     onClick = onExecuteAction,
-                                    onLongClick = { onAddActionShortcut(ShortcutType.Action) }
                                 )
                                 .padding(
                                     start = if (!module.hasWebUi && !hasUpdate) 6.dp else 0.dp,
@@ -948,9 +950,9 @@ fun ModuleItem(
                                 .widthIn(min = 35.dp)
                                 .clip(CircleShape)
                                 .background(secondaryContainer)
-                                .combinedClickable(
+                                .xWaterDropClick(
+                                    onLongClick = { onAddActionShortcut(ShortcutType.WebUI) },
                                     onClick = onOpenWebUi,
-                                    onLongClick = { onAddActionShortcut(ShortcutType.WebUI) }
                                 )
                                 .padding(horizontal = if (!module.hasActionScript && !hasUpdate) 10.dp else 0.dp),
                             verticalAlignment = Alignment.CenterVertically,

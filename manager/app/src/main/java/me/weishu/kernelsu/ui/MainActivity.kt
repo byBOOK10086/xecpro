@@ -24,7 +24,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -70,6 +69,12 @@ import me.weishu.kernelsu.ui.component.bottombar.NavigationBadgeState
 import me.weishu.kernelsu.ui.component.bottombar.SideRail
 import me.weishu.kernelsu.ui.component.bottombar.rememberMainPagerState
 import me.weishu.kernelsu.ui.component.bottombar.useNavigationRail
+import me.weishu.kernelsu.ui.component.dialog.LocalXDialogBackdrop
+import me.weishu.kernelsu.ui.component.dialog.LocalXDialogHost
+import me.weishu.kernelsu.ui.component.dialog.XDialogHost
+import me.weishu.kernelsu.ui.component.dialog.XDialogHostState
+import me.weishu.kernelsu.ui.design.liquid.XDropletHost
+import me.weishu.kernelsu.ui.design.token.XcTheme
 import me.weishu.kernelsu.ui.navigation3.IntentDispatcher
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.navigation3.Navigator
@@ -92,6 +97,7 @@ import me.weishu.kernelsu.ui.screen.superuser.SuperUserPager
 import me.weishu.kernelsu.ui.screen.template.AppProfileTemplateScreen
 import me.weishu.kernelsu.ui.screen.templateeditor.TemplateEditorScreen
 import me.weishu.kernelsu.ui.theme.KernelSUTheme
+import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.theme.LocalColorMode
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.LocalEnableFloatingBottomBar
@@ -137,7 +143,6 @@ class MainActivity : ComponentActivity() {
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             val selectedMainPage by viewModel.selectedMainPage.collectAsStateWithLifecycle()
             val appSettings = uiState.appSettings
-            val uiMode = uiState.uiMode
             val darkMode = appSettings.colorMode.isDark || (appSettings.colorMode.isSystem && isSystemInDarkTheme())
 
             DisposableEffect(darkMode) {
@@ -169,78 +174,110 @@ class MainActivity : ComponentActivity() {
                 LocalEnableFloatingBottomBar provides uiState.enableFloatingBottomBar,
                 LocalEnableFloatingBottomBarBlur provides uiState.enableFloatingBottomBarBlur,
                 LocalEnableNavigationBadge provides uiState.enableNavigationBadge,
-                LocalUiMode provides uiMode,
             ) {
-                KernelSUTheme(appSettings = appSettings, uiMode = uiMode) {
-                    IntentDispatcher(intentChannel = intentChannel)
-                    val mainScreenEntry = @Composable {
-                        MainScreen(
-                            initialPage = selectedMainPage,
-                            onPageChanged = viewModel::setSelectedMainPage,
-                        )
-                    }
+                // XcTheme 必须包在 KernelSUTheme 外面：miuix 主题内部会重新下发
+                // 一次 LocalIndication，圆角高光只有在它之内才覆盖得住。
+                XcTheme(isDark = isInDarkTheme(), isAmoled = appSettings.colorMode.isAmoled) {
+                    KernelSUTheme(appSettings = appSettings) {
+                        // 对话框的玻璃要采"整个窗口"的图层，所以 backdrop 只能建在根层：
+                        // 各页自己的 rememberBlurBackdrop 只覆盖那一页，而对话框宿主是
+                        // 5 个 nav entry（Main / Home / SuperUser / Module / Settings）
+                        // 共用的，拿不到任何单独一页的采样源。
+                        val dialogBackdrop = rememberBlurBackdrop(uiState.enableBlur)
+                        val dialogHostState = remember { XDialogHostState() }
 
-                    val navDisplay = @Composable {
-                        NavDisplay(
-                            backStack = navigator.backStack,
-                            entryDecorators = listOf(
-                                rememberSaveableStateHolderNavEntryDecorator(),
-                                rememberViewModelStoreNavEntryDecorator()
-                            ),
-                            onBack = {
-                                when (val top = navigator.current()) {
-                                    is Route.TemplateEditor -> {
-                                        if (!top.readOnly) {
-                                            navigator.setResult("template_edit", true)
-                                        } else {
-                                            navigator.pop()
-                                        }
-                                    }
-
-                                    else -> navigator.pop()
+                        CompositionLocalProvider(
+                            LocalXDialogHost provides dialogHostState,
+                            LocalXDialogBackdrop provides dialogBackdrop,
+                        ) {
+                            XDropletHost {
+                                IntentDispatcher(intentChannel = intentChannel)
+                                val mainScreenEntry = @Composable {
+                                    MainScreen(
+                                        initialPage = selectedMainPage,
+                                        onPageChanged = viewModel::setSelectedMainPage,
+                                    )
                                 }
-                            },
-                            entryProvider = entryProvider {
-                                entry<Route.Main> { mainScreenEntry() }
-                                entry<Route.About> { AboutScreen() }
-                                entry<Route.Sulog> { SulogScreen() }
-                                entry<Route.ColorPalette> { ColorPaletteScreen() }
-                                entry<Route.AppProfileTemplate> { AppProfileTemplateScreen() }
-                                entry<Route.TemplateEditor> { key -> TemplateEditorScreen(key.template, key.readOnly) }
-                                entry<Route.AppProfile> { key -> AppProfileScreen(key.uid) }
-                                entry<Route.ModuleRepo> { ModuleRepoScreen() }
-                                entry<Route.ModuleRepoDetail> { key -> ModuleRepoDetailScreen(key.module) }
-                                entry<Route.Install> { InstallScreen() }
-                                entry<Route.Flash> { key -> FlashScreen(key.flashIt) }
-                                entry<Route.ExecuteModuleAction> { key -> ExecuteModuleActionScreen(key.moduleId, key.fromShortcut) }
-                                entry<Route.Home> { mainScreenEntry() }
-                                entry<Route.SuperUser> { mainScreenEntry() }
-                                entry<Route.Module> { mainScreenEntry() }
-                                entry<Route.Settings> { mainScreenEntry() }
-                            }
-                        )
-                    }
 
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        Image(
-                            painter = painterResource(
-                                if (isManager) R.drawable.bg_lkm_active else R.drawable.bg_not_patched
-                            ),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
-                        when (uiMode) {
-                            UiMode.Material -> androidx.compose.material3.Scaffold(
-                                containerColor = Color.Transparent
-                            ) { navDisplay() }
+                                val navDisplay = @Composable {
+                                    NavDisplay(
+                                        backStack = navigator.backStack,
+                                        entryDecorators = listOf(
+                                            rememberSaveableStateHolderNavEntryDecorator(),
+                                            rememberViewModelStoreNavEntryDecorator()
+                                        ),
+                                        onBack = {
+                                            when (val top = navigator.current()) {
+                                                is Route.TemplateEditor -> {
+                                                    if (!top.readOnly) {
+                                                        navigator.setResult("template_edit", true)
+                                                    } else {
+                                                        navigator.pop()
+                                                    }
+                                                }
 
-                            UiMode.Miuix -> Scaffold(containerColor = Color.Transparent) {
-                                navDisplay()
+                                                else -> navigator.pop()
+                                            }
+                                        },
+                                        entryProvider = entryProvider {
+                                            entry<Route.Main> { mainScreenEntry() }
+                                            entry<Route.About> { AboutScreen() }
+                                            entry<Route.Sulog> { SulogScreen() }
+                                            entry<Route.ColorPalette> { ColorPaletteScreen() }
+                                            entry<Route.AppProfileTemplate> { AppProfileTemplateScreen() }
+                                            entry<Route.TemplateEditor> { key -> TemplateEditorScreen(key.template, key.readOnly) }
+                                            entry<Route.AppProfile> { key -> AppProfileScreen(key.uid) }
+                                            entry<Route.ModuleRepo> { ModuleRepoScreen() }
+                                            entry<Route.ModuleRepoDetail> { key -> ModuleRepoDetailScreen(key.module) }
+                                            entry<Route.Install> { InstallScreen() }
+                                            entry<Route.Flash> { key -> FlashScreen(key.flashIt) }
+                                            entry<Route.ExecuteModuleAction> { key -> ExecuteModuleActionScreen(key.moduleId, key.fromShortcut) }
+                                            entry<Route.Home> { mainScreenEntry() }
+                                            entry<Route.SuperUser> { mainScreenEntry() }
+                                            entry<Route.Module> { mainScreenEntry() }
+                                            entry<Route.Settings> { mainScreenEntry() }
+                                        }
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        // 根层 backdrop 的采样源 = 壁纸 + 全部导航内容。
+                                        // 对话框**不**放进这个 Box，免得把自己也采进采样源、
+                                        // 出现自采样把背景糊成一团。
+                                        .then(
+                                            if (dialogBackdrop != null) {
+                                                Modifier.layerBackdrop(dialogBackdrop)
+                                            } else {
+                                                Modifier
+                                            }
+                                        ),
+                                ) {
+                                    Image(
+                                        painter = painterResource(
+                                            if (isManager) R.drawable.bg_lkm_active else R.drawable.bg_not_patched
+                                        ),
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop,
+                                    )
+                                    Scaffold(containerColor = Color.Transparent) {
+                                        navDisplay()
+                                    }
+                                }
+
+                                // 同窗口浮层靠绘制顺序盖住内容，所以必须排在 Box 之后；
+                                // 排在这里才有意义——此时根层 backdrop 里已经录好了
+                                // "对话框背后的那一帧"。
+                                XDialogHost(
+                                    state = dialogHostState,
+                                    backdrop = dialogBackdrop,
+                                )
+                                SideEffect { contentReady = true }
                             }
                         }
                     }
-                    SideEffect { contentReady = true }
                 }
             }
         }
@@ -328,11 +365,7 @@ fun MainScreen(
     } else {
         NavigationBadgeState()
     }
-    val uiMode = LocalUiMode.current
-    val surfaceColor = when (uiMode) {
-        UiMode.Material -> MaterialTheme.colorScheme.surface // Blur is not used in Material, this is just a placeholder
-        UiMode.Miuix -> MiuixTheme.colorScheme.surface
-    }
+    val surfaceColor = MiuixTheme.colorScheme.surface
     val blurBackdrop = rememberBlurBackdrop(enableBlur)
 
     val backdrop = rememberLayerBackdrop {
@@ -383,32 +416,15 @@ fun MainScreen(
                 .only(WindowInsetsSides.Start)
             val navBarBottomPadding = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
 
-            when (uiMode) {
-                UiMode.Material -> androidx.compose.material3.Scaffold(
-                    containerColor = Color.Transparent
-                ) {
-                    Row {
-                        SideRail(navigationBadge)
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .consumeWindowInsets(startInsets)
-                        ) {
-                            pagerContent(navBarBottomPadding)
-                        }
-                    }
-                }
-
-                UiMode.Miuix -> Scaffold(containerColor = Color.Transparent) { _ ->
-                    Row {
-                        SideRail(navigationBadge)
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .consumeWindowInsets(startInsets)
-                        ) {
-                            pagerContent(navBarBottomPadding)
-                        }
+            Scaffold(containerColor = Color.Transparent) { _ ->
+                Row {
+                    SideRail(navigationBadge)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .consumeWindowInsets(startInsets)
+                    ) {
+                        pagerContent(navBarBottomPadding)
                     }
                 }
             }
@@ -426,20 +442,11 @@ fun MainScreen(
                 }
             }
 
-            when (uiMode) {
-                UiMode.Material -> androidx.compose.material3.Scaffold(
-                    bottomBar = bottomBar,
-                    containerColor = Color.Transparent
-                ) { innerPadding ->
-                    pagerContent(innerPadding.calculateBottomPadding())
-                }
-
-                UiMode.Miuix -> Scaffold(
-                    bottomBar = bottomBar,
-                    containerColor = Color.Transparent,
-                ) { innerPadding ->
-                    pagerContent(innerPadding.calculateBottomPadding())
-                }
+            Scaffold(
+                bottomBar = bottomBar,
+                containerColor = Color.Transparent,
+            ) { innerPadding ->
+                pagerContent(innerPadding.calculateBottomPadding())
             }
         }
     }

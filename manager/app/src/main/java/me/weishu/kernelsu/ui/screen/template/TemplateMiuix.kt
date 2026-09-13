@@ -64,6 +64,8 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.model.TemplateInfo
 import me.weishu.kernelsu.ui.component.ListPopupDefaults
 import me.weishu.kernelsu.ui.component.miuix.DropdownItem
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
@@ -278,7 +280,7 @@ private fun TemplateItem(
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier.padding(bottom = 12.dp),
+        modifier = Modifier.padding(bottom = 12.dp).xGlassRim(Xc.shapes.md),
         onClick = onClick,
         showIndication = true,
         pressFeedbackType = PressFeedbackType.Sink

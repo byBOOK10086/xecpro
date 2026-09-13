@@ -316,6 +316,7 @@ fun FloatingBottomBar(
     val interactiveHighlight = remember(animationScope, tabWidthPx, dampedDragAnimation) {
         InteractiveHighlight(
             animationScope = animationScope,
+            shape = pillShape,
             position = { size, _ ->
                 Offset(
                     if (isLtr) (dampedDragAnimation.value + 0.5f) * tabWidthPx + panelOffset

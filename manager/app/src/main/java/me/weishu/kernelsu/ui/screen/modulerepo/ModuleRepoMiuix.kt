@@ -39,7 +39,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -86,6 +85,8 @@ import me.weishu.kernelsu.ui.component.miuix.SearchBarFake
 import me.weishu.kernelsu.ui.component.miuix.SearchBox
 import me.weishu.kernelsu.ui.component.miuix.SearchPager
 import me.weishu.kernelsu.ui.component.miuix.deferredTopPadding
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -263,7 +264,8 @@ fun ModuleRepoScreenMiuix(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 12.dp)
-                                .padding(bottom = 12.dp),
+                                .padding(bottom = 12.dp)
+                                .xGlassRim(Xc.shapes.md),
                             insideMargin = PaddingValues(16.dp),
                             showIndication = true,
                             pressFeedbackType = PressFeedbackType.Sink,
@@ -287,7 +289,7 @@ fun ModuleRepoScreenMiuix(
                                                 color = metaTint,
                                                 modifier = Modifier
                                                     .padding(start = 6.dp)
-                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .clip(Xc.shapes.xs)
                                                     .background(metaBg)
                                                     .padding(horizontal = 6.dp, vertical = 2.dp),
                                                 fontWeight = FontWeight(750),
@@ -437,7 +439,8 @@ fun ModuleRepoScreenMiuix(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(horizontal = 12.dp)
-                                        .padding(bottom = 12.dp),
+                                        .padding(bottom = 12.dp)
+                                        .xGlassRim(Xc.shapes.md),
                                     insideMargin = PaddingValues(16.dp),
                                     showIndication = true,
                                     onClick = { actions.onOpenRepoDetail(module) }) {
@@ -457,7 +460,7 @@ fun ModuleRepoScreenMiuix(
                                                         color = metaTint,
                                                         modifier = Modifier
                                                             .padding(start = 6.dp)
-                                                            .clip(RoundedCornerShape(6.dp))
+                                                            .clip(Xc.shapes.xs)
                                                             .background(metaBg)
                                                             .padding(horizontal = 6.dp, vertical = 2.dp),
                                                         fontWeight = FontWeight(750),
@@ -657,6 +660,7 @@ fun ReleasesPage(
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp)
                             .padding(bottom = 12.dp)
+                            .xGlassRim(Xc.shapes.md)
                     ) {
                         Column {
                             Row(
@@ -929,7 +933,8 @@ fun InfoPage(
                         text = stringResource(R.string.module_author), modifier = Modifier.padding(top = 6.dp)
                     )
                     Card(
-                        modifier = Modifier.padding(horizontal = 12.dp), insideMargin = PaddingValues(16.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp).xGlassRim(Xc.shapes.md),
+                        insideMargin = PaddingValues(16.dp)
                     ) {
                         Column {
                             module.authorsList.forEachIndexed { index, author ->
@@ -983,7 +988,8 @@ fun InfoPage(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp)
-                            .padding(bottom = 12.dp),
+                            .padding(bottom = 12.dp)
+                            .xGlassRim(Xc.shapes.md),
                         insideMargin = PaddingValues(16.dp)
                     ) {
                         Row(

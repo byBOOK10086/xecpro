@@ -67,6 +67,9 @@ import com.materialkolor.rememberDynamicColorScheme
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.bottombar.useNavigationRail
 import me.weishu.kernelsu.ui.component.miuix.ScaleDialog
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
+import me.weishu.kernelsu.ui.design.token.XcRadius
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.keyColorOptions
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -175,7 +178,8 @@ fun ColorPaletteScreenMiuix(
                     Card(
                         modifier = Modifier
                             .padding(top = 12.dp)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .xGlassRim(Xc.shapes.md),
                     ) {
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_monet),
@@ -281,7 +285,8 @@ fun ColorPaletteScreenMiuix(
                     Card(
                         modifier = Modifier
                             .padding(top = 12.dp)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .xGlassRim(Xc.shapes.md),
                     ) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             SwitchPreference(
@@ -356,7 +361,8 @@ fun ColorPaletteScreenMiuix(
                     Card(
                         modifier = Modifier
                             .padding(top = 12.dp)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .xGlassRim(Xc.shapes.md),
                     ) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                             SwitchPreference(
@@ -488,9 +494,9 @@ private fun ThemePreviewCardMiuix(
             modifier = Modifier
                 .fillMaxWidth(0.4f)
                 .aspectRatio(screenRatio)
-                .clip(RoundedCornerShape(20.dp))
+                .clip(Xc.shapes.lg)
                 .background(bgColor)
-                .border(1.dp, colorScheme.outline, RoundedCornerShape(20.dp))
+                .border(1.dp, colorScheme.outline, Xc.shapes.lg)
         ) {
             val content = @Composable {
                 Column {
@@ -513,7 +519,7 @@ private fun ThemePreviewCardMiuix(
                             .fillMaxWidth()
                             .height(45.dp)
                             .padding(horizontal = 8.dp)
-                            .clip(RoundedCornerShape(6.dp))
+                            .clip(Xc.shapes.xs)
                             .background(accentCardColor)
                     )
 
@@ -534,7 +540,7 @@ private fun ThemePreviewCardMiuix(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f)
-                                    .clip(RoundedCornerShape(6.dp))
+                                    .clip(Xc.shapes.xs)
                                     .background(cardColor)
                             )
                             repeat(smallCardCount) {
@@ -542,7 +548,7 @@ private fun ThemePreviewCardMiuix(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(smallCardHeight)
-                                        .clip(RoundedCornerShape(6.dp))
+                                        .clip(Xc.shapes.xs)
                                         .background(cardColor)
                                 )
                             }
@@ -557,7 +563,8 @@ private fun ThemePreviewCardMiuix(
                         modifier = Modifier
                             .fillMaxHeight()
                             .width(30.dp)
-                            .background(navBarColor),
+                            // 侧栏示意图：只圆右侧两角，避免与内容区交界处出现直角。
+                            .background(navBarColor, RoundedCornerShape(topEnd = XcRadius.xs, bottomEnd = XcRadius.xs)),
                         verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -591,12 +598,12 @@ private fun ThemePreviewCardMiuix(
                     Row(
                         modifier = Modifier
                             .height(28.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(Xc.shapes.bar)
                             .background(
                                 if (enableFloatingBottomBarBlur) navBarColor.copy(alpha = 0.5f)
                                 else navBarColor
                             )
-                            .border(0.5.dp, textColor.copy(alpha = 0.1f), RoundedCornerShape(14.dp))
+                            .border(0.5.dp, textColor.copy(alpha = 0.1f), Xc.shapes.bar)
                             .padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -627,7 +634,8 @@ private fun ThemePreviewCardMiuix(
                         modifier = Modifier
                             .height(36.dp)
                             .fillMaxWidth()
-                            .background(navBarColor)
+                            // 底栏示意图：只圆上方两角，避免与内容区交界处出现直角。
+                            .background(navBarColor, RoundedCornerShape(topStart = XcRadius.xs, topEnd = XcRadius.xs))
                             .padding(top = 2.dp, bottom = 8.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically

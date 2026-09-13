@@ -26,7 +26,7 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.RectangleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -59,6 +59,8 @@ import kotlinx.coroutines.flow.onEach
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.miuix.effect.BgEffectBackground
 import me.weishu.kernelsu.ui.component.miuix.effect.ColorBlendToken
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -301,7 +303,11 @@ private fun AboutContent(
                             if (enableBlur) {
                                 Modifier.textureBlur(
                                     backdrop = backdrop,
-                                    shape = RoundedCornerShape(0.dp),
+                                    // 这里的 shape 是模糊的**取样区域**，不是容器的圆角：
+                                    // 结果还会按图标的 alpha 做 DstIn，所以取直角矩形才
+                                    // 不会把图标本身切掉一圈。设计里"不许直角"针对的是
+                                    // 可见容器，这类遮罩除外。
+                                    shape = RectangleShape,
                                     blurRadius = 150f,
                                     colors = BlurColors(blendColors = logoBlend),
                                     contentBlendMode = ComposeBlendMode.DstIn,
@@ -332,7 +338,8 @@ private fun AboutContent(
                         if (enableBlur) {
                             Modifier.textureBlur(
                                 backdrop = backdrop,
-                                shape = RoundedCornerShape(0.dp),
+                                // 同上：取样区域取直角，否则标题文字的四角会被切掉。
+                                shape = RectangleShape,
                                 blurRadius = 150f,
                                 colors = BlurColors(blendColors = logoBlend),
                                 contentBlendMode = ComposeBlendMode.DstIn,
@@ -411,11 +418,12 @@ private fun AboutContent(
                     Card(
                         modifier = Modifier
                             .padding(horizontal = 12.dp)
+                            .xGlassRim(Xc.shapes.md)
                             .then(
                                 if (enableBlur) {
                                     Modifier.textureBlur(
                                         backdrop = backdrop,
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = Xc.shapes.md,
                                         blurRadius = 60f,
                                         colors = BlurColors(blendColors = blendColors),
                                         enabled = true,

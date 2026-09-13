@@ -217,8 +217,6 @@
     <string name="settings_monet">Aktifkan Monet</string>
     <string name="settings_key_color">Warna utama</string>
     <string name="settings_key_color_default">Bawaan</string>
-    <string name="settings_ui_mode">Gaya antarmuka</string>
-    <string name="settings_ui_mode_summary">Pilih gaya antarmuka</string>
     <string name="settings_page_scale">Skala tampilan</string>
     <string name="settings_page_scale_summary">Sesuaikan skala tampilan</string>
     <string name="settings_color_spec">Spesifikasi warna</string>

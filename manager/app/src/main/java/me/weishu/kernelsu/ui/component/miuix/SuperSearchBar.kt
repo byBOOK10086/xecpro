@@ -15,7 +15,6 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -65,6 +65,8 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import me.weishu.kernelsu.ui.component.SearchStatus
+import me.weishu.kernelsu.ui.design.liquid.xWaterDropClick
+import me.weishu.kernelsu.ui.design.token.XcRadius
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.Text
@@ -158,8 +160,13 @@ fun SearchStatus.SearchPager(
                 .fillMaxWidth()
                 .padding(top = topPadding)
                 .then(
-                    if (!searchStatus.isCollapsed()) Modifier.background(colorScheme.surface)
-                    else Modifier
+                    if (!searchStatus.isCollapsed()) {
+                        // 搜索展开时的顶部条：只圆下方两角，避免出现直角矩形。
+                        Modifier.background(
+                            colorScheme.surface,
+                            RoundedCornerShape(bottomStart = XcRadius.xl, bottomEnd = XcRadius.xl)
+                        )
+                    } else Modifier
                 ),
             horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
@@ -168,7 +175,6 @@ fun SearchStatus.SearchPager(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .background(colorScheme.surface)
                 ) {
                     expandBar(searchStatus, onSearchStatusChange, searchBarTopPadding)
                 }
@@ -184,10 +190,8 @@ fun SearchStatus.SearchPager(
                     color = colorScheme.primary,
                     modifier = Modifier
                         .padding(start = 4.dp, end = 16.dp, top = searchBarTopPadding, bottom = 6.dp)
-                        .clickable(
-                            interactionSource = null,
+                        .xWaterDropClick(
                             enabled = searchStatus.isExpand(),
-                            indication = null
                         ) {
                             onSearchStatusChange(
                                 searchStatus.copy(
@@ -296,10 +300,7 @@ fun SearchBar(
                         modifier = Modifier
                             .size(44.dp)
                             .padding(start = 8.dp, end = 16.dp)
-                            .clickable(
-                                interactionSource = null,
-                                indication = null
-                            ) {
+                            .xWaterDropClick {
                                 textFieldValue = TextFieldValue("")
                                 onSearchStatusChange(searchStatus.copy(searchText = ""))
                             },

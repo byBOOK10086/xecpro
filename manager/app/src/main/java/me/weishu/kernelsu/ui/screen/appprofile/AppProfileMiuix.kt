@@ -56,6 +56,8 @@ import me.weishu.kernelsu.ui.component.profile.AppProfileConfig
 import me.weishu.kernelsu.ui.component.profile.RootProfileConfig
 import me.weishu.kernelsu.ui.component.profile.TemplateConfig
 import me.weishu.kernelsu.ui.component.statustag.StatusTag
+import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.listAppProfileTemplates
@@ -199,7 +201,8 @@ private fun AppProfileInner(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
-                .padding(bottom = 12.dp),
+                .padding(bottom = 12.dp)
+                .xGlassRim(Xc.shapes.md),
             insideMargin = PaddingValues(start = 12.dp, end = 16.dp, top = 10.dp, bottom = 10.dp)
         ) {
             Row(
@@ -308,7 +311,8 @@ private fun AppProfileInner(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = 12.dp)
+                    .xGlassRim(Xc.shapes.md),
             ) {
                 SwitchPreference(
                     startAction = {
@@ -395,7 +399,8 @@ private fun AppProfileInner(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
-                    .padding(bottom = if (rootMode != Mode.Default) 12.dp else 0.dp),
+                    .padding(bottom = if (rootMode != Mode.Default) 12.dp else 0.dp)
+                    .xGlassRim(Xc.shapes.md),
             ) {
                 AnimatedVisibility(
                     visible = rootMode == Mode.Template,
@@ -432,7 +437,8 @@ private fun AppProfileInner(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
-                    .padding(bottom = if (nonRootMode != Mode.Default) 12.dp else 0.dp),
+                    .padding(bottom = if (nonRootMode != Mode.Default) 12.dp else 0.dp)
+                    .xGlassRim(Xc.shapes.md),
             ) {
                 AnimatedVisibility(
                     visible = nonRootMode == Mode.Custom,
@@ -458,7 +464,8 @@ private fun AppProfileInner(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
-                    .padding(bottom = 12.dp),
+                    .padding(bottom = 12.dp)
+                    .xGlassRim(Xc.shapes.md),
             ) {
                 Spacer(Modifier.height(3.dp))
                 affectedApps.forEach { app ->
@@ -599,7 +606,8 @@ private fun ProfileBox(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = 12.dp)
+            .xGlassRim(Xc.shapes.md),
     ) {
         OverlayDropdownPreference(
             title = stringResource(R.string.profile),
