@@ -45,8 +45,9 @@
 #define kpm_access_ok(addr, size) access_ok(VERIFY_WRITE, addr, size)
 #endif
 
-/* iov_iter direction names changed in 5.15 (READ -> ITER_DEST). */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+/* ITER_DEST/ITER_SOURCE replaced READ/WRITE only in v6.2 (upstream
+ * de4eda9de2d9), so 5.10/5.15/6.1 still need READ here. */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
 #define KPM_ITER_DEST ITER_DEST
 #else
 #define KPM_ITER_DEST READ
