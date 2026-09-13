@@ -11,9 +11,9 @@
 #ifndef _KP_KPMODULE_H_
 #define _KP_KPMODULE_H_
 
-#define KPM_INFO(name, info, limit)                                                                                    \
-    _Static_assert(sizeof(info) <= limit, "Info string too long");                                                     \
-    static const char __kpm_info_##name[] __attribute__((__used__))                                                    \
+#define KPM_INFO(name, info, limit)                                 \
+    _Static_assert(sizeof(info) <= limit, "Info string too long");  \
+    static const char __kpm_info_##name[] __attribute__((__used__)) \
     __attribute__((section(".kpm.info"), unused, aligned(1))) = #name "=" info
 
 #define KPM_NAME_LEN 32
@@ -35,20 +35,19 @@ typedef long (*mod_ctl1call_t)(void *a1, void *a2, void *a3);
 typedef long (*mod_exitcall_t)(void *reserved);
 typedef long (*mod_eventcall_t)(const char *event, const char *args, void *reserved);
 
-#define KPM_INIT(fn)                                                                                                   \
+#define KPM_INIT(fn) \
     static mod_initcall_t __kpm_initcall_##fn __attribute__((__used__)) __attribute__((__section__(".kpm.init"))) = fn
 
-#define KPM_CTL0(fn)                                                                                                   \
+#define KPM_CTL0(fn) \
     static mod_ctl0call_t __kpm_ctlmodule_##fn __attribute__((__used__)) __attribute__((__section__(".kpm.ctl0"))) = fn
 
-#define KPM_CTL1(fn)                                                                                                   \
+#define KPM_CTL1(fn) \
     static mod_ctl1call_t __kpm_ctlmodule_##fn __attribute__((__used__)) __attribute__((__section__(".kpm.ctl1"))) = fn
 
-#define KPM_EXIT(fn)                                                                                                   \
+#define KPM_EXIT(fn) \
     static mod_exitcall_t __kpm_exitcall_##fn __attribute__((__used__)) __attribute__((__section__(".kpm.exit"))) = fn
 
-#define KPM_EVENT(fn)                                                                                                  \
-    static mod_eventcall_t __kpm_eventcall_##fn __attribute__((__used__)) __attribute__((__section__(".kpm.event"))) = \
-        fn
+#define KPM_EVENT(fn) \
+    static mod_eventcall_t __kpm_eventcall_##fn __attribute__((__used__)) __attribute__((__section__(".kpm.event"))) = fn
 
 #endif

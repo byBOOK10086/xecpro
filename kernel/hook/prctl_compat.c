@@ -41,82 +41,85 @@
  */
 #define PRCTL_COMPAT_KSU_VERSION 20000
 
-static long ksu_handle_prctl(unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5)
+static long ksu_handle_prctl(unsigned long arg2, unsigned long arg3,
+			     unsigned long arg4, unsigned long arg5)
 {
-    u32 *result = (u32 *)arg5;
-    u32 reply_ok = KERNEL_SU_OPTION;
-    /* Success in this interface is signalled by writing the magic to arg5. */
+	u32 *result = (u32 *)arg5;
+	u32 reply_ok = KERNEL_SU_OPTION;
+	/* Success in this interface is signalled by writing the magic to arg5. */
 
-    switch (arg2) {
-    case CMD_GET_VERSION: {
-        u32 version = PRCTL_COMPAT_KSU_VERSION;
-        if (copy_to_user((void __user *)arg3, &version, sizeof(version))) {
-            pr_err("prctl compat: GET_VERSION copy err\n");
-            return -EFAULT;
-        }
-        if (arg4) {
-            u32 version_flags = 0;
+	switch (arg2) {
+	case CMD_GET_VERSION: {
+		u32 version = PRCTL_COMPAT_KSU_VERSION;
+		if (copy_to_user((void __user *)arg3, &version,
+				 sizeof(version))) {
+			pr_err("prctl compat: GET_VERSION copy err\n");
+			return -EFAULT;
+		}
+		if (arg4) {
+			u32 version_flags = 0;
 #ifdef MODULE
-            version_flags |= KSU_GET_INFO_FLAG_LKM;
+			version_flags |= KSU_GET_INFO_FLAG_LKM;
 #endif
-            if (copy_to_user((void __user *)arg4, &version_flags, sizeof(version_flags))) {
-                pr_err("prctl compat: GET_VERSION flags copy err\n");
-                return -EFAULT;
-            }
-        }
-        return 0;
-    }
-    case CMD_UID_GRANTED_ROOT:
-    case CMD_UID_SHOULD_UMOUNT: {
-        uid_t target_uid = (uid_t)arg3;
-        bool allow = false;
-        if (arg2 == CMD_UID_GRANTED_ROOT) {
-            allow = ksu_is_allow_uid(target_uid);
-        } else {
-            allow = ksu_uid_should_umount(target_uid);
-        }
-        if (copy_to_user((void __user *)arg4, &allow, sizeof(allow))) {
-            pr_err("prctl compat: allow copy err\n");
-            return -EFAULT;
-        }
-        if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
-            pr_err("prctl compat: reply copy err\n");
-            return -EFAULT;
-        }
-        return 0;
-    }
-    default:
-        /* Unrecognized legacy command: swallow it, as upstream did. */
-        return 0;
-    }
+			if (copy_to_user((void __user *)arg4, &version_flags,
+					 sizeof(version_flags))) {
+				pr_err("prctl compat: GET_VERSION flags copy err\n");
+				return -EFAULT;
+			}
+		}
+		return 0;
+	}
+	case CMD_UID_GRANTED_ROOT:
+	case CMD_UID_SHOULD_UMOUNT: {
+		uid_t target_uid = (uid_t)arg3;
+		bool allow = false;
+		if (arg2 == CMD_UID_GRANTED_ROOT) {
+			allow = ksu_is_allow_uid(target_uid);
+		} else {
+			allow = ksu_uid_should_umount(target_uid);
+		}
+		if (copy_to_user((void __user *)arg4, &allow, sizeof(allow))) {
+			pr_err("prctl compat: allow copy err\n");
+			return -EFAULT;
+		}
+		if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
+			pr_err("prctl compat: reply copy err\n");
+			return -EFAULT;
+		}
+		return 0;
+	}
+	default:
+		/* Unrecognized legacy command: swallow it, as upstream did. */
+		return 0;
+	}
 }
 
 long __nocfi ksu_hook_prctl(int orig_nr, const struct pt_regs *regs)
 {
-    int option = (int)PT_REGS_PARM1(regs);
-    unsigned long arg2;
-    unsigned long arg3;
-    unsigned long arg4;
-    unsigned long arg5;
-    bool from_root;
-    bool from_manager;
+	int option = (int)PT_REGS_PARM1(regs);
+	unsigned long arg2;
+	unsigned long arg3;
+	unsigned long arg4;
+	unsigned long arg5;
+	bool from_root;
+	bool from_manager;
 
-    /* Not our magic: hand it to the real prctl syscall. */
-    if (option != KERNEL_SU_OPTION) {
-        return ksu_syscall_table[orig_nr](regs);
-    }
+	/* Not our magic: hand it to the real prctl syscall. */
+	if (option != KERNEL_SU_OPTION) {
+		return ksu_syscall_table[orig_nr](regs);
+	}
 
-    arg2 = (unsigned long)PT_REGS_PARM2(regs);
-    arg3 = (unsigned long)PT_REGS_PARM3(regs);
-    arg4 = (unsigned long)PT_REGS_SYSCALL_PARM4(regs);
-    arg5 = (unsigned long)PT_REGS_PARM5(regs);
+	arg2 = (unsigned long)PT_REGS_PARM2(regs);
+	arg3 = (unsigned long)PT_REGS_PARM3(regs);
+	arg4 = (unsigned long)PT_REGS_SYSCALL_PARM4(regs);
+	arg5 = (unsigned long)PT_REGS_PARM5(regs);
 
-    /* Only root or the manager may talk to the supercall interface. */
-    from_root = (0 == current_uid().val);
-    from_manager = is_manager();
-    if (!from_root && !from_manager) {
-        return 0;
-    }
+	/* Only root or the manager may talk to the supercall interface. */
+	from_root = (0 == current_uid().val);
+	from_manager = is_manager();
+	if (!from_root && !from_manager) {
+		return 0;
+	}
 
-    return ksu_handle_prctl(arg2, arg3, arg4, arg5);
+	return ksu_handle_prctl(arg2, arg3, arg4, arg5);
 }
