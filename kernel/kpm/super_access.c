@@ -85,8 +85,13 @@ DYNAMIC_STRUCT_END(vfsmount)
 DYNAMIC_STRUCT_BEGIN(mnt_namespace)
 DEFINE_MEMBER(mnt_namespace, ns)
 DEFINE_MEMBER(mnt_namespace, root)
+/* `seq` arrived in 5.19; `mounts` became an rb_root in 5.15. */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0)
 DEFINE_MEMBER(mnt_namespace, seq)
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 DEFINE_MEMBER(mnt_namespace, mounts)
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
 DEFINE_MEMBER(mnt_namespace, count)
 #endif
@@ -129,7 +134,9 @@ DYNAMIC_STRUCT_END(vm_operations_struct)
 
 DYNAMIC_STRUCT_BEGIN(netlink_kernel_cfg)
 DEFINE_MEMBER(netlink_kernel_cfg, groups)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 DEFINE_MEMBER(netlink_kernel_cfg, flags)
+#endif
 DEFINE_MEMBER(netlink_kernel_cfg, input)
 DEFINE_MEMBER(netlink_kernel_cfg, cb_mutex)
 DEFINE_MEMBER(netlink_kernel_cfg, bind)
