@@ -68,7 +68,7 @@ jobs:
         set -e
         tail -n 20 "$BUILD_LOG"
         if [ $BUILD_RC -ne 0 ]; then
-          MSG=$(tail -n 80 "$BUILD_LOG" | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+          MSG=$(tail -n 200 "$BUILD_LOG" | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
           echo "::error title=aarch64 ${{ inputs.kmi }} compiler output::$MSG"
           exit $BUILD_RC
         fi
@@ -160,7 +160,7 @@ jobs:
         set -e
         tail -n 20 "$BUILD_LOG"
         if [ $BUILD_RC -ne 0 ]; then
-          MSG=$(tail -n 80 "$BUILD_LOG" | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+          MSG=$(tail -n 200 "$BUILD_LOG" | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
           echo "::error title=x86_64 ${{ inputs.kmi }} compiler output::$MSG"
           exit $BUILD_RC
         fi
