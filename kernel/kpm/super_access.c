@@ -136,7 +136,13 @@ DEFINE_MEMBER(netlink_kernel_cfg, groups)
 DEFINE_MEMBER(netlink_kernel_cfg, flags)
 #endif
 DEFINE_MEMBER(netlink_kernel_cfg, input)
+/* `cb_mutex` was the dump-mutex "injection" knob; upstream removed it in 6.11
+ * by commit 5fbf57a9 ("net: netlink: remove the cb_mutex injection from netlink
+ * core"). Older kernels still carry the member.
+ */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0)
 DEFINE_MEMBER(netlink_kernel_cfg, cb_mutex)
+#endif
 DEFINE_MEMBER(netlink_kernel_cfg, bind)
 DEFINE_MEMBER(netlink_kernel_cfg, unbind)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
