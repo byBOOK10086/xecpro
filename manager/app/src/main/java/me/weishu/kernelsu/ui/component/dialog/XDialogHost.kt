@@ -68,7 +68,7 @@ internal class ConfirmDialogRegistration(
  * 退出动画期间要留住上一次的内容，否则玻璃块会先变空再淡出。
  * 刻意用普通字段而不是 `mutableStateOf`：这里只需要"读到上一次的值"，不需要触发重组。
  */
-private class Retained<T>(var value: T?)
+private class Retained<T>(var value: T? = null)
 
 val LocalXDialogHost = staticCompositionLocalOf<XDialogHostState> {
     error("XDialogHostState 未下发：请在根组合里用 CompositionLocalProvider 下发，并渲染 XDialogHost()")

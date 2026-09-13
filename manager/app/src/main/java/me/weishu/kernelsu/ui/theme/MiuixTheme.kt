@@ -108,15 +108,17 @@ fun MiuixKernelSUTheme(
                     surfaceContainer = xc.surfaceMuted.copy(alpha = 0.58f),
                     surfaceContainerHigh = xc.surfaceMuted.copy(alpha = 0.70f),
                     surfaceContainerHighest = xc.surfaceMuted.copy(alpha = 0.82f),
-                    surfaceContainerLow = xc.surface.copy(alpha = 0.36f),
-                    surfaceContainerLowest = xc.backdrop,
-                    surfaceDim = xc.backdrop,
-                    surfaceBright = xc.surfaceMuted,
-                    surfaceTint = xc.accent,
+                    // 注意：miuix 的 Colors 只提供上面这三档容器槽位，
+                    // **没有** Material 那套 surfaceContainerLow / surfaceContainerLowest /
+                    // surfaceDim / surfaceBright / surfaceTint。写进去是硬编译错误
+                    // （`No parameter with name ... found`，CI 已实测）。
+                    // 比 surfaceContainer 更低的层级由 XEC 自己的 XGlassSurface
+                    // 玻璃层来表达，不需要在这里补槽位。
                     // 文本：三档灰阶统一到 XEC，避免混入上游默认灰。
                     onSurface = xc.text,
                     onSurfaceSecondary = xc.textSecondary,
-                    onSurfaceVariant = xc.textSecondary,
+                    // miuix 没有单一的 onSurfaceVariant，只有下面这组细分槽位
+                    // （Summary / Actions 两档），这里用它们覆盖"次级文本"。
                     onSurfaceVariantSummary = xc.textMuted,
                     onSurfaceVariantActions = xc.textMuted.copy(alpha = 0.82f),
                     onSurfaceContainer = xc.text,
@@ -124,11 +126,9 @@ fun MiuixKernelSUTheme(
                     disabledOnSurface = xc.textMuted.copy(alpha = 0.38f),
                     // 描边与分隔：用玻璃描边色，没有模糊的设备上也能分层。
                     outline = xc.glassRim,
-                    outlineVariant = xc.glassRim.copy(alpha = 0.60f),
                     dividerLine = xc.glassRim.copy(alpha = 0.55f),
-                    // 反色与遮罩。
-                    inverseSurface = xc.text,
-                    inverseOnSurface = xc.surface,
+                    // 遮罩。（miuix 无 outlineVariant / inverseSurface / inverseOnSurface 槽位，
+                    // 描边档位统一收在 outline + dividerLine 这两条上。）
                     windowDimming = xc.backdropScrim,
                 )
             } else {
