@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.DeveloperBoard
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Security
@@ -133,7 +134,10 @@ fun HomePagerMaterial(
                 state = state,
                 actions = actions,
             )
-            InfoCard(systemInfo = state.systemInfo)
+            InfoCard(
+                systemInfo = state.systemInfo,
+                downloadCount = state.latestVersionInfo.downloadCount,
+            )
             SupportLinks(onOpenUrl = actions.onOpenUrl)
             Spacer(
                 Modifier.height(
@@ -391,6 +395,7 @@ private fun SupportLinks(
 @Composable
 private fun InfoCard(
     systemInfo: SystemInfo,
+    downloadCount: Long = 0,
     modifier: Modifier = Modifier,
 ) {
     @Composable
@@ -439,6 +444,15 @@ private fun InfoCard(
                     label = stringResource(R.string.home_manager_version),
                     content = systemInfo.managerVersion,
                 )
+            }
+            if (downloadCount > 0) {
+                item {
+                    InfoCardItem(
+                        icon = Icons.Filled.Download,
+                        label = stringResource(R.string.home_download_count),
+                        content = "%,d".format(downloadCount),
+                    )
+                }
             }
             item {
                 InfoCardItem(

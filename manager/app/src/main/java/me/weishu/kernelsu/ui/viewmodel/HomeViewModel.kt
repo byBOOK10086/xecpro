@@ -37,10 +37,9 @@ class HomeViewModel(
         viewModelScope.launch {
             val baseState = withContext(Dispatchers.IO) { buildState() }
             _uiState.update { baseState }
-            if (baseState.checkUpdateEnabled) {
-                val latestVersionInfo = withContext(Dispatchers.IO) { checkNewVersion() }
-                _uiState.update { it.copy(latestVersionInfo = latestVersionInfo) }
-            }
+            // 始终拉取一次版本信息，用于首页展示累计下载量；更新提示仍由 checkUpdateEnabled 控制
+            val latestVersionInfo = withContext(Dispatchers.IO) { checkNewVersion() }
+            _uiState.update { it.copy(latestVersionInfo = latestVersionInfo) }
         }
     }
 

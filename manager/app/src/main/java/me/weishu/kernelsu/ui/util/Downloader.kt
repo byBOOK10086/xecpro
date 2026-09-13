@@ -38,7 +38,8 @@ suspend fun download(
 
 fun checkNewVersion(): LatestVersionInfo {
     if (!isNetworkAvailable(ksuApp)) return LatestVersionInfo()
-    val url = "https://api.github.com/repos/byBOOK10086/xecpro/releases/latest"
+    // 拉取全部 release（按发布时间倒序，最新在前），用于累计下载量与最新版本信息
+    val url = "https://api.github.com/repos/byBOOK10086/xecpro/releases?per_page=100"
     // default null value if failed
     val defaultValue = LatestVersionInfo()
     runCatching {
@@ -47,32 +48,47 @@ fun checkNewVersion(): LatestVersionInfo {
                 if (!response.isSuccessful) {
                     return defaultValue
                 }
-                val body = response.body.string()
-                val json = org.json.JSONObject(body)
-                val changelog = json.optString("body")
+                val releases = org.json.JSONArray(response.body.string())
 
-                val assets = json.getJSONArray("assets")
-                for (i in 0 until assets.length()) {
-                    val asset = assets.getJSONObject(i)
-                    val name = asset.getString("name")
-                    if (!name.endsWith(".apk")) {
-                        continue
+                var totalDownloads = 0L
+                var versionCode = 0
+                var downloadUrl = ""
+                var changelog = ""
+
+                for (i in 0 until releases.length()) {
+                    val release = releases.getJSONObject(i)
+                    val assets = release.optJSONArray("assets") ?: continue
+
+                    for (j in 0 until assets.length()) {
+                        totalDownloads += assets.getJSONObject(j).optLong("download_count")
                     }
 
-                    // 兼容 XECKernelPro_<versionName>_<versionCode>-release.apk 以及
-                    // 上游 KernelSU_v<ver>_<versionCode>-release.apk 等命名，只取文件名末尾的版本号
-                    val regex = Regex("_(\\d+)(?:-release|-debug)?\\.apk$")
-                    val matchResult = regex.find(name) ?: continue
-                    val versionCode = matchResult.groupValues[1].toInt()
-                    val downloadUrl = asset.getString("browser_download_url")
-
-                    return LatestVersionInfo(
-                        versionCode,
-                        downloadUrl,
-                        changelog
-                    )
+                    // 取首个包含 apk 的 release 作为版本信息（release 已按最新在前排序）
+                    if (downloadUrl.isEmpty()) {
+                        changelog = release.optString("body")
+                        for (j in 0 until assets.length()) {
+                            val asset = assets.getJSONObject(j)
+                            val name = asset.getString("name")
+                            if (!name.endsWith(".apk")) {
+                                continue
+                            }
+                            // 兼容 XECKernelPro_<versionName>_<versionCode>-release.apk 以及
+                            // 上游 KernelSU_v<ver>_<versionCode>-release.apk 等命名，只取文件名末尾的版本号
+                            val regex = Regex("_(\\d+)(?:-release|-debug)?\\.apk$")
+                            val matchResult = regex.find(name) ?: continue
+                            versionCode = matchResult.groupValues[1].toInt()
+                            downloadUrl = asset.getString("browser_download_url")
+                            break
+                        }
+                    }
                 }
 
+                return LatestVersionInfo(
+                    versionCode,
+                    downloadUrl,
+                    changelog,
+                    totalDownloads
+                )
             }
     }
     return defaultValue

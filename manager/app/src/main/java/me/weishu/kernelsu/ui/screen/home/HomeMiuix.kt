@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.DeveloperBoard
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Security
@@ -169,6 +170,7 @@ fun HomePagerMiuix(
                         )
                         InfoCard(
                             systemInfo = state.systemInfo,
+                            downloadCount = state.latestVersionInfo.downloadCount,
                             modifier = Modifier.fillMaxWidth(),
                         )
                         SupportLinks(
@@ -473,6 +475,7 @@ private fun SupportLinks(
 @Composable
 private fun InfoCard(
     systemInfo: SystemInfo,
+    downloadCount: Long = 0,
     modifier: Modifier = Modifier,
 ) {
     @Composable
@@ -538,6 +541,13 @@ private fun InfoCard(
                     title = stringResource(R.string.home_manager_version),
                     content = systemInfo.managerVersion,
                 )
+                if (downloadCount > 0) {
+                    InfoText(
+                        icon = Icons.Filled.Download,
+                        title = stringResource(R.string.home_download_count),
+                        content = "%,d".format(downloadCount),
+                    )
+                }
                 InfoText(
                     icon = Icons.Filled.DeveloperBoard,
                     title = stringResource(R.string.home_kernel),

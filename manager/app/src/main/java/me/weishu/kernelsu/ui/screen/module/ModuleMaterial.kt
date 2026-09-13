@@ -145,6 +145,7 @@ import me.weishu.kernelsu.ui.component.material.SearchAppBar
 import me.weishu.kernelsu.ui.component.material.SnackBarHost
 import me.weishu.kernelsu.ui.component.material.TonalCard
 import me.weishu.kernelsu.ui.component.statustag.StatusTag
+import me.weishu.kernelsu.ui.util.getFileName
 import me.weishu.kernelsu.ui.util.reboot
 
 @SuppressLint("StringFormatInvalid")
@@ -369,6 +370,12 @@ fun ModulePagerMaterial(
         floatingActionButton = {
             if (uiState.installButtonVisible) {
                 val moduleInstall = stringResource(id = R.string.module_install)
+                val installPromptWithName = stringResource(R.string.module_install_prompt_with_name, "%s")
+                val confirmTitle = stringResource(R.string.module)
+                var zipUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+                val multiSelectConfirmDialog = rememberConfirmDialog(
+                    onConfirm = { actions.onOpenFlash(zipUris) }
+                )
                 val selectZipLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
                 ) { activityResult ->
@@ -387,7 +394,18 @@ fun ModulePagerMaterial(
                         data.data?.let { uris.add(it) }
                     }
 
-                    actions.onOpenFlash(uris)
+                    if (uris.size == 1) {
+                        actions.onOpenFlash(listOf(uris.first()))
+                    } else if (uris.size > 1) {
+                        zipUris = uris
+                        val moduleNames = uris.mapIndexed { index, uri ->
+                            "\n${index + 1}. ${uri.getFileName(context)}"
+                        }.joinToString("")
+                        multiSelectConfirmDialog.showConfirm(
+                            title = confirmTitle,
+                            content = installPromptWithName.format(moduleNames)
+                        )
+                    }
                 }
 
                 SmallExtendedFloatingActionButton(
