@@ -128,7 +128,10 @@ DYNAMIC_STRUCT_END(vm_area_struct)
 DYNAMIC_STRUCT_BEGIN(vm_operations_struct)
 DEFINE_MEMBER(vm_operations_struct, open)
 DEFINE_MEMBER(vm_operations_struct, close)
+/* `name` (report memory name) arrived in 5.17. */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 17, 0)
 DEFINE_MEMBER(vm_operations_struct, name)
+#endif
 DEFINE_MEMBER(vm_operations_struct, access)
 DYNAMIC_STRUCT_END(vm_operations_struct)
 
@@ -162,7 +165,10 @@ DEFINE_MEMBER(task_struct, pids[PIDTYPE_PID].pid)
 DEFINE_MEMBER(task_struct, thread_pid)
 #endif
 DEFINE_MEMBER(task_struct, files)
+/* `seccomp` moved from thread_struct to task_struct in 5.11. */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 DEFINE_MEMBER(task_struct, seccomp)
+#endif
 #ifdef CONFIG_THREAD_INFO_IN_TASK
 DEFINE_MEMBER(task_struct, thread_info)
 #endif
