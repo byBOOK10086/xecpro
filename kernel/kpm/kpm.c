@@ -38,11 +38,12 @@
 
 #define KPM_ERROR_MSG_LEN 160
 
-/* access_ok() became 3-argument since Linux 5.0. */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 0, 0)
-#define kpm_access_ok(addr, size) access_ok(addr, size)
+/* access_ok() lost its leading "type" argument in Linux 5.0
+ * (upstream 96d4f267e40f), so VERIFY_WRITE only exists on 4.x. */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+#define kpm_access_ok(addr, size) access_ok((void __user *)(addr), (size))
 #else
-#define kpm_access_ok(addr, size) access_ok(VERIFY_WRITE, addr, size)
+#define kpm_access_ok(addr, size) access_ok(VERIFY_WRITE, (void __user *)(addr), (size))
 #endif
 
 /* ITER_DEST/ITER_SOURCE replaced READ/WRITE only in v6.2 (upstream
@@ -1044,7 +1045,7 @@ noinline int sukisu_handle_kpm(unsigned long control_code, unsigned long arg1,
 			goto invalid_arg;
 		}
 
-		res = copy_to_user(arg2, &buf, size);
+		res = copy_to_user((void __user *)arg2, &buf, size);
 
 	} else if (control_code == SUKISU_KPM_LIST) {
 		char buf[1024];
@@ -1066,7 +1067,7 @@ noinline int sukisu_handle_kpm(unsigned long control_code, unsigned long arg1,
 			goto exit;
 		}
 
-		if (copy_to_user(arg1, &buf, len) != 0)
+		if (copy_to_user((void __user *)arg1, &buf, len) != 0)
 			pr_info("kpm: Copy to user failed.");
 
 	} else if (control_code == SUKISU_KPM_CONTROL) {
@@ -1104,11 +1105,11 @@ noinline int sukisu_handle_kpm(unsigned long control_code, unsigned long arg1,
 		if (len >= outlen)
 			len = outlen - 1;
 
-		res = copy_to_user(arg1, &buffer, len + 1);
+		res = copy_to_user((void __user *)arg1, &buffer, len + 1);
 	}
 
 exit:
-	if (copy_to_user(result_code, &res, sizeof(res)) != 0)
+	if (copy_to_user((void __user *)result_code, &res, sizeof(res)) != 0)
 		pr_info("kpm: Copy to user failed.");
 
 	return 0;
