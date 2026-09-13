@@ -37,6 +37,52 @@ data class XcColors(
     val danger: Color,
     val warning: Color,
     val success: Color,
+) {
+    /**
+     * 语义色的「容器态」。
+     *
+     * 告警卡、状态徽章这类容器不能直接用高饱和的语义实色铺满：深色玻璃上
+     * 会刺眼，浅色上又会糊成一块。统一按"实色 @ 低透明度压在 [surface] 上"
+     * 合成，深浅两档只调 alpha、规则一致，结果本身不透明——容器一旦半透明
+     * 就会透出下面的背景图，红/橙直接变成脏色。
+     */
+    val dangerTint: Color get() = danger.over(surface, if (isDark) 0.22f else 0.13f)
+
+    val warningTint: Color get() = warning.over(surface, if (isDark) 0.22f else 0.15f)
+
+    val successTint: Color get() = success.over(surface, if (isDark) 0.22f else 0.15f)
+
+    /**
+     * 压在容器态之上的前景色。
+     *
+     * 不能直接拿 [danger] / [warning] / [success] 当文字色：这三个实色在浅色档
+     * 是给实底用的（`#D93025` / `#D08700`），铺在将近纯白的容器上，14sp 的小字
+     * 对比度只有 3:1 上下，读起来发飘；深色档又反过来偏暗。
+     *
+     * 所以朝 [text] 方向混一档——浅色档 [text] 近黑，混完变深（红更沉、橙更褐）；
+     * 深色档 [text] 近白，混完变亮（红转粉、橙转杏）。两档都能拿到 7:1 以上的
+     * 对比度，同时保住语义色相。
+     */
+    val onDangerTint: Color get() = danger.over(text, 0.55f)
+
+    val onWarningTint: Color get() = warning.over(text, 0.55f)
+
+    val onSuccessTint: Color get() = success.over(text, 0.55f)
+
+    /**
+     * 语义实色**当实底用**时的前景色（例：告警卡里的实心操作按钮）。
+     *
+     * [danger] 一族在深浅两档都偏中艳，白色是唯一两档都稳的取值。
+     */
+    val onSemanticSolid: Color get() = Color.White
+}
+
+/** 把 [this] 按 [alpha] 压在 [base] 上，返回一个不透明的合成色。 */
+private fun Color.over(base: Color, alpha: Float): Color = Color(
+    red = red * alpha + base.red * (1f - alpha),
+    green = green * alpha + base.green * (1f - alpha),
+    blue = blue * alpha + base.blue * (1f - alpha),
+    alpha = 1f,
 )
 
 private val XcDarkBase = XcColors(

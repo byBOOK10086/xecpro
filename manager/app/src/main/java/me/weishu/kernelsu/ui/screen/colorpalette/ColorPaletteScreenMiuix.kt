@@ -70,6 +70,7 @@ import me.weishu.kernelsu.ui.component.miuix.ScaleDialog
 import me.weishu.kernelsu.ui.design.glass.xGlassRim
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.design.token.XcRadius
+import me.weishu.kernelsu.ui.design.token.xcColorsFor
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.keyColorOptions
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -473,11 +474,10 @@ private fun ThemePreviewCardMiuix(
 
     val bgColor = if (miuixMonet) dynamicCs.background else colorScheme.surface
     val textColor = if (miuixMonet) dynamicCs.onSurface else colorScheme.onBackground
-    val accentCardColor = when {
-        miuixMonet -> dynamicCs.secondaryContainer
-        isDark -> Color(0xFF1A3825)
-        else -> Color(0xFFDFFAE4)
-    }
+    // 这张卡模拟的是首页那张状态卡，而首页那张卡用的是**语义绿**（安装成功），
+    // 不跟随强调色——所以这里也固定取语义令牌。取值走 xcColorsFor(isDark) 而不是
+    // Xc.colors：后者是"当前主题"的色，预览浅色档时会串成深色。
+    val accentCardColor = xcColorsFor(isDark).successTint
     val cardColor = if (miuixMonet) dynamicCs.surfaceContainerHighest else colorScheme.surfaceVariant
     val navBarColor = if (miuixMonet) dynamicCs.surfaceContainer else colorScheme.surface
     val iconColor = if (miuixMonet) dynamicCs.primary else colorScheme.primary

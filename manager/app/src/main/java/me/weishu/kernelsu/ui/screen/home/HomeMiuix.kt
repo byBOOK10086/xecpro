@@ -66,7 +66,6 @@ import me.weishu.kernelsu.ui.component.statustag.StatusTag
 import me.weishu.kernelsu.ui.design.glass.xGlassRim
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
-import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.module.LatestVersionInfo
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
@@ -86,7 +85,6 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -276,11 +274,7 @@ private fun StatusCard(
                     Card(
                         modifier = Modifier.fillMaxWidth().xGlassRim(Xc.shapes.md),
                         colors = CardDefaults.defaultColors(
-                            color = when {
-                                isDynamicColor -> colorScheme.secondaryContainer
-                                isInDarkTheme() -> Color(0xFF1A3825)
-                                else -> Color(0xFFDFFAE4)
-                            }
+                            color = Xc.colors.successTint
                         ),
                         onClick = {
                             if (!state.isLateLoadMode) {
@@ -300,11 +294,7 @@ private fun StatusCard(
                                 Icon(
                                     modifier = Modifier.size(110.dp),
                                     imageVector = Icons.Rounded.CheckCircleOutline,
-                                    tint = if (isDynamicColor) {
-                                        colorScheme.primary.copy(alpha = 0.8f)
-                                    } else {
-                                        Color(0xFF36D167)
-                                    },
+                                    tint = Xc.colors.success,
                                     contentDescription = null
                                 )
                             }
@@ -348,20 +338,11 @@ private fun StatusCard(
                                             Spacer(Modifier.width(8.dp))
                                             StatusTag(
                                                 label = stringResource(R.string.home_lkm_custom),
-                                                contentColor = if (isDynamicColor) {
-                                                    colorScheme.onTertiaryContainer
-                                                } else if (isInDarkTheme()) {
-                                                    Color(0xFFB8E8C5)
-                                                } else {
-                                                    Color(0xFF164A29)
-                                                },
-                                                backgroundColor = if (isDynamicColor) {
-                                                    colorScheme.tertiaryContainer
-                                                } else if (isInDarkTheme()) {
-                                                    Color(0xFF315D3E)
-                                                } else {
-                                                    Color(0xFFB8E8C5)
-                                                },
+                                                // 徽章就在上面那张 successTint 的卡里，
+                                                // 两者同色会互相吞掉。用前景色压一层低透明
+                                                // 当底，保持原设计里那一档色调差。
+                                                contentColor = Xc.colors.onSuccessTint,
+                                                backgroundColor = Xc.colors.onSuccessTint.copy(alpha = 0.16f),
                                             )
                                         }
                                     }

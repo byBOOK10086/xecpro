@@ -101,7 +101,6 @@ import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -405,8 +404,10 @@ private fun SulogStatusSection(
                             cornerRadius = 50.dp,
                             insideMargin = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                             colors = ButtonDefaults.textButtonColors(
-                                color = if (isDynamicColor) colorScheme.onErrorContainer else colorScheme.error,
-                                textColor = colorScheme.onError,
+                                // 这张告警卡的底已经是 dangerTint，按钮再用同色就糊成
+                                // 一整块，所以这里走实心危险色 + 白字，保住行动号召的分量。
+                                color = Xc.colors.danger,
+                                textColor = Xc.colors.onSemanticSolid,
                             ),
                         )
                     },

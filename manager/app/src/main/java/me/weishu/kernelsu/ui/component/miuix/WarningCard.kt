@@ -13,12 +13,9 @@ import androidx.compose.ui.unit.sp
 import me.weishu.kernelsu.ui.component.WarningLevel
 import me.weishu.kernelsu.ui.design.glass.xGlassRim
 import me.weishu.kernelsu.ui.design.token.Xc
-import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 @Composable
@@ -60,32 +57,13 @@ fun WarningCard(
 }
 
 @Composable
-private fun WarningLevel.containerColor(): Color = when {
-    isDynamicColor -> when (this) {
-        WarningLevel.Error -> colorScheme.errorContainer
-        WarningLevel.Notice -> colorScheme.tertiaryContainer
-    }
-
-    isInDarkTheme() -> when (this) {
-        WarningLevel.Error -> Color(0xFF310808)
-        WarningLevel.Notice -> Color(0xFF3E2F1B)
-    }
-
-    else -> when (this) {
-        WarningLevel.Error -> Color(0xFFF8E2E2)
-        WarningLevel.Notice -> Color(0xFFFFF0DB)
-    }
+private fun WarningLevel.containerColor(): Color = when (this) {
+    WarningLevel.Error -> Xc.colors.dangerTint
+    WarningLevel.Notice -> Xc.colors.warningTint
 }
 
 @Composable
-private fun WarningLevel.contentColor(): Color = when {
-    isDynamicColor -> when (this) {
-        WarningLevel.Error -> colorScheme.onErrorContainer
-        WarningLevel.Notice -> colorScheme.onTertiaryContainer
-    }
-
-    else -> when (this) {
-        WarningLevel.Error -> Color(0xFFF72727)
-        WarningLevel.Notice -> Color(0xFFF5A623)
-    }
+private fun WarningLevel.contentColor(): Color = when (this) {
+    WarningLevel.Error -> Xc.colors.onDangerTint
+    WarningLevel.Notice -> Xc.colors.onWarningTint
 }
