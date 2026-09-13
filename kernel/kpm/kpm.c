@@ -1130,6 +1130,7 @@ int sukisu_is_kpm_control_code(unsigned long control_code)
 int do_kpm(void __user *arg)
 {
 	struct ksu_kpm_cmd cmd;
+	int control_code;
 
 	if (copy_from_user(&cmd, arg, sizeof(cmd))) {
 		pr_err("kpm: copy_from_user failed\n");
@@ -1148,6 +1149,15 @@ int do_kpm(void __user *arg)
 		return -EFAULT;
 	}
 
-	return sukisu_handle_kpm(cmd.control_code, cmd.arg1, cmd.arg2,
-				 cmd.result_code);
+	/* control_code is a user pointer to the actual command value; the old
+	 * code passed the pointer itself, so every command comparison failed. */
+	if (get_user(control_code, (int __user *)cmd.control_code)) {
+		pr_err("kpm: get_user control_code failed\n");
+		return -EFAULT;
+	}
+
+	return sukisu_handle_kpm((unsigned long)control_code,
+				 (unsigned long)cmd.arg1,
+				 (unsigned long)cmd.arg2,
+				 (unsigned long)cmd.result_code);
 }
