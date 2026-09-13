@@ -82,10 +82,14 @@ DYNAMIC_STRUCT_END(vfsmount)
 DYNAMIC_STRUCT_BEGIN(mnt_namespace)
 DEFINE_MEMBER(mnt_namespace, ns)
 DEFINE_MEMBER(mnt_namespace, root)
-/* `seq` and `mounts` exist across all supported kernels (5.10+); `mounts`
- * only changes type from `unsigned int` (<=6.6) to `struct rb_root` (6.7+)
- * but keeps its name. Only `count` disappears in 5.15 (moved to ns.count). */
+/* `mounts` exists across all supported kernels (5.10+); it only changes type
+ * from `unsigned int` (<=6.6) to `struct rb_root` (6.7+) but keeps its name.
+ * `count` disappears in 5.15 (moved to ns.count). `seq` was dropped in 6.18
+ * when the mount namespace was ported onto the generic ns lookup
+ * infrastructure (upstream 7d7d1649, "mnt: support ns lookup"). */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 18, 0)
 DEFINE_MEMBER(mnt_namespace, seq)
+#endif
 DEFINE_MEMBER(mnt_namespace, mounts)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0)
 DEFINE_MEMBER(mnt_namespace, count)
