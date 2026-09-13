@@ -9,7 +9,6 @@ use crate::{
 use anyhow::{Context, Result, anyhow, bail, ensure};
 use const_format::concatcp;
 use is_executable::is_executable;
-use java_properties::PropertiesIter;
 use log::{debug, error, info, warn};
 use regex_lite::Regex;
 
@@ -17,7 +16,6 @@ use std::{
     collections::{BTreeMap, HashMap},
     env::var as env_var,
     fs::{File, Permissions, canonicalize, remove_dir_all, set_permissions},
-    io::Cursor,
     path::{Path, PathBuf},
     process::Command,
     str::FromStr,
@@ -748,12 +746,7 @@ fn install_module_to_system(zip: &str) -> Result<()> {
     let zip_path = zip_path.canonicalize()?;
     zip_extract_file_to_memory(&zip_path, &entry_path, &mut buffer)?;
 
-    let mut module_prop = HashMap::new();
-    PropertiesIter::new_with_encoding(Cursor::new(buffer), encoding_rs::UTF_8).read_into(
-        |k, v| {
-            module_prop.insert(k, v);
-        },
-    )?;
+    let module_prop = parse_module_prop(&buffer);
     info!("module prop: {module_prop:?}");
 
     let Some(module_id) = module_prop.get("id") else {
@@ -1003,6 +996,27 @@ fn mark_all_modules(flag_file: &str) -> Result<()> {
     Ok(())
 }
 
+/// Parse module.prop content into a key-value map.
+///
+/// Uses plain `key=value` line parsing (split on the first '='), which is
+/// more tolerant than java_properties for values containing spaces, parens or
+/// commas (e.g. `version=1.3.4 (746-d1b76b3-release)`, `author=5ec1cff, Nullptr`).
+fn parse_module_prop(content: &[u8]) -> HashMap<String, String> {
+    let text = String::from_utf8_lossy(content);
+    let mut prop_map: HashMap<String, String> = HashMap::new();
+    for line in text.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') || line.starts_with('!') {
+            continue;
+        }
+        let Some((key, value)) = line.split_once('=') else {
+            continue;
+        };
+        prop_map.insert(key.trim().to_string(), value.trim().to_string());
+    }
+    prop_map
+}
+
 /// Read module.prop from the given module path and return as a HashMap
 pub fn read_module_prop(module_path: &Path) -> Result<HashMap<String, String>> {
     let module_prop = module_path.join("module.prop");
@@ -1015,14 +1029,7 @@ pub fn read_module_prop(module_path: &Path) -> Result<HashMap<String, String>> {
     let content = std::fs::read(&module_prop)
         .with_context(|| format!("Failed to read module.prop: {}", module_prop.display()))?;
 
-    let mut prop_map: HashMap<String, String> = HashMap::new();
-    PropertiesIter::new_with_encoding(Cursor::new(content), encoding_rs::UTF_8)
-        .read_into(|k, v| {
-            prop_map.insert(k, v);
-        })
-        .with_context(|| format!("Failed to parse module.prop: {}", module_prop.display()))?;
-
-    Ok(prop_map)
+    Ok(parse_module_prop(&content))
 }
 
 /// Resolve a module icon path to an absolute on-disk path

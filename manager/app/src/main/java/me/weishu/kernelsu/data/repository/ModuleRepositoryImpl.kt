@@ -12,6 +12,17 @@ import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 
+private fun JSONObject.getStringIgnoreCase(key: String, default: String = ""): String {
+    val keys = keys()
+    while (keys.hasNext()) {
+        val k = keys.next()
+        if (k.equals(key, ignoreCase = true)) {
+            return optString(k, default)
+        }
+    }
+    return default
+}
+
 class ModuleRepositoryImpl : ModuleRepository {
 
     companion object {
@@ -29,8 +40,8 @@ class ModuleRepositoryImpl : ModuleRepository {
                     Module(
                         id = obj.getString("id"),
                         name = obj.optString("name"),
-                        author = obj.optString("author", "Unknown"),
-                        version = obj.optString("version", "Unknown"),
+                        author = obj.getStringIgnoreCase("author", "Unknown"),
+                        version = obj.getStringIgnoreCase("version", "Unknown"),
                         versionCode = obj.optInt("versionCode", 0),
                         description = obj.optString("description"),
                         enabled = obj.getBoolean("enabled"),

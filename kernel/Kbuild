@@ -89,7 +89,9 @@ endif
 ccflags-y += -I$(KSU_KERNEL_DIR) -I$(KSU_KERNEL_DIR)/include
 
 obj-$(CONFIG_KPM) += kpm/compact.o
+obj-$(CONFIG_KPM) += kpm/insn.o
 obj-$(CONFIG_KPM) += kpm/kpm.o
+obj-$(CONFIG_KPM) += kpm/relo.o
 obj-$(CONFIG_KPM) += kpm/super_access.o
 
 obj-$(CONFIG_KSU) += kernelsu.o

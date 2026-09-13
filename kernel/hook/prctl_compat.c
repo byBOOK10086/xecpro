@@ -22,6 +22,7 @@
 
 #include "arch.h"
 #include "klog.h" // IWYU pragma: keep
+#include "uapi/supercall.h"
 #include "hook/syscall_hook.h"
 #include "manager/manager_identity.h"
 #include "policy/allowlist.h"
@@ -57,6 +58,9 @@ static long ksu_handle_prctl(unsigned long arg2, unsigned long arg3,
 		}
 		if (arg4) {
 			u32 version_flags = 0;
+#ifdef MODULE
+			version_flags |= KSU_GET_INFO_FLAG_LKM;
+#endif
 			if (copy_to_user((void __user *)arg4, &version_flags,
 					 sizeof(version_flags))) {
 				pr_err("prctl compat: GET_VERSION flags copy err\n");
