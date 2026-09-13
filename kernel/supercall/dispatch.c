@@ -726,8 +726,8 @@ static int list_try_umount(void __user *arg)
     bool using_vmalloc = false;
     int mount_count = 0;
 
-    #define MAX_UMOUNT_LIST_SIZE (2 * 1024 * 1024)  // 2MB absolute max
-    #define DEFAULT_UMOUNT_SIZE (64 * 1024)         // 64KB default
+#define MAX_UMOUNT_LIST_SIZE (2 * 1024 * 1024) // 2MB absolute max
+#define DEFAULT_UMOUNT_SIZE (64 * 1024) // 64KB default
 
     if (copy_from_user(&cmd, arg, sizeof(cmd)))
         return -EFAULT;
@@ -744,7 +744,7 @@ static int list_try_umount(void __user *arg)
 
     // Count mounts first to estimate size needed
     down_read(&mount_list_lock);
-    list_for_each_entry(entry, &mount_list, list) {
+    list_for_each_entry (entry, &mount_list, list) {
         mount_count++;
     }
     up_read(&mount_list_lock);
@@ -758,8 +758,7 @@ static int list_try_umount(void __user *arg)
     if (output_size > MAX_UMOUNT_LIST_SIZE)
         output_size = MAX_UMOUNT_LIST_SIZE;
 
-    pr_info("list_try_umount: allocating %zu bytes for %d mounts\n",
-            output_size, mount_count);
+    pr_info("list_try_umount: allocating %zu bytes for %d mounts\n", output_size, mount_count);
 
     // Try kzalloc first with NOWARN flag
     output_buf = kzalloc(output_size, GFP_KERNEL | __GFP_NOWARN);
@@ -773,16 +772,12 @@ static int list_try_umount(void __user *arg)
         pr_err("list_try_umount: failed to allocate %zu bytes\n", output_size);
         return -ENOMEM;
     }
-    offset += snprintf(output_buf + offset, output_size - offset,
-               "Mount Point\tFlags\n");
-    offset += snprintf(output_buf + offset, output_size - offset,
-               "----------\t-----\n");
+    offset += snprintf(output_buf + offset, output_size - offset, "Mount Point\tFlags\n");
+    offset += snprintf(output_buf + offset, output_size - offset, "----------\t-----\n");
 
     down_read(&mount_list_lock);
     list_for_each_entry (entry, &mount_list, list) {
-        int written =
-            snprintf(output_buf + offset, output_size - offset,
-                 "%s\t%u\n", entry->umountable, entry->flags);
+        int written = snprintf(output_buf + offset, output_size - offset, "%s\t%u\n", entry->umountable, entry->flags);
         if (written < 0) {
             ret = -EFAULT;
             break;
