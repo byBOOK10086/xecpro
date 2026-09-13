@@ -58,8 +58,21 @@ jobs:
         if [ -n "$EXPECTED_SIZE2" ]; then
           EXTRA_ARGS="KSU_EXPECTED_SIZE2=$EXPECTED_SIZE2 KSU_EXPECTED_HASH2=$EXPECTED_HASH2"
         fi
-        CONFIG_KSU=m CC=clang make $EXTRA_ARGS
-        
+
+        # Capture the compiler output so a failure can be reported as an
+        # annotation instead of a bare "exit code 2".
+        BUILD_LOG=$(mktemp)
+        set +e
+        CONFIG_KSU=m CONFIG_KPM=y CC=clang make $EXTRA_ARGS >"$BUILD_LOG" 2>&1
+        BUILD_RC=$?
+        set -e
+        tail -n 20 "$BUILD_LOG"
+        if [ $BUILD_RC -ne 0 ]; then
+          MSG=$(tail -n 200 "$BUILD_LOG" | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=aarch64 ${{ inputs.kmi }} compiler output::$MSG"
+          exit $BUILD_RC
+        fi
+
         echo "=== Build completed ==="
 
         # Create output directory in GitHub workspace
@@ -136,12 +149,22 @@ jobs:
         
         MDIR=$(realpath .)
 
+        BUILD_LOG=$(mktemp)
+        set +e
         if [ "$kmi" == "android17-6.18" ]; then
-          make -C $KDIR M=$MDIR MO=$MDIR compile_commands.json modules CONFIG_KSU=m CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y $EXTRA_ARGS
+          make -C $KDIR M=$MDIR MO=$MDIR compile_commands.json modules CONFIG_KSU=m CONFIG_KPM=y CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y $EXTRA_ARGS >"$BUILD_LOG" 2>&1
         else
-          make -C $KDIR M=$MDIR src=$MDIR compile_commands.json modules CONFIG_KSU=m CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y $EXTRA_ARGS
+          make -C $KDIR M=$MDIR src=$MDIR compile_commands.json modules CONFIG_KSU=m CONFIG_KPM=y CONFIG_KSU_X86_PATCH_SYSCALL_DISPATCHER=y $EXTRA_ARGS >"$BUILD_LOG" 2>&1
         fi
-        
+        BUILD_RC=$?
+        set -e
+        tail -n 20 "$BUILD_LOG"
+        if [ $BUILD_RC -ne 0 ]; then
+          MSG=$(tail -n 200 "$BUILD_LOG" | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=x86_64 ${{ inputs.kmi }} compiler output::$MSG"
+          exit $BUILD_RC
+        fi
+
         echo "=== Build completed ==="
 
         # Create output directory in GitHub workspace

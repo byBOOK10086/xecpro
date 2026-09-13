@@ -10,18 +10,18 @@
 #include <linux/types.h>
 
 enum kp_aarch64_insn_imm_type {
-	KP_INSN_IMM_ADR,
-	KP_INSN_IMM_26,
-	KP_INSN_IMM_19,
-	KP_INSN_IMM_16,
-	KP_INSN_IMM_14,
-	KP_INSN_IMM_12,
-	KP_INSN_IMM_9,
-	KP_INSN_IMM_7,
-	KP_INSN_IMM_6,
-	KP_INSN_IMM_S,
-	KP_INSN_IMM_R,
-	KP_INSN_IMM_MAX,
+    KP_INSN_IMM_ADR,
+    KP_INSN_IMM_26,
+    KP_INSN_IMM_19,
+    KP_INSN_IMM_16,
+    KP_INSN_IMM_14,
+    KP_INSN_IMM_12,
+    KP_INSN_IMM_9,
+    KP_INSN_IMM_7,
+    KP_INSN_IMM_6,
+    KP_INSN_IMM_S,
+    KP_INSN_IMM_R,
+    KP_INSN_IMM_MAX,
 };
 
 /* relo.c uses the KernelPatch original names; map them onto the ported enum. */
