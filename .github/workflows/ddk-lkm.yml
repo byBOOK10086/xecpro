@@ -75,6 +75,17 @@ jobs:
 
         echo "=== Build completed ==="
 
+        # Out-of-tree (LKM) builds silently drop `obj-$(CONFIG_KPM)` objects, so a
+        # green build does not prove the KPM loader is actually inside the module.
+        # Assert on the exported loader symbols instead.
+        NM=$(command -v llvm-nm || command -v nm)
+        KPM_SYMS=$($NM kernelsu.ko | grep -E ' [Tt] sukisu_(handle_kpm|kpm_control|kpm_load_module_path|kpm_version)$' || true)
+        echo "$KPM_SYMS"
+        if [ "$(echo "$KPM_SYMS" | grep -c ' [Tt] sukisu_')" -lt 4 ]; then
+          echo "::error title=aarch64 ${{ inputs.kmi }} KPM loader missing::kernelsu.ko does not contain the exported KPM loader symbols; the kpm/ objects were not linked in."
+          exit 1
+        fi
+
         # Create output directory in GitHub workspace
         OUT_DIR=/github/workspace/out/aarch64
         mkdir -p $OUT_DIR
@@ -166,6 +177,17 @@ jobs:
         fi
 
         echo "=== Build completed ==="
+
+        # Same KPM linker assertion as the aarch64 step above: KPM is AArch64-only
+        # at runtime, but its objects are linked unconditionally and therefore must
+        # also show up in the x86_64 module.
+        NM=$(command -v llvm-nm || command -v nm)
+        KPM_SYMS=$($NM kernelsu.ko | grep -E ' [Tt] sukisu_(handle_kpm|kpm_control|kpm_load_module_path|kpm_version)$' || true)
+        echo "$KPM_SYMS"
+        if [ "$(echo "$KPM_SYMS" | grep -c ' [Tt] sukisu_')" -lt 4 ]; then
+          echo "::error title=x86_64 ${{ inputs.kmi }} KPM loader missing::kernelsu.ko does not contain the exported KPM loader symbols; the kpm/ objects were not linked in."
+          exit 1
+        fi
 
         # Create output directory in GitHub workspace
         OUT_DIR=/github/workspace/out/x86_64
