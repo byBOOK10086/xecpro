@@ -98,8 +98,6 @@ long __nocfi ksu_hook_prctl(int orig_nr, const struct pt_regs *regs)
     unsigned long arg3;
     unsigned long arg4;
     unsigned long arg5;
-    bool from_root;
-    bool from_manager;
 
     /* Not our magic: hand it to the real prctl syscall. */
     if (option != KERNEL_SU_OPTION) {
@@ -111,12 +109,8 @@ long __nocfi ksu_hook_prctl(int orig_nr, const struct pt_regs *regs)
     arg4 = (unsigned long)PT_REGS_SYSCALL_PARM4(regs);
     arg5 = (unsigned long)PT_REGS_PARM5(regs);
 
-    /* Only root or the manager may talk to the supercall interface. */
-    from_root = (0 == current_uid().val);
-    from_manager = is_manager();
-    if (!from_root && !from_manager) {
-        return 0;
-    }
-
+    // 这个 ABI 只有只读查询（GET_VERSION / UID_GRANTED_ROOT / UID_SHOULD_UMOUNT），
+    // 必须对任意进程开放：Zygisk Next 在 app 进程（已 setuid，非 root、非管理器）
+    // 里查询 denylist 时若被拦截，denylist 就会整体失效，表现为「无法识别 root 管理器」。
     return ksu_handle_prctl(arg2, arg3, arg4, arg5);
 }

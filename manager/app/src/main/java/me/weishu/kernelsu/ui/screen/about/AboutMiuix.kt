@@ -118,10 +118,11 @@ fun AboutScreenMiuix(
     val barColor = if (blurActive) {
         Color.Transparent
     } else {
-        if (scrollProgress == 1f) colorScheme.surface else Color.Transparent
+        if (scrollProgress == 1f) colorScheme.surface.copy(alpha = 1f) else Color.Transparent
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             BlurredBar(backdrop = barBlurBackdrop, blurActive = blurActive) {
                 SmallTopAppBar(

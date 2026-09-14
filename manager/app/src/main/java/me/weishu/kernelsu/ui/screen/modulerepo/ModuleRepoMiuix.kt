@@ -152,9 +152,10 @@ fun ModuleRepoScreenMiuix(
     val enableBlur = LocalEnableBlur.current
     val backdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = backdrop != null
-    val barColor = if (blurActive) Color.Transparent else colorScheme.surface
+    val barColor = if (blurActive) Color.Transparent else colorScheme.surface.copy(alpha = 1f)
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             BlurredBar(backdrop) {
                 searchStatus.TopAppBarAnim(backgroundColor = barColor) {
@@ -1049,7 +1050,7 @@ fun ModuleRepoDetailScreenMiuix(
 
     val backdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = backdrop != null
-    val detailBarColor = if (blurActive) Color.Transparent else colorScheme.surface
+    val detailBarColor = if (blurActive) Color.Transparent else colorScheme.surface.copy(alpha = 1f)
 
     val tabs = listOf(
         stringResource(R.string.tab_readme), stringResource(R.string.tab_releases), stringResource(R.string.tab_info)
@@ -1062,6 +1063,7 @@ fun ModuleRepoDetailScreenMiuix(
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             BlurredBar(backdrop) {
                 TopAppBar(color = detailBarColor, title = module.moduleName, scrollBehavior = scrollBehavior, navigationIcon = {

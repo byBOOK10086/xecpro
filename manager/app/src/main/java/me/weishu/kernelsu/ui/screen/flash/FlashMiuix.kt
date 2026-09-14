@@ -72,11 +72,12 @@ fun FlashScreenMiuix(
     val scrollState = rememberScrollState()
     val backdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = backdrop != null
-    val barColor = if (blurActive) Color.Transparent else colorScheme.surface
+    val barColor = if (blurActive) Color.Transparent else colorScheme.surface.copy(alpha = 1f)
 
     // 对话框是同窗口玻璃浮层，必须叠在 Scaffold 之上，所以整体包一层 Box
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
+            containerColor = Color.Transparent,
             topBar = {
                 TopBar(
                     state.flashingStatus,
