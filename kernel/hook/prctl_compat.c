@@ -37,9 +37,10 @@
  * Zygisk Next accepts KernelSU versions in [10940, 20000]; anything above is
  * classified as "Abnormal" and every feature (denylist included) is disabled.
  * This fork's KERNEL_SU_VERSION is >= 30000, so report a clamped value that
- * stays firmly inside the supported window.
+ * stays firmly inside the supported window. 11999 is used instead of 20000 to
+ * stay clear of the upper bound (off-by-one / strict-upper checks in ZN).
  */
-#define PRCTL_COMPAT_KSU_VERSION 20000
+#define PRCTL_COMPAT_KSU_VERSION 11999
 
 static long ksu_handle_prctl(unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5)
 {

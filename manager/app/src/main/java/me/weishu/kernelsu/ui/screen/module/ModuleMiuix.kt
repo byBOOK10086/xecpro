@@ -44,7 +44,6 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
@@ -80,7 +79,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -124,7 +122,6 @@ import me.weishu.kernelsu.ui.component.dialog.rememberLoadingDialog
 import me.weishu.kernelsu.ui.component.miuix.SearchBarFake
 import me.weishu.kernelsu.ui.component.miuix.SearchBox
 import me.weishu.kernelsu.ui.component.miuix.SearchPager
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
 import me.weishu.kernelsu.ui.design.liquid.xWaterDropClick
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
@@ -802,7 +799,6 @@ fun ModuleItem(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .padding(bottom = 16.dp)
-            .height(IntrinsicSize.Min)
             .clip(Xc.shapes.md)
             .pointerInput(module.id) {
                 detectHorizontalDragGestures(
@@ -819,13 +815,19 @@ fun ModuleItem(
                 )
             }
     ) {
-        // 右侧红色操作栏（底层，向左滑出后露出）
-        Column(
+        // 右侧操作栏（底层，向左滑出后露出）。用 matchParentSize 填满条目高度，
+        // 避免在 LazyColumn 的无限高度约束里用 fillMaxHeight / IntrinsicSize 触发测量崩溃。
+        Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
+                .matchParentSize(),
+            contentAlignment = Alignment.CenterEnd,
+        ) {
+        Column(
+            modifier = Modifier
                 .width(actionWidth)
                 .fillMaxHeight()
-                .background(Brush.linearGradient(listOf(Color(0xFFE53935), Color(0xFFB71C1C))))
+                .background(colorScheme.surfaceContainerHighest)
                 .padding(vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly,
@@ -863,11 +865,13 @@ fun ModuleItem(
             SlideActionButton(
                 icon = if (module.remove) MiuixIcons.Undo else MiuixIcons.Delete,
                 label = stringResource(if (module.remove) R.string.undo else R.string.uninstall),
+                danger = !module.remove,
                 onClick = {
                     if (module.remove) onUndoUninstall() else onUninstall()
                     settleTo(0f)
                 },
             )
+        }
         }
 
         // 模块内容（顶层，随滑动偏移）
@@ -876,7 +880,6 @@ fun ModuleItem(
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .fillMaxWidth()
                 .background(colorScheme.surfaceContainer)
-                .xGlassRim(Xc.shapes.md)
                 .padding(16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -964,12 +967,13 @@ private fun SlideActionButton(
     label: String,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
+    danger: Boolean = false,
 ) {
+    val tint = if (danger) Xc.colors.danger else colorScheme.onSurface
     Column(
         modifier = Modifier
             .size(52.dp)
             .clip(CircleShape)
-            .background(Color.White.copy(alpha = 0.14f))
             .xWaterDropClick(onClick = onClick, onLongClick = onLongClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -977,13 +981,13 @@ private fun SlideActionButton(
         Icon(
             modifier = Modifier.size(20.dp),
             imageVector = icon,
-            tint = Color.White,
+            tint = tint,
             contentDescription = label,
         )
         Text(
             modifier = Modifier.padding(top = 2.dp),
             text = label,
-            color = Color.White,
+            color = tint,
             fontSize = 9.sp,
             maxLines = 1,
         )

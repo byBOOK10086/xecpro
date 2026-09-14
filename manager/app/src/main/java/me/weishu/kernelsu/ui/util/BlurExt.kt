@@ -23,7 +23,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun rememberBlurBackdrop(enableBlur: Boolean): LayerBackdrop? {
     if (!enableBlur || !isRenderEffectSupported()) return null
-    val surfaceColor = MiuixTheme.colorScheme.surface
+    // 用不透明的 surface 垫底：miuix 的 surface 在深色档是半透明(alpha 0.48)，
+    // 直接 drawRect 会透出窗口的黑色背景，顶栏/玻璃块就变成「黑框」。
+    val surfaceColor = MiuixTheme.colorScheme.surface.copy(alpha = 1f)
     return rememberLayerBackdrop {
         drawRect(surfaceColor)
         drawContent()

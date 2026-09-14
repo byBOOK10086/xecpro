@@ -95,8 +95,43 @@
     <string name="home_learn_kernelsu">Learn XECKernel Pro</string>
     <string name="home_learn_kernelsu_url">https://github.com/byBOOK10086/xecpro</string>
     <string name="home_click_to_learn_kernelsu">Learn how to install XECKernel Pro and use modules.</string>
-    <string name="home_support_title">Support Us</string>
-    <string name="home_support_content">XECKernel Pro is, and always will be, free, and open source. However, you can show us that you care by making a donation.</string>
+    <string name="home_support_title">Developers</string>
+    <string name="home_support_content">Project developers and contributors (official)</string>
+    <string name="home_developers_list"><![CDATA[
+Project developers and contributors (official)
+
+This project is initiated and developed by XEC (3228636402). The following members made important contributions to development, icon design, UI design, testing feedback and module support. We hereby announce and sincerely thank them (in no particular order):
+
+I. Project developers/authors
+XEC (3228636402)
+
+II. APK icon design
+阿零不是阿麟 (3068258374)
+今天蕾姆了吗 (2941123540)
+
+III. UI aesthetic design
+XEC (3228636402)
+小Y (3961592339)
+
+IV. Bug testing and quality feedback
+永雏塔菲喵 (1658998584)
+江不辞 (3318621299)
+阿零不是阿麟 (3068258374)
+小Y (3961592339)
+力克千均 (602432323)
+贝利亚大王 (3483361380)
+大表哥 (381283226)
+薇尔莉特 (1941333061)
+and others
+
+V. Module support
+微微微 (2898395199)
+
+VI. Acknowledgements
+Project developer XEC sincerely thanks all the above people for their contributions in development, design, testing and module support.
+
+Hereby announced with gratitude.
+]]></string>
     <string name="home_gki_warning">Starting from v3.0.0, the GKI work mode will be used only in testing environments. We do not recommend it for daily use, and image files will no longer be provided.</string>
     <string name="about_source_code"><![CDATA[View source code at %1$s<br/>Join our %2$s channel]]></string>
     <string name="profile" translatable="false">App Profile</string>

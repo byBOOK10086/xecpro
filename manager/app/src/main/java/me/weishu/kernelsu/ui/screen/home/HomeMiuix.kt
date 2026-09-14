@@ -8,7 +8,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -28,6 +27,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.DeveloperBoard
@@ -42,6 +43,10 @@ import androidx.compose.material.icons.rounded.CheckCircleOutline
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,6 +64,8 @@ import me.weishu.kernelsu.KernelVersion
 import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.WarningLevel
+import me.weishu.kernelsu.ui.component.dialog.XDialog
+import me.weishu.kernelsu.ui.component.dialog.XDialogTitle
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.component.miuix.WarningCard
 import me.weishu.kernelsu.ui.component.rebootlistpopup.RebootListPopupMiuix
@@ -268,8 +275,7 @@ private fun StatusCard(
 
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min),
+                        .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Card(
@@ -426,6 +432,7 @@ private fun SupportLinks(
     modifier: Modifier = Modifier,
 ) {
     val learnMoreUrl = stringResource(R.string.home_learn_kernelsu_url)
+    var showDevelopers by remember { mutableStateOf(false) }
 
     Card(modifier = modifier.xGlassRim(Xc.shapes.md)) {
         ArrowPreference(
@@ -439,7 +446,7 @@ private fun SupportLinks(
                     tint = colorScheme.onBackground,
                 )
             },
-            onClick = { onOpenUrl("https://github.com/byBOOK10086/xecpro") },
+            onClick = { showDevelopers = true },
         )
         ArrowPreference(
             title = stringResource(R.string.home_learn_kernelsu),
@@ -453,6 +460,23 @@ private fun SupportLinks(
                 )
             },
             onClick = { onOpenUrl(learnMoreUrl) },
+        )
+    }
+
+    XDialog(
+        show = showDevelopers,
+        onDismissRequest = { showDevelopers = false },
+    ) {
+        XDialogTitle(text = stringResource(R.string.home_support_title))
+        Text(
+            text = stringResource(R.string.home_developers_list),
+            color = Xc.colors.textSecondary,
+            fontSize = 14.sp,
+            lineHeight = 22.sp,
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
         )
     }
 }

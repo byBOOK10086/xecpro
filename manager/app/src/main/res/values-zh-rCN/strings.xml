@@ -82,8 +82,43 @@
     <string name="home_learn_kernelsu">了解 XECKernel Pro</string>
     <string name="home_learn_kernelsu_url">https://github.com/byBOOK10086/xecpro</string>
     <string name="home_click_to_learn_kernelsu">了解如何安装 XECKernel Pro 以及如何开发模块</string>
-    <string name="home_support_title">支持开发</string>
-    <string name="home_support_content">XECKernel Pro 将保持免费开源，向开发者捐赠以表示支持</string>
+    <string name="home_support_title">开发者名单</string>
+    <string name="home_support_content">项目开发者及贡献者名单（官方公示）</string>
+    <string name="home_developers_list"><![CDATA[
+项目开发者及贡献者名单（官方公示）
+
+本项目由 XEC（3228636402）发起并开发。以下成员在项目开发、图标提供、UI设计、测试反馈及模块支持等方面作出了重要贡献。特此公示，并致以诚挚感谢（以下排名不分先后）：
+
+一、项目开发者/作者
+XEC（3228636402）
+
+二、APK图标提供
+阿零不是阿麟（3068258374）
+今天蕾姆了吗（2941123540）
+
+三、UI美学设计
+XEC（3228636402）
+小Y（3961592339）
+
+四、BUG测试与质量反馈
+永雏塔菲喵（1658998584）
+江不辞（3318621299）
+阿零不是阿麟（3068258374）
+小Y（3961592339）
+力克千均（602432323）
+贝利亚大王（3483361380）
+大表哥（381283226）
+薇尔莉特（1941333061）
+等
+
+五、模块支持
+微微微（2898395199）
+
+六、致谢
+项目开发者 XEC 谨向以上所有人员致以诚挚感谢。感谢各位在开发、设计、测试与模块支持等环节所作出的贡献。
+
+特此公示，并致谢忱。
+]]></string>
     <string name="home_gki_warning">自 v3.0.0 起 GKI 工作模式将仅用于测试环境，我们不建议用于日常使用，也不再提供镜像文件</string>
     <string name="about_source_code"><![CDATA[在 %1$s 查看源码<br/>加入我们的 %2$s 频道<br/>加入我们的 <b><a href="https://pd.qq.com/s/8lipl1brp">QQ</a></b> 频道]]></string>
     <string name="profile_default">默认</string>
