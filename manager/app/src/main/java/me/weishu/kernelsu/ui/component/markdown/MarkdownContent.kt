@@ -6,8 +6,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,9 +39,14 @@ fun MarkdownContent(
             .fillMaxWidth()
             .animateContentSize(animationSpec = tween(durationMillis = 300))
     ) {
+        // 本组件的唯一调用点是 XDialogHost 的确认框，而确认框的正文本来就活在
+        // XGlassDialog 的纵向滚动 Column 里（那一层传给子项的 maxHeight 是
+        // Infinity）。此处再套一层 verticalScroll 就是同方向嵌套滚动，必崩：
+        // IllegalStateException: Vertically scrollable component was measured with
+        // an infinity maximum height constraints。WebView 自己是 wrapContentHeight、
+        // 不滚动，高度交给外层滚即可。
         Box(
             modifier = Modifier
-                .verticalScroll(rememberScrollState())
                 .graphicsLayer { this.alpha = alpha }
         ) {
             GithubMarkdown(

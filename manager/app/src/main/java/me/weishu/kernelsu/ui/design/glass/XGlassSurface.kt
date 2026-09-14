@@ -11,6 +11,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.ui.component.liquid.InnerShadow
@@ -107,10 +108,18 @@ fun XGlassSurface(
             .clipTo(shape)
             .xGlassRim(shape, rimColor, rim)
 
-        else -> Modifier
-            .background(color = tint, shape = shape)
-            .clipTo(shape)
-            .xGlassRim(shape, rimColor, rim)
+        // 没有 backdrop（用户关掉了模糊 / 设备不支持 RenderEffect / 还没采样到图层）
+        // 时**不能**继续拿半透明的 tint 兜底：tint 是 0.55 Alpha 的深色，
+        // 直接 background 画上去会透出窗口底色，整块面板就塌成一块「黑框」——
+        // 这正是"弹窗/栏变黑方块"的来源。把 tint 合成到不透明的 surface 上，
+        // 色相保留、Alpha 归 1，与 `BlurredBar` 的无毛玻璃分支保持一致。
+        else -> {
+            val solid = if (tint.alpha >= 1f) tint else tint.compositeOver(surface)
+            Modifier
+                .background(color = solid, shape = shape)
+                .clipTo(shape)
+                .xGlassRim(shape, rimColor, rim)
+        }
     }
 
     Box(modifier = modifier.then(glassModifier), content = content)

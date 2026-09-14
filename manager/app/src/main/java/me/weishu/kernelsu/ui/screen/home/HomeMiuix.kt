@@ -27,8 +27,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.DeveloperBoard
@@ -472,6 +470,12 @@ private fun SupportLinks(
         onDismissRequest = { showDevelopers = false },
     ) {
         XDialogTitle(text = stringResource(R.string.home_support_title))
+        // 这里**不要**再挂 verticalScroll：XGlassDialog 的面板本身就是一个
+        // 纵向滚动容器，它会把 maxHeight = Infinity 交给子项；子项再嵌一层同方向
+        // 滚动时 Compose 会直接抛
+        // IllegalStateException: Vertically scrollable component was measured with
+        // an infinity maximum height constraints。
+        // 长文案交给面板那一层滚就够了。
         Text(
             text = stringResource(R.string.home_developers_list),
             color = Xc.colors.textSecondary,
@@ -479,8 +483,7 @@ private fun SupportLinks(
             lineHeight = 22.sp,
             modifier = Modifier
                 .padding(top = 8.dp)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+                .fillMaxWidth(),
         )
     }
 }
