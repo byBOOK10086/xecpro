@@ -175,7 +175,7 @@ private fun KpmPagerMiuix(
                     }
                     Card(modifier = Modifier.xGlassRim(Xc.shapes.md), onClick = onFlash) {
                         BasicComponent(
-                            title = stringResource(R.string.kpm_flash),
+                            title = if (uiState.isFlashing) stringResource(R.string.processing) else stringResource(R.string.kpm_flash),
                             startAction = {
                                 MiuixIcon(
                                     imageVector = Icons.Rounded.Add,

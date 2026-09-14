@@ -59,18 +59,23 @@ class KpmViewModel : ViewModel() {
 
     fun flash(uri: Uri) {
         viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                flashKpmModule(uri, {}, {})
-            }
-            val res = ksuApp.resources
-            val message = if (result.code == 0) {
-                R.string.kpm_flash_success
-            } else {
-                R.string.kpm_flash_failed
-            }
-            emitEffect(KpmEffect.SnackBar(res.getString(message)))
-            if (result.code == 0) {
-                load()
+            _uiState.update { it.copy(isFlashing = true) }
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    flashKpmModule(uri, {}, {})
+                }
+                val res = ksuApp.resources
+                val message = if (result.code == 0) {
+                    R.string.kpm_flash_success
+                } else {
+                    R.string.kpm_flash_failed
+                }
+                emitEffect(KpmEffect.SnackBar(res.getString(message)))
+                if (result.code == 0) {
+                    load()
+                }
+            } finally {
+                _uiState.update { it.copy(isFlashing = false) }
             }
         }
     }

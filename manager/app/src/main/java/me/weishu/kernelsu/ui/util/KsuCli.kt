@@ -240,12 +240,18 @@ fun flashKpmModule(
     onStderr: (String) -> Unit
 ): FlashResult {
     val resolver = ksuApp.contentResolver
+    // 保留原始文件名并做一次白名单过滤，避免多个模块都被覆盖成同名文件；
+    // 同时加载的是 /data/adb/kpm 下的全局副本（boot 时也从这里自动加载），
+    // 而不是 app 私有 cache 目录——内核态 filp_open 访问 app_data_file 会受 SELinux 限制。
+    val rawName = uri.getFileName(ksuApp)?.takeIf { it.isNotBlank() } ?: "module.kpm"
+    val safeName = rawName.replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { "module.kpm" }
     with(resolver.openInputStream(uri)) {
-        val file = File(ksuApp.cacheDir, "kpm-module.kpm")
+        val file = File(ksuApp.cacheDir, safeName)
         file.outputStream().use { output ->
             this?.copyTo(output)
         }
-        val cmd = "mkdir -p /data/adb/kpm && cp ${file.absolutePath} /data/adb/kpm/ && ${getKsuDaemonPath()} kpm load ${file.absolutePath}"
+        val dest = "/data/adb/kpm/$safeName"
+        val cmd = "mkdir -p /data/adb/kpm && cp ${file.absolutePath} $dest && ${getKsuDaemonPath()} kpm load $dest"
         val result = flashWithIO(cmd, onStdout, onStderr)
         Log.i("XECKernelPro", "flash kpm module $uri result: $result")
 
