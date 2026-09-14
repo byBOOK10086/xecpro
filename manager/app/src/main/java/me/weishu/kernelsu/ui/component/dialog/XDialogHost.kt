@@ -14,6 +14,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -228,7 +229,16 @@ private fun ConfirmDialogContent(
             }
         } else {
             val button = measurables[1].measure(constraints)
-            val content = measurables[0].measure(constraints.copy(maxHeight = constraints.maxHeight - button.height))
+            // 对话框本体放在 verticalScroll 里，纵向约束是无限的（maxHeight == Infinity）。
+            // 此时直接拿「无限 - 按钮高」会得到 2147483480 这种既不等于 Infinity、
+            // 又塞不进 Constraints 位压缩的畸形值，直接崩（Can't represent ... in Constraints）。
+            // 纵向无限时原样传给正文让它自己 wrap，只有纵向有界时才扣掉按钮高度。
+            val contentConstraints = if (constraints.maxHeight == Constraints.Infinity) {
+                constraints
+            } else {
+                constraints.copy(maxHeight = (constraints.maxHeight - button.height).coerceAtLeast(0))
+            }
+            val content = measurables[0].measure(contentConstraints)
             layout(constraints.maxWidth, content.height + button.height) {
                 content.place(0, 0)
                 button.place(0, content.height)

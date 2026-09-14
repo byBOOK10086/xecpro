@@ -365,7 +365,7 @@ fun MainScreen(
     } else {
         NavigationBadgeState()
     }
-    val surfaceColor = MiuixTheme.colorScheme.surface
+    val surfaceColor = MiuixTheme.colorScheme.surface.copy(alpha = 1f)
     val blurBackdrop = rememberBlurBackdrop(enableBlur)
 
     val backdrop = rememberLayerBackdrop {
