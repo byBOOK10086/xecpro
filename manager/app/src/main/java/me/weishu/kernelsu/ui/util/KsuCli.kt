@@ -221,16 +221,16 @@ fun flashModule(
 }
 
 suspend fun kpmVersion(): String = withContext(Dispatchers.IO) {
-    val shell = getRootShell()
-    val out = shell.newJob()
-        .add("${getKsuDaemonPath()} kpm version").to(ArrayList<String>(), null).exec().out
+    val out = withNewRootShell {
+        newJob().add("${getKsuDaemonPath()} kpm version").to(ArrayList<String>(), null).exec().out
+    }
     out.firstOrNull()?.trim().orEmpty()
 }
 
 suspend fun kpmList(): String = withContext(Dispatchers.IO) {
-    val shell = getRootShell()
-    val out = shell.newJob()
-        .add("${getKsuDaemonPath()} kpm list").to(ArrayList<String>(), null).exec().out
+    val out = withNewRootShell {
+        newJob().add("${getKsuDaemonPath()} kpm list").to(ArrayList<String>(), null).exec().out
+    }
     out.joinToString("\n")
 }
 

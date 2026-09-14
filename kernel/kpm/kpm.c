@@ -1048,18 +1048,22 @@ noinline int sukisu_handle_kpm(unsigned long control_code, unsigned long arg1, u
             goto exit;
         }
 
-        if (!kpm_access_ok(arg2, len)) {
+        if (len > (int)sizeof(buf)) {
+            len = (int)sizeof(buf);
+        }
+
+        if (!kpm_access_ok(arg1, len)) {
             goto invalid_arg;
         }
 
         sukisu_kpm_list((char *)&buf, sizeof(buf), &res);
 
-        if (res > len) {
+        if (res < 0 || res > len) {
             res = -ENOBUFS;
             goto exit;
         }
 
-        if (copy_to_user((void __user *)arg1, &buf, len) != 0)
+        if (res > 0 && copy_to_user((void __user *)arg1, &buf, res) != 0)
             pr_info("kpm: Copy to user failed.");
 
     } else if (control_code == SUKISU_KPM_CONTROL) {
