@@ -212,7 +212,7 @@ fun flashModule(
         }
         val cmd = "module install ${file.absolutePath}"
         val result = flashWithIO("${getKsuDaemonPath()} $cmd", onStdout, onStderr)
-        Log.i("KernelSU", "install module $uri result: $result")
+        Log.i("XECKernelPro", "install module $uri result: $result")
 
         file.delete()
 
@@ -247,7 +247,7 @@ fun flashKpmModule(
         }
         val cmd = "mkdir -p /data/adb/kpm && cp ${file.absolutePath} /data/adb/kpm/ && ${getKsuDaemonPath()} kpm load ${file.absolutePath}"
         val result = flashWithIO(cmd, onStdout, onStderr)
-        Log.i("KernelSU", "flash kpm module $uri result: $result")
+        Log.i("XECKernelPro", "flash kpm module $uri result: $result")
 
         file.delete()
 
@@ -275,7 +275,7 @@ fun runModuleAction(
             .to(stdoutCallback, stderrCallback).exec()
     }
 
-    Log.i("KernelSU", "Module runAction result: $result")
+    Log.i("XECKernelPro", "Module runAction result: $result")
 
     return result.isSuccess
 }
@@ -381,7 +381,7 @@ fun installBoot(
     }
 
     val result = flashWithIO("${getKsuDaemonPath()} $cmd", onStdout, onStderr)
-    Log.i("KernelSU", "install boot result: ${result.isSuccess}")
+    Log.i("XECKernelPro", "install boot result: ${result.isSuccess}")
 
     bootFile?.delete()
     lkmFile?.delete()
@@ -411,7 +411,7 @@ fun installBootKpm(
     val outFile = File(downloadsDir, "XECKernelPro_KPM_patched_${System.currentTimeMillis()}.img")
     val cmd = "${getKsuDaemonPath()} boot-patch-kpm -b ${bootFile.absolutePath} -o ${outFile.absolutePath} --force"
     val result = flashWithIO(cmd, onStdout, onStderr)
-    Log.i("KernelSU", "install kpm result: ${result.isSuccess}")
+    Log.i("XECKernelPro", "install kpm result: ${result.isSuccess}")
 
     bootFile.delete()
     return FlashResult(result)
@@ -424,7 +424,7 @@ fun embedKpm(
     // 一键嵌入：对当前 boot 分区直接打 KPatch-Next 补丁并写回，无需外部 boot 文件或 fastboot。
     val cmd = "${getKsuDaemonPath()} boot-patch-kpm --flash"
     val result = flashWithIO(cmd, onStdout, onStderr)
-    Log.i("KernelSU", "embed kpm result: ${result.isSuccess}")
+    Log.i("XECKernelPro", "embed kpm result: ${result.isSuccess}")
     return FlashResult(result)
 }
 

@@ -12,6 +12,7 @@ import me.weishu.kernelsu.Natives
 import me.weishu.kernelsu.ksuApp
 import me.weishu.kernelsu.magica.BootCompletedReceiver
 import me.weishu.kernelsu.ui.screen.modulerepo.RepoSort
+import me.weishu.kernelsu.ui.theme.ColorMode
 import me.weishu.kernelsu.ui.util.execKsud
 import me.weishu.kernelsu.ui.util.getFeaturePersistValue
 import me.weishu.kernelsu.ui.util.getFeatureStatus
@@ -45,7 +46,9 @@ class SettingsRepositoryImpl : SettingsRepository {
         set(value) = prefs.edit { putBoolean("module_check_update", value) }
 
     override var themeMode: Int
-        get() = prefs.getInt("color_mode", 0)
+        // XEC Fluid Glass 是深色优先的设计语言，默认直接进深色档，
+        // 否则系统处于浅色时用户看到的是"和原版几乎一样"的浅色 miuix。
+        get() = prefs.getInt("color_mode", ColorMode.DARK.value)
         set(value) = prefs.edit { putInt("color_mode", value) }
 
     override var miuixMonet: Boolean
@@ -68,16 +71,20 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("enable_predictive_back", false)
         set(value) = prefs.edit { putBoolean("enable_predictive_back", value) }
 
+    // 玻璃模糊是 XEC Fluid Glass 的核心签名：默认关闭时所有玻璃面会退化成
+    // 纯色块，观感立刻回到原版。因此这里默认打开（不支持 RenderEffect 的
+    // 设备会在 BlurExt 里自动降级，不会崩）。
     override var enableBlur: Boolean
-        get() = prefs.getBoolean("enable_blur", false)
+        get() = prefs.getBoolean("enable_blur", true)
         set(value) = prefs.edit { putBoolean("enable_blur", value) }
 
+    // 悬浮玻璃底栏同样是签名元素，默认开。
     override var enableFloatingBottomBar: Boolean
-        get() = prefs.getBoolean("enable_floating_bottom_bar", false)
+        get() = prefs.getBoolean("enable_floating_bottom_bar", true)
         set(value) = prefs.edit { putBoolean("enable_floating_bottom_bar", value) }
 
     override var enableFloatingBottomBarBlur: Boolean
-        get() = prefs.getBoolean("enable_floating_bottom_bar_blur", false)
+        get() = prefs.getBoolean("enable_floating_bottom_bar_blur", true)
         set(value) = prefs.edit { putBoolean("enable_floating_bottom_bar_blur", value) }
 
     override var enableNavigationBadge: Boolean

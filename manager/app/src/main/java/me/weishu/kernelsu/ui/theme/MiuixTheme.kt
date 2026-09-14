@@ -199,17 +199,34 @@ fun MiuixKernelSUTheme(
                     windowDimming = xc.backdropScrim,
                 )
             } else {
-                // 浅色沿用 miuix 的灰阶（设计文档的取舍：不为浅色单独做一套），
-                // 只把容器做轻一点，让层次靠阴影和描边说话。
-                // 强调色不在此列——它在第一层已经从 accentSeed 换掉了，
-                // 否则浅色档又会变回上游皮肤。
+                // 浅色档同样接管中性色，不再沿用 miuix 的灰阶。
+                //
+                // 上游那套浅色灰阶是"一眼看去还是 KernelSU"的第三个来源：它和
+                // 深色档出自同一套蓝灰偏色，只换强调色压不住——底、容器、分隔线、
+                // 次级文字全是从它派生的。XEC 的浅色取值（backdrop #F2F5F6 /
+                // surface 纯白 / text 近黑）与深色档共用同一套语义槽位，规则一致，
+                // 只是把值换掉，所以这里是深色分支的镜像，不是第二套设计。
+                //
+                // alpha 与深色档取同一组：底 0.80 让背景图透出约两成，容器越高的
+                // 档位越实，层次仍然靠玻璃描边说话。
                 accented.copy(
-                    background = accented.background,
-                    surface = accented.surface.copy(alpha = 0.62f),
-                    surfaceVariant = accented.surfaceVariant.copy(alpha = 0.62f),
-                    surfaceContainer = accented.surfaceContainer.copy(alpha = 0.70f),
-                    surfaceContainerHigh = accented.surfaceContainerHigh.copy(alpha = 0.80f),
-                    surfaceContainerHighest = accented.surfaceContainerHighest.copy(alpha = 0.90f),
+                    background = xc.backdrop.copy(alpha = 0.80f),
+                    onBackground = xc.text,
+                    surface = xc.surface.copy(alpha = 0.62f),
+                    surfaceVariant = xc.surfaceMuted.copy(alpha = 0.62f),
+                    surfaceContainer = xc.surfaceMuted.copy(alpha = 0.72f),
+                    surfaceContainerHigh = xc.surfaceMuted.copy(alpha = 0.82f),
+                    surfaceContainerHighest = xc.surfaceMuted.copy(alpha = 0.90f),
+                    onSurface = xc.text,
+                    onSurfaceSecondary = xc.textSecondary,
+                    onSurfaceVariantSummary = xc.textMuted,
+                    onSurfaceVariantActions = xc.textMuted.copy(alpha = 0.82f),
+                    onSurfaceContainer = xc.text,
+                    onSurfaceContainerHigh = xc.textSecondary,
+                    disabledOnSurface = xc.textMuted.copy(alpha = 0.38f),
+                    outline = xc.glassRim,
+                    dividerLine = xc.glassRim.copy(alpha = 0.55f),
+                    windowDimming = xc.backdropScrim,
                 )
             }
             MiuixTheme(

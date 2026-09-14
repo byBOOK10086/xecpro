@@ -195,13 +195,13 @@ private fun AboutContent(
             listOf(
                 BlendColorEntry(Color(0xe6a1a1a1), BlurBlendMode.ColorDodge),
                 BlendColorEntry(Color(0x4de6e6e6), BlurBlendMode.LinearLight),
-                BlendColorEntry(Color(0xff1af500), BlurBlendMode.Lab),
+                BlendColorEntry(Color(0xff12b886), BlurBlendMode.Lab),
             )
         } else {
             listOf(
                 BlendColorEntry(Color(0xcc4a4a4a), BlurBlendMode.ColorBurn),
                 BlendColorEntry(Color(0xff4f4f4f), BlurBlendMode.LinearLight),
-                BlendColorEntry(Color(0xff1af200), BlurBlendMode.Lab),
+                BlendColorEntry(Color(0xff0e9e76), BlurBlendMode.Lab),
             )
         }
     }
