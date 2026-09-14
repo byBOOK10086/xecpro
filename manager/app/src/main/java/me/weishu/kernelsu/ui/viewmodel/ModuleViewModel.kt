@@ -378,7 +378,7 @@ class ModuleViewModel(
         viewModelScope.launch {
             val res = ksuApp.resources
             val success = withContext(Dispatchers.IO) {
-                toggleModuleUtil(module.id, !module.enabled)
+                runCatching { toggleModuleUtil(module.id, !module.enabled) }.getOrDefault(false)
             }
             if (success) {
                 fetchModuleList(checkUpdate = true, resort = false)
@@ -394,7 +394,7 @@ class ModuleViewModel(
         viewModelScope.launch {
             val res = ksuApp.resources
             val success = withContext(Dispatchers.IO) {
-                uninstallModuleUtil(module.id)
+                runCatching { uninstallModuleUtil(module.id) }.getOrDefault(false)
             }
             if (success) {
                 fetchModuleList(checkUpdate = true, resort = false)
@@ -414,7 +414,7 @@ class ModuleViewModel(
         viewModelScope.launch {
             val res = ksuApp.resources
             val success = withContext(Dispatchers.IO) {
-                undoUninstallModuleUtil(module.id)
+                runCatching { undoUninstallModuleUtil(module.id) }.getOrDefault(false)
             }
             if (success) {
                 fetchModuleList(checkUpdate = true, resort = false)

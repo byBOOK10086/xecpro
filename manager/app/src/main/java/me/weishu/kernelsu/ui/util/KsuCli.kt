@@ -132,10 +132,11 @@ fun install() {
 }
 
 fun listModules(): String {
-    val shell = getRootShell()
-
-    val out = shell.newJob()
-        .add("${getKsuDaemonPath()} module list").to(ArrayList(), null).exec().out
+    val out = runCatching {
+        withNewRootShell {
+            newJob().add("${getKsuDaemonPath()} module list").to(ArrayList<String>(), null).exec().out
+        }
+    }.getOrDefault(emptyList())
     return out.joinToString("\n").ifBlank { "[]" }
 }
 
