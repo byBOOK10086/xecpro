@@ -16,9 +16,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
@@ -27,13 +24,12 @@ import kotlinx.coroutines.withContext
 import me.weishu.kernelsu.BuildConfig
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.dialog.LoadingDialogHandle
+import me.weishu.kernelsu.ui.component.dialog.XDialog
+import me.weishu.kernelsu.ui.component.dialog.XDialogTitle
 import me.weishu.kernelsu.ui.util.getBugreportFile
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -65,91 +61,79 @@ fun SendLogDialog(
             }
         }
     }
-    OverlayDialog(
+    XDialog(
         show = show,
         onDismissRequest = onDismissRequest,
-        insideMargin = DpSize(0.dp, 0.dp),
-        content = {
-            Text(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp, bottom = 12.dp),
-                text = stringResource(R.string.send_log),
-                fontSize = MiuixTheme.textStyles.title4.fontSize,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                color = colorScheme.onSurface
-            )
-            ArrowPreference(
-                title = stringResource(id = R.string.save_log),
-                startAction = {
-                    Icon(
-                        Icons.Rounded.Save,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 16.dp),
-                        tint = colorScheme.onSurface
-                    )
-                },
-                onClick = {
-                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm")
-                    val current = LocalDateTime.now().format(formatter)
-                    exportBugreportLauncher.launch("KernelSU_bugreport_${current}.tar.gz")
+    ) {
+        XDialogTitle(text = stringResource(R.string.send_log))
+        ArrowPreference(
+            title = stringResource(id = R.string.save_log),
+            startAction = {
+                Icon(
+                    Icons.Rounded.Save,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 16.dp),
+                    tint = colorScheme.onSurface
+                )
+            },
+            onClick = {
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH_mm")
+                val current = LocalDateTime.now().format(formatter)
+                exportBugreportLauncher.launch("KernelSU_bugreport_${current}.tar.gz")
+                onDismissRequest()
+            },
+            insideMargin = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+        )
+        ArrowPreference(
+            title = stringResource(id = R.string.send_log),
+            startAction = {
+                Icon(
+                    Icons.Rounded.Share,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 16.dp),
+                    tint = colorScheme.onSurface
+                )
+            },
+            onClick = {
+                scope.launch {
                     onDismissRequest()
-                },
-                insideMargin = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-            )
-            ArrowPreference(
-                title = stringResource(id = R.string.send_log),
-                startAction = {
-                    Icon(
-                        Icons.Rounded.Share,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 16.dp),
-                        tint = colorScheme.onSurface
-                    )
-                },
-                onClick = {
-                    scope.launch {
-                        onDismissRequest()
-                        val bugreport = loadingDialog.withLoading {
-                            withContext(Dispatchers.IO) {
-                                getBugreportFile(context)
-                            }
+                    val bugreport = loadingDialog.withLoading {
+                        withContext(Dispatchers.IO) {
+                            getBugreportFile(context)
                         }
-
-                        val uri: Uri =
-                            FileProvider.getUriForFile(
-                                context,
-                                "${BuildConfig.APPLICATION_ID}.fileprovider",
-                                bugreport
-                            )
-
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            putExtra(Intent.EXTRA_STREAM, uri)
-                            setDataAndType(uri, "application/gzip")
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-
-                        context.startActivity(
-                            Intent.createChooser(
-                                shareIntent,
-                                sendLogText
-                            )
-                        )
                     }
-                },
-                insideMargin = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-            )
-            TextButton(
-                text = stringResource(id = android.R.string.cancel),
-                onClick = {
-                    onDismissRequest()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp, bottom = 24.dp)
-                    .padding(horizontal = 24.dp)
-            )
-        }
-    )
+
+                    val uri: Uri =
+                        FileProvider.getUriForFile(
+                            context,
+                            "${BuildConfig.APPLICATION_ID}.fileprovider",
+                            bugreport
+                        )
+
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        setDataAndType(uri, "application/gzip")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+
+                    context.startActivity(
+                        Intent.createChooser(
+                            shareIntent,
+                            sendLogText
+                        )
+                    )
+                }
+            },
+            insideMargin = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+        )
+        TextButton(
+            text = stringResource(id = android.R.string.cancel),
+            onClick = {
+                onDismissRequest()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+        )
+    }
 }

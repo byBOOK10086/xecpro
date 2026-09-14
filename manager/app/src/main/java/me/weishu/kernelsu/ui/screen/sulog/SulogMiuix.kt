@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
@@ -65,6 +66,8 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.ListPopupDefaults
 import me.weishu.kernelsu.ui.component.ScrollToTopOnChange
 import me.weishu.kernelsu.ui.component.SearchStatus
+import me.weishu.kernelsu.ui.component.dialog.XDialog
+import me.weishu.kernelsu.ui.component.dialog.XDialogTitle
 import me.weishu.kernelsu.ui.component.miuix.SearchBarFake
 import me.weishu.kernelsu.ui.component.miuix.SearchBox
 import me.weishu.kernelsu.ui.component.miuix.SearchPager
@@ -97,7 +100,6 @@ import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Filter
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -570,31 +572,30 @@ private fun SulogDetailDialog(
     var lastEntry by remember { mutableStateOf(entry) }
     if (entry != null) lastEntry = entry
     val displayEntry = lastEntry ?: return
-    OverlayDialog(
+    XDialog(
         show = show,
-        title = sulogEntryTitle(displayEntry),
         onDismissRequest = onDismiss,
-        content = {
-            Column {
-                SelectionContainer(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .verticalScroll(rememberScrollState()),
-                ) {
-                    Text(
-                        text = sulogEntryDetailText(displayEntry),
-                        fontSize = 14.sp,
-                        fontFamily = FontFamily.Monospace,
-                    )
-                }
-                Spacer(Modifier.height(12.dp))
-                TextButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = stringResource(android.R.string.ok),
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.textButtonColorsPrimary(),
+    ) {
+        XDialogTitle(text = sulogEntryTitle(displayEntry))
+        Column {
+            SelectionContainer(
+                modifier = Modifier
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Text(
+                    text = sulogEntryDetailText(displayEntry),
+                    fontSize = 14.sp,
+                    fontFamily = FontFamily.Monospace,
                 )
             }
-        },
-    )
+            Spacer(Modifier.height(12.dp))
+            TextButton(
+                modifier = Modifier.fillMaxWidth(),
+                text = stringResource(android.R.string.ok),
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+            )
+        }
+    }
 }

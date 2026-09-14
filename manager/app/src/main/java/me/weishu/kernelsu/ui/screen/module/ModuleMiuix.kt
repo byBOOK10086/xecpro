@@ -53,9 +53,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Code
@@ -108,6 +106,8 @@ import me.weishu.kernelsu.ui.component.ListPopupDefaults
 import me.weishu.kernelsu.ui.component.ObserveAsEvents
 import me.weishu.kernelsu.ui.component.ScrollToTopOnChange
 import me.weishu.kernelsu.ui.component.SearchStatus
+import me.weishu.kernelsu.ui.component.dialog.XDialog
+import me.weishu.kernelsu.ui.component.dialog.XDialogTitle
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.component.dialog.rememberLoadingDialog
 import me.weishu.kernelsu.ui.component.miuix.SearchBarFake
@@ -152,7 +152,6 @@ import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.icon.extended.Undo
 import top.yukonga.miuix.kmp.icon.extended.UploadCloud
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -585,107 +584,105 @@ private fun ModuleShortcutDialog(
         Toast.makeText(context, resources.getString(R.string.module_shortcut_scheme_copied), Toast.LENGTH_SHORT).show()
     }
 
-    OverlayDialog(
+    XDialog(
         show = show,
-        title = stringResource(R.string.module_shortcut_title),
         onDismissRequest = onDismissRequest,
-        content = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        XDialogTitle(text = stringResource(R.string.module_shortcut_title))
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .padding(vertical = 16.dp)
+                    .size(100.dp)
+                    .clip(Xc.shapes.xl)
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .padding(vertical = 16.dp)
-                        .size(100.dp)
-                        .clip(Xc.shapes.xl)
-                ) {
-                    val preview = shortcutState.previewIcon
-                    if (preview != null) {
-                        Image(
-                            bitmap = preview,
-                            modifier = Modifier.size(100.dp),
-                            contentDescription = null,
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .background(Color.White)
-                        )
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = null,
-                            contentScale = FixedScale(1.5f)
-                        )
-                    }
-                }
-                Row {
-                    TextButton(
-                        modifier = Modifier.weight(1f),
-                        text = stringResource(id = R.string.module_shortcut_icon_pick),
-                        onClick = onPickShortcutIcon,
+                val preview = shortcutState.previewIcon
+                if (preview != null) {
+                    Image(
+                        bitmap = preview,
+                        modifier = Modifier.size(100.dp),
+                        contentDescription = null,
                     )
-                    AnimatedVisibility(
-                        visible = shortcutState.iconUri != shortcutState.defaultShortcutIconUri,
-                        enter = expandHorizontally() + slideInHorizontally(initialOffsetX = { it }),
-                        exit = shrinkHorizontally() + slideOutHorizontally(targetOffsetX = { it }),
-                        modifier = Modifier.align(Alignment.CenterVertically),
-                    ) {
-                        IconButton(
-                            onClick = shortcutState::resetIconToDefault,
-                            modifier = Modifier.padding(start = 12.dp)
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Undo,
-                                contentDescription = null,
-                                tint = colorScheme.onSurface,
-                                modifier = Modifier.size(28.dp),
-                            )
-                        }
-                    }
-                }
-                TextField(
-                    value = shortcutState.name,
-                    onValueChange = shortcutState::updateName,
-                    label = stringResource(id = R.string.module_shortcut_name_label)
-                )
-                if (shortcutState.hasExistingShortcut) {
-                    TextButton(
-                        text = stringResource(id = R.string.module_shortcut_delete),
-                        onClick = onDeleteShortcut,
-                        modifier = Modifier.fillMaxWidth(),
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .background(Color.White)
                     )
-                }
-                TextButton(
-                    text = stringResource(id = R.string.module_shortcut_copy_scheme),
-                    onClick = ::copyShortcutUrl,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    TextButton(
-                        text = stringResource(id = android.R.string.cancel),
-                        onClick = onDismissRequest,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        text = if (shortcutState.hasExistingShortcut) {
-                            stringResource(id = R.string.module_update)
-                        } else {
-                            stringResource(id = android.R.string.ok)
-                        },
-                        onClick = onConfirmShortcut,
-                        colors = ButtonDefaults.textButtonColorsPrimary(),
-                        modifier = Modifier.weight(1f),
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = null,
+                        contentScale = FixedScale(1.5f)
                     )
                 }
             }
+            Row {
+                TextButton(
+                    modifier = Modifier.weight(1f),
+                    text = stringResource(id = R.string.module_shortcut_icon_pick),
+                    onClick = onPickShortcutIcon,
+                )
+                AnimatedVisibility(
+                    visible = shortcutState.iconUri != shortcutState.defaultShortcutIconUri,
+                    enter = expandHorizontally() + slideInHorizontally(initialOffsetX = { it }),
+                    exit = shrinkHorizontally() + slideOutHorizontally(targetOffsetX = { it }),
+                    modifier = Modifier.align(Alignment.CenterVertically),
+                ) {
+                    IconButton(
+                        onClick = shortcutState::resetIconToDefault,
+                        modifier = Modifier.padding(start = 12.dp)
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Undo,
+                            contentDescription = null,
+                            tint = colorScheme.onSurface,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                }
+            }
+            TextField(
+                value = shortcutState.name,
+                onValueChange = shortcutState::updateName,
+                label = stringResource(id = R.string.module_shortcut_name_label)
+            )
+            if (shortcutState.hasExistingShortcut) {
+                TextButton(
+                    text = stringResource(id = R.string.module_shortcut_delete),
+                    onClick = onDeleteShortcut,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            TextButton(
+                text = stringResource(id = R.string.module_shortcut_copy_scheme),
+                onClick = ::copyShortcutUrl,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                TextButton(
+                    text = stringResource(id = android.R.string.cancel),
+                    onClick = onDismissRequest,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    text = if (shortcutState.hasExistingShortcut) {
+                        stringResource(id = R.string.module_update)
+                    } else {
+                        stringResource(id = android.R.string.ok)
+                    },
+                    onClick = onConfirmShortcut,
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
-    )
+    }
 }
 
 @Composable

@@ -59,7 +59,7 @@ val XcShapesDefault = XcShapes(
  * 只接受 `Dp` 而不是 `Shape` 的组件必须从这里取值，否则"同一层级用同一半径"
  * 会因为这些组件无法消费 [XcShapes] 而悄悄跑偏：
  * - miuix `Card(cornerRadius = …)`、`CardDefaults.CornerRadius = 16.dp`；
- * - `OverlayDialog(cornerRadius = …)`；
+ * - 已移除的 `OverlayDialog` 及其后继 `XDialog` / `XGlassDialog`（圆角统一走 [Xc.shapes]）；
  * - `miuix-squircle` 的 `squircleSurface(cornerRadius = …)` / `squircleBorder(width = …)`。
  *
  * [XcShapesDefault] 也是由这套数值构造出来的，两者不可能不一致。

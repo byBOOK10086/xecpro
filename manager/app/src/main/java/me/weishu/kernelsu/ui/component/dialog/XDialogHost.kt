@@ -23,7 +23,6 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.markdown.MarkdownContent
 import me.weishu.kernelsu.ui.design.glass.XGlassDialog
-import me.weishu.kernelsu.ui.design.token.Xc
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
@@ -48,7 +47,19 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  */
 class XDialogHostState {
     internal val loadingStates = mutableStateListOf<MutableState<Boolean>>()
+
     internal val confirmStates = mutableStateListOf<ConfirmDialogRegistration>()
+
+    /**
+     * 自绘内容的显示请求（见 [XDialog]）。
+     *
+     * 三个通道分开而不是合成一个"通用登记"，是因为加载框与确认框的骨架是固定的、
+     * 宿主能自己拼（也因此能共用同一份退出动画与标题样式）；只有这一条必须把
+     * 内容整块交给调用方。放在最后一项的 [XDialogHost] 按
+     * 加载 → 自绘 → 确认 的顺序绘制，后画的盖在上面 —— 确认框永远是压在
+     * 最上面的那一层（选项面板里点一下再问"确定吗"就是这个顺序）。
+     */
+    internal val customStates = mutableStateListOf<CustomDialogRegistration>()
 }
 
 /**
@@ -129,6 +140,23 @@ fun XDialogHost(
         }
     }
 
+    // 自绘内容的对话框（见 XDialog）。夹在中间：确认框要压在它上面，
+    // 所以绘制顺序必须是 加载 → 自绘 → 确认。
+    val custom = state.customStates.lastOrNull { it.isVisible() }
+    val retainedCustom = remember { Retained<CustomDialogRegistration>() }
+    if (custom != null) retainedCustom.value = custom
+    val shownCustom = custom ?: retainedCustom.value
+
+    XGlassDialog(
+        show = custom != null,
+        onDismissRequest = { shownCustom?.onDismissRequest?.invoke() },
+        backdrop = backdrop,
+        modifier = modifier,
+        maxWidth = shownCustom?.maxWidth?.invoke() ?: 420.dp,
+    ) {
+        shownCustom?.content?.invoke(this)
+    }
+
     val registration = state.confirmStates.lastOrNull { it.visible.value }
     val retained = remember { Retained<ConfirmDialogRegistration>() }
     if (registration != null) retained.value = registration
@@ -143,12 +171,7 @@ fun XDialogHost(
         if (shown == null) return@XGlassDialog
         val visuals = shown.visualsProvider()
         if (visuals.title.isNotBlank()) {
-            Text(
-                modifier = Modifier.fillMaxWidth(),
-                text = visuals.title,
-                color = Xc.colors.text,
-                fontWeight = FontWeight.SemiBold,
-            )
+            XDialogTitle(text = visuals.title)
         }
         ConfirmDialogContent(
             visuals = visuals,

@@ -10,11 +10,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
+import me.weishu.kernelsu.ui.component.dialog.XDialog
+import me.weishu.kernelsu.ui.component.dialog.XDialogTitle
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.navigation3.Route
@@ -25,9 +24,7 @@ import me.weishu.kernelsu.ui.screen.flash.UninstallType.PERMANENT
 import me.weishu.kernelsu.ui.screen.flash.UninstallType.RESTORE_STOCK_IMAGE
 import me.weishu.kernelsu.ui.screen.flash.UninstallType.TEMPORARY
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -60,49 +57,37 @@ fun UninstallDialogMiuix(
         }
     }
 
-    OverlayDialog(
+    XDialog(
         show = show,
         onDismissRequest = onDismissRequest,
-        insideMargin = DpSize(0.dp, 0.dp),
-        content = {
-            Text(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp, bottom = 12.dp),
-                text = stringResource(R.string.uninstall),
-                fontSize = MiuixTheme.textStyles.title4.fontSize,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                color = MiuixTheme.colorScheme.onSurface
-            )
-            options.forEach { type ->
-                ArrowPreference(
-                    onClick = {
-                        showConfirmDialog.value = true
-                        runType.value = type
-                    },
-                    title = stringResource(type.title),
-                    startAction = {
-                        Icon(
-                            imageVector = type.icon,
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 16.dp),
-                            tint = MiuixTheme.colorScheme.onSurface
-                        )
-                    },
-                    insideMargin = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
-                )
-            }
-            TextButton(
-                text = stringResource(id = android.R.string.cancel),
-                onClick = onDismissRequest,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp, bottom = 24.dp)
-                    .padding(horizontal = 24.dp)
+    ) {
+        XDialogTitle(text = stringResource(R.string.uninstall))
+        options.forEach { type ->
+            ArrowPreference(
+                onClick = {
+                    showConfirmDialog.value = true
+                    runType.value = type
+                },
+                title = stringResource(type.title),
+                startAction = {
+                    Icon(
+                        imageVector = type.icon,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 16.dp),
+                        tint = MiuixTheme.colorScheme.onSurface
+                    )
+                },
+                insideMargin = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
             )
         }
-    )
+        TextButton(
+            text = stringResource(id = android.R.string.cancel),
+            onClick = onDismissRequest,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+        )
+    }
     val confirmDialog = rememberConfirmDialog(
         onConfirm = {
             showConfirmDialog.value = false
