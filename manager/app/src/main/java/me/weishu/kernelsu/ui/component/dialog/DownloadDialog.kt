@@ -18,7 +18,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.ui.design.glass.XGlassDialog
 import me.weishu.kernelsu.ui.design.token.Xc
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
@@ -28,10 +27,16 @@ import top.yukonga.miuix.kmp.basic.TextField
 /**
  * 下载远程 boot 分区镜像的输入对话框。
  *
- * 这个对话框**没有**登记到 [XDialogHost]，而是自己画一层 [XGlassDialog]：
- * 原因有两个——它是受控的（`show` 由调用方持有），输入框的内容也只是这份局部状态，
- * 登记到宿主反而要把这些状态来回搬。代价是它必须自己从 [LocalXDialogBackdrop]
- * 取根层 backdrop，才能采到玻璃的模糊源。
+ * **必须走 [XDialog]（根层宿主），不能就地画 `XGlassDialog`。** 根层 backdrop 的宿主
+ * 就是 `MainActivity` 里那个包住**全部导航内容**的 Box，而本对话框所在的
+ * `InstallScreen` 正挂在它里面。就地绘制意味着"在 backdrop 的采样源内部再去采样
+ * 它自己"，miuix 的 Backdrop 会因此成环，RenderThread 在
+ * `RenderNode::prepareTreeImpl` 中无限递归，直接把进程打成原生 SIGSEGV
+ * （`stack pointer is not in a rw map; likely due to stack overflow.`）。
+ *
+ * 交给 [XDialog] 之后，绘制发生在根层宿主里——它是那个包内容 Box 的**兄弟**节点，
+ * 采样源与消费者分处两棵子树，成环条件消失。`show` 与输入框内容照旧只由调用方
+ * 持有（见 [XDialog] 的 KDoc），行为与就地绘制时一致。
  */
 @Composable
 fun DownloadDialog(
@@ -40,10 +45,9 @@ fun DownloadDialog(
     onDismiss: () -> Unit,
 ) {
     var url by remember { mutableStateOf("") }
-    XGlassDialog(
+    XDialog(
         show = show,
         onDismissRequest = onDismiss,
-        backdrop = LocalXDialogBackdrop.current,
     ) {
         Text(
             modifier = Modifier.fillMaxWidth(),
