@@ -19,6 +19,14 @@ mod android {
 
     pub const DAEMON_LINK_PATH: &str = concatcp!(BINARY_DIR, "xudc");
 
+    // Official KernelSU daemon paths. Third-party consumers (Zygisk Next /
+    // ReZygisk and friends) validate the KernelSU identity by probing these
+    // exact paths, so the daemon is mirrored there as symlinks. Keep both the
+    // legacy `/data/adb/ksud` and the current `/data/adb/ksu/bin/ksud` shape:
+    // the probe changed over time and we must satisfy either generation.
+    pub const OFFICIAL_DAEMON_PATH: &str = concatcp!(ADB_DIR, "ksud");
+    pub const OFFICIAL_DAEMON_LINK_PATH: &str = concatcp!(BINARY_DIR, "ksud");
+
     pub const MODULE_DIR: &str = concatcp!(ADB_DIR, "modules/");
     pub const MODULE_UPDATE_DIR: &str = concatcp!(ADB_DIR, "modules_update/");
     pub const METAMODULE_DIR: &str = concatcp!(ADB_DIR, "metamodule/");

@@ -15,16 +15,26 @@ static const __u32 KERNEL_SU_UAPI_VERSION = 4;
  * Version reported to *non-manager* callers through the root-detection
  * interfaces (ioctl KSU_IOCTL_GET_INFO / legacy prctl CMD_GET_VERSION).
  *
- * This fork reports KERNEL_SU_VERSION >= 30000, but Zygisk Next only accepts
- * KernelSU versions inside [10940, 20000] (its build-time minKsuVersion /
- * maxKsuVersion window). Anything above the upper bound is classified as
- * "Abnormal" and *every* feature - the denylist included - is silently
- * disabled, which surfaces to the user as "Zygisk 无法识别 root 实现".
+ * Downstream consumers such as Zygisk Next / ReZygisk classify the root
+ * implementation as "TooOld" unless the reported version reaches their
+ * MIN_KSU_VERSION (10940 in ReZygisk), while older builds of the same code
+ * base additionally enforced an upper bound (MAX_KSU_VERSION = 20000) and
+ * classified anything above it as "Abnormal" - in which case *every* feature,
+ * the denylist included, is silently disabled.
  *
- * 11999 sits safely inside that window (deliberately below 20000 so we stay
- * clear of strict upper-bound checks). Only non-manager callers are clamped:
- * the manager app still receives the real KERNEL_SU_VERSION so its about
- * screen keeps showing the true build.
+ * This fork reports KERNEL_SU_VERSION >= 30000, far above the legacy upper
+ * bound, so the externally visible version is clamped into the window that
+ * both generations accept. Current builds no longer enforce an upper bound, so
+ * 11999 is deliberately conservative: it satisfies the lower bound and stays
+ * clear of the historical upper-bound check at the same time.
+ *
+ * Note that a matching version is *not* sufficient on its own: consumers also
+ * probe the official daemon paths (/data/adb/ksud, /data/adb/ksu/bin/ksud) and
+ * bail out with "Inexistent"/"Abnormal" when the binary is missing. Those paths
+ * are mirrored by ksud; see `link_daemon_to` in userspace/ksud/src/utils.rs.
+ *
+ * Only non-manager callers are clamped: the manager app still receives the real
+ * KERNEL_SU_VERSION so its about screen keeps showing the true build.
  */
 static const __u32 KSU_COMPAT_REPORTED_VERSION = 11999;
 

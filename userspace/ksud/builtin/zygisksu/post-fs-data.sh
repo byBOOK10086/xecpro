@@ -70,6 +70,20 @@ mkdir -p /data/adb/ksu/bin
 rm -f /data/adb/ksu/bin/zygisk-ctl /data/adb/ksu/bin/znctl
 ln -sf "$MODDIR/bin/zygiskd" /data/adb/ksu/bin/znctl
 
+# --- 兼容官方 KernelSU 守护进程路径 ---
+# Zygisk Next 通过探测"官方"守护进程路径来确认 KernelSU 身份。本项目把守护进程
+# 改名为 xudc，若不补链接会被判定为 Inexistent/Abnormal（表现为"无法确定 root
+# 实现"）。这里在启动 daemon 之前补齐，兼容新旧两代探测路径。
+DAEMON=/data/adb/xudc
+if [ -x "$DAEMON" ]; then
+  mkdir -p /data/adb/ksu/bin 2>/dev/null
+  for L in /data/adb/ksud /data/adb/ksu/bin/ksud; do
+    [ -L "$L" ] && [ "$(readlink "$L")" = "$DAEMON" ] && continue
+    rm -f "$L" 2>/dev/null
+    ln -sf "$DAEMON" "$L" 2>/dev/null
+  done
+fi
+
 # --- 启动 daemon ---
 export ZYGISK_ENABLED
 [ -f /data/adb/zygisksu/klog ] && [ "1" = "$(cat /data/adb/zygisksu/klog)" ] && export KLOG_ENABLED=1

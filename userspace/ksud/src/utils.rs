@@ -222,13 +222,56 @@ pub fn has_magisk() -> bool {
     which::which("magisk").is_ok()
 }
 
-fn link_ksud_to_bin() -> Result<()> {
+// Mirror the daemon onto every path a KernelSU-aware consumer may probe.
+//
+// The daemon itself is renamed to `xudc`, but Zygisk Next / ReZygisk decide
+// whether a KernelSU installation is usable by looking for the *official*
+// daemon paths (`/data/adb/ksud` historically, `/data/adb/ksu/bin/ksud` in
+// current builds). When the probe misses, the root implementation is reported
+// as `Inexistent`/`Abnormal` and Zygisk refuses to work, so we expose the
+// daemon under those names as well.
+fn link_daemon_to(paths: &[&str]) -> Result<()> {
     let ksu_bin = PathBuf::from(defs::DAEMON_PATH);
-    let ksu_bin_link = PathBuf::from(defs::DAEMON_LINK_PATH);
-    if ksu_bin.exists() && !ksu_bin_link.exists() {
-        std::os::unix::fs::symlink(&ksu_bin, &ksu_bin_link)?;
+    if !ksu_bin.exists() {
+        return Ok(());
+    }
+
+    for path in paths {
+        let link = PathBuf::from(path);
+        if std::fs::read_link(&link).ok().as_deref() == Some(ksu_bin.as_path()) {
+            // Already pointing at the daemon, nothing to do.
+            continue;
+        }
+        // Drop a stale regular file or a link that points somewhere else.
+        if std::fs::symlink_metadata(&link).is_ok() {
+            let _ = std::fs::remove_file(&link);
+        }
+        if let Some(parent) = link.parent() {
+            ensure_dir_exists(parent)?;
+        }
+        std::os::unix::fs::symlink(&ksu_bin, &link)
+            .with_context(|| format!("failed to link {path} -> {}", ksu_bin.display()))?;
     }
     Ok(())
+}
+
+fn link_ksud_to_bin() -> Result<()> {
+    link_daemon_to(&[
+        defs::DAEMON_LINK_PATH,
+        defs::OFFICIAL_DAEMON_PATH,
+        defs::OFFICIAL_DAEMON_LINK_PATH,
+    ])
+}
+
+/// Re-assert the KernelSU-compatibility daemon links.
+///
+/// `install()` already creates them, but they live on `/data`, so anything that
+/// wipes `/data/adb` (flashing a new boot image without reinstalling, cleaner
+/// apps, manual `rm`) silently removes them and every Zygisk consumer goes back
+/// to reporting "no KernelSU". The boot path calls this before any module script
+/// runs so the official layout is guaranteed to be in place first.
+pub fn refresh_daemon_links() -> Result<()> {
+    link_ksud_to_bin()
 }
 
 pub fn install(libadbroot: Option<PathBuf>, data_path: Option<PathBuf>) -> Result<()> {
@@ -284,6 +327,14 @@ pub fn uninstall(package_name: &str) -> Result<()> {
         module::prune_modules()?;
     }
     println!("- Removing directories..");
+    // Drop the KernelSU-compatibility links first, but only when they are ours
+    // (never touch a genuine official `ksud` binary).
+    for path in [defs::OFFICIAL_DAEMON_PATH, defs::OFFICIAL_DAEMON_LINK_PATH] {
+        let link = PathBuf::from(path);
+        if std::fs::read_link(&link).ok().as_deref() == Some(Path::new(defs::DAEMON_PATH)) {
+            let _ = std::fs::remove_file(&link);
+        }
+    }
     std::fs::remove_dir_all(defs::WORKING_DIR).ok();
     std::fs::remove_file(defs::DAEMON_PATH).ok();
     std::fs::remove_dir_all(defs::MODULE_DIR).ok();

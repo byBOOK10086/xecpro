@@ -23,6 +23,14 @@ pub fn on_post_data_fs() -> Result<()> {
 
     utils::umask(0);
 
+    // Re-assert the KernelSU-compatibility daemon links before anything else
+    // touches the module tree. Zygisk Next / ReZygisk identify the root
+    // implementation by probing the *official* daemon paths, so the mirror must
+    // exist before the first module script (ZN's own included) is executed.
+    if let Err(e) = utils::refresh_daemon_links() {
+        warn!("refresh daemon links failed: {e}");
+    }
+
     #[cfg(target_arch = "aarch64")]
     if let Err(e) = crate::kpm::booted_load() {
         warn!("kpm booted_load failed: {e}");
