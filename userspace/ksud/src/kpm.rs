@@ -78,8 +78,8 @@ pub fn list() -> Result<()> {
     Ok(())
 }
 
-pub fn unload_module(name: String) -> Result<()> {
-    let out = run_kpm_core(&["kpm", "unload", &name])?;
+pub fn unload_module(name: &str) -> Result<()> {
+    let out = run_kpm_core(&["kpm", "unload", name])?;
     let out = out.trim();
     if !out.is_empty() {
         println!("{out}");
@@ -93,8 +93,8 @@ pub fn info(name: String) -> Result<()> {
     Ok(())
 }
 
-pub fn control(name: String, args: String) -> Result<i32> {
-    let out = run_kpm_core(&["kpm", "ctl0", &name, &args])?;
+pub fn control(name: &str, args: &str) -> Result<i32> {
+    let out = run_kpm_core(&["kpm", "ctl0", name, args])?;
     let out = out.trim();
     if !out.is_empty() {
         println!("{out}");
@@ -148,8 +148,9 @@ pub fn booted_load() -> Result<()> {
 
     ensure_kpm_core()?;
 
-    let hello = run_kpm_core(&["hello"]).unwrap_or_default();
-    if hello.trim().is_empty() {
+    // Probe the core through the shared version check so the two paths cannot
+    // drift apart (both rely on `hello` for readiness).
+    if check_version().is_err() {
         drop_kpm_core();
         log::info!("KPM: core not ready, skip");
         return Ok(());

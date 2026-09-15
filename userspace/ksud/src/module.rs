@@ -70,10 +70,10 @@ fn xor_builtin(data: &[u8]) -> Vec<u8> {
 }
 
 fn builtin_file_mode(rel: &str) -> u32 {
-    if rel.ends_with(".sh")
-        || rel.starts_with("bin/")
-        || matches!(rel, "daemon" | "inject" | "supervisor")
-    {
+    let is_shell = Path::new(rel)
+        .extension()
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("sh"));
+    if is_shell || rel.starts_with("bin/") || matches!(rel, "daemon" | "inject" | "supervisor") {
         0o755
     } else {
         0o644

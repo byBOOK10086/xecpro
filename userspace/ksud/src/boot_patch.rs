@@ -205,7 +205,7 @@ mod android {
         Ok(())
     }
 
-    pub(crate) fn flash_partition(partition: &str, data: &[u8]) -> Result<()> {
+    pub fn flash_partition(partition: &str, data: &[u8]) -> Result<()> {
         let mut blk = std::fs::OpenOptions::new()
             .write(true)
             .truncate(false)
