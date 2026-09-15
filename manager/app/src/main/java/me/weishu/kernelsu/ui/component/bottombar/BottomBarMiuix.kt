@@ -66,7 +66,10 @@ fun BottomBarMiuix(
         BlurredBar(blurBackdrop) {
             NavigationBar(
                 modifier = modifier,
-                color = if (blurBackdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface,
+                // 无模糊设备上会走这一支：直传 0.48 alpha 的 surface 同样会透出窗口底色，
+                // 底栏会变成一条近黑的横条，和 BlurredBar 内部 tint 的修正保持一致。
+                color = if (blurBackdrop != null) Color.Transparent
+                else MiuixTheme.colorScheme.surface.copy(alpha = 1f),
                 content = {
                     items.forEachIndexed { index, item ->
                         NavigationBarItem(

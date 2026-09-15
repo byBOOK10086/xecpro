@@ -137,6 +137,10 @@ fun FlashScreenMiuix(
                     Text(
                         modifier = Modifier.padding(8.dp),
                         text = state.text,
+                        // 刷写日志固定用纯黑：这一屏是叠在浅色壁纸上的玻璃浮层，
+                        // 跟着 LocalContentColor 走会在浅色档变成深灰、在深色档变成亮灰，
+                        // 两种都不如直接压黑来得清楚。
+                        color = Color.Black,
                         fontSize = 12.sp,
                         fontFamily = FontFamily.Monospace,
                     )

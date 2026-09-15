@@ -53,7 +53,9 @@ fun NavigationRailMiuix(
         modifier = modifier
             .padding(horizontal = 8.dp, vertical = 12.dp)
             .clip(Xc.shapes.xl)
-            .background(MiuixTheme.colorScheme.surface),
+            // 深色档的 surface 是 0.48 alpha 的深色，直接画上去会透出窗口底色，
+            // 整块面板会塌成一条近黑的竖条。这里按 BlurExt 的写法先抹平 alpha。
+            .background(MiuixTheme.colorScheme.surface.copy(alpha = 1f)),
     ) {
         NavigationRail(
             modifier = Modifier,
