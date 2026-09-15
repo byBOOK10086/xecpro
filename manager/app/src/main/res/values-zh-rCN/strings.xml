@@ -56,6 +56,9 @@
     <string name="install">安装</string>
     <string name="reboot">重启</string>
     <string name="settings">设置</string>
+    <string name="terminal">终端</string>
+    <string name="terminal_unavailable">无法连接 %1$s</string>
+    <string name="terminal_hint">请确认模块已安装并已启用，然后重试。</string>
     <string name="reboot_soft">软重启</string>
     <string name="reboot_userspace">用户空间重启</string>
     <string name="reboot_recovery">重启到 Recovery</string>

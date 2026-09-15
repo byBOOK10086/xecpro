@@ -69,6 +69,9 @@
     <string name="install">Install</string>
     <string name="reboot">Reboot</string>
     <string name="settings">Settings</string>
+    <string name="terminal">Terminal</string>
+    <string name="terminal_unavailable">Unable to reach %1$s</string>
+    <string name="terminal_hint">Make sure the module is installed and enabled, then retry.</string>
     <string name="reboot_soft">Soft restart</string>
     <string name="reboot_userspace">Userspace reboot</string>
     <string name="reboot_recovery">Reboot to Recovery</string>

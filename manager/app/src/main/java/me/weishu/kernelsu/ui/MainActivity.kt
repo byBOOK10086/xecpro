@@ -96,6 +96,7 @@ import me.weishu.kernelsu.ui.screen.sulog.SulogScreen
 import me.weishu.kernelsu.ui.screen.superuser.SuperUserPager
 import me.weishu.kernelsu.ui.screen.template.AppProfileTemplateScreen
 import me.weishu.kernelsu.ui.screen.templateeditor.TemplateEditorScreen
+import me.weishu.kernelsu.ui.screen.terminal.TerminalPager
 import me.weishu.kernelsu.ui.theme.KernelSUTheme
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
 import me.weishu.kernelsu.ui.theme.LocalColorMode
@@ -406,6 +407,7 @@ fun MainScreen(
                         2 -> if (contentReady || isCurrentPage) ModulePager(bottomInnerPadding, isCurrentPage)
                         3 -> if (contentReady || isCurrentPage) KpmPager(bottomInnerPadding, isCurrentPage)
                         4 -> if (contentReady || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)
+                        5 -> if (contentReady || isCurrentPage) TerminalPager(bottomInnerPadding, isCurrentPage)
                     }
                 }
             }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Cottage
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Memory
@@ -141,7 +142,8 @@ enum class BottomBarDestination(
     SuperUser(R.string.superuser, Icons.Rounded.Security),
     Module(R.string.module, Icons.Rounded.Extension),
     Kpm(R.string.kpm, Icons.Rounded.Memory),
-    Setting(R.string.settings, Icons.Rounded.Settings)
+    Setting(R.string.settings, Icons.Rounded.Settings),
+    Terminal(R.string.terminal, Icons.Rounded.Code),
 }
 
 internal fun navigationBadgeFor(
