@@ -40,8 +40,8 @@ class ModuleRepositoryImpl : ModuleRepository {
                     Module(
                         id = obj.getString("id"),
                         name = obj.optString("name"),
-                        author = obj.getStringIgnoreCase("author", "Unknown"),
-                        version = obj.getStringIgnoreCase("version", "Unknown"),
+                        author = obj.getStringIgnoreCase("author", ""),
+                        version = obj.getStringIgnoreCase("version", ""),
                         versionCode = obj.optInt("versionCode", 0),
                         description = obj.optString("description"),
                         enabled = obj.getBoolean("enabled"),

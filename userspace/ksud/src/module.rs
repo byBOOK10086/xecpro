@@ -707,22 +707,21 @@ pub fn handle_updated_modules() -> Result<()> {
 
         if let Some(name) = updated_module.file_name() {
             let module_dir = modules_root.join(name);
-            let mut disabled = false;
-            let mut removed = false;
-            if module_dir.exists() {
-                // If the old module is disabled, we need to also disable the new one
-                disabled = module_dir.join(defs::DISABLE_FILE_NAME).exists();
-                removed = module_dir.join(defs::REMOVE_FILE_NAME).exists();
+            // Preserve the "remove" marker so a pending uninstall still takes
+            // effect, but do NOT carry over the "disable" marker: the installer
+            // (installer.sh + Rust cleanup) explicitly clears it, and carrying
+            // it forward makes freshly-flashed modules appear "disabled by
+            // default" — the user's #1 complaint about ZY modules.
+            let removed = if module_dir.exists() {
+                let r = module_dir.join(defs::REMOVE_FILE_NAME).exists();
                 remove_dir_all(&module_dir)?;
-            }
+                r
+            } else {
+                false
+            };
             rename(updated_module, &module_dir)?;
             if removed {
                 let path = module_dir.join(defs::REMOVE_FILE_NAME);
-                if let Err(e) = ensure_file_exists(&path) {
-                    warn!("Failed to create {}: {e}", path.display());
-                }
-            } else if disabled {
-                let path = module_dir.join(defs::DISABLE_FILE_NAME);
                 if let Err(e) = ensure_file_exists(&path) {
                     warn!("Failed to create {}: {e}", path.display());
                 }
@@ -856,6 +855,20 @@ fn install_module_to_system(zip: &str) -> Result<()> {
 
     let module_dir = Path::new(MODULE_DIR).join(module_id);
     ensure_dir_exists(&module_dir)?;
+
+    // installer.sh already removes these, but if customize.sh aborted or the
+    // script failed mid-way, stale markers from a previous install would
+    // survive and cause handle_updated_modules() to recreate them on the new
+    // version — making the freshly-flashed module appear "disabled by default".
+    let disable_file = module_dir.join(defs::DISABLE_FILE_NAME);
+    if disable_file.exists() {
+        let _ = std::fs::remove_file(&disable_file);
+    }
+    let remove_file = module_dir.join(defs::REMOVE_FILE_NAME);
+    if remove_file.exists() {
+        let _ = std::fs::remove_file(&remove_file);
+    }
+
     copy(
         updated_dir.join("module.prop"),
         module_dir.join("module.prop"),
@@ -1131,6 +1144,25 @@ fn list_module(path: &str) -> Vec<HashMap<String, String>> {
                 continue;
             }
         }
+
+        // Ensure name, author, version, description have sane defaults so the
+        // manager never shows "Unknown" when the fields are merely absent from
+        // a truncated or customize.sh-rewritten module.prop.
+        module_prop_map
+            .entry("name".to_owned())
+            .or_insert_with(|| module_prop_map.get("id").cloned().unwrap_or_default());
+        module_prop_map
+            .entry("author".to_owned())
+            .or_insert_with(|| "".to_string());
+        module_prop_map
+            .entry("version".to_owned())
+            .or_insert_with(|| "".to_string());
+        module_prop_map
+            .entry("versionCode".to_owned())
+            .or_insert_with(|| "0".to_string());
+        module_prop_map
+            .entry("description".to_owned())
+            .or_insert_with(|| "".to_string());
 
         // Add enabled, update, remove, web, action flags
         let enabled = !path.join(defs::DISABLE_FILE_NAME).exists();
