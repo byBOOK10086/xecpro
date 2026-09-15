@@ -111,7 +111,15 @@ pub fn patch_kpm_bytes(boot_data: &[u8]) -> Result<Vec<u8>> {
 
     println!("- Patching kernel with KPatch-Next");
     let status = Command::new(PATCH_TOOL_BIN)
-        .args(["-p", "-i", KERNEL_IN, "-k", PATCH_CORE_BIN, "-o", KERNEL_OUT])
+        .args([
+            "-p",
+            "-i",
+            KERNEL_IN,
+            "-k",
+            PATCH_CORE_BIN,
+            "-o",
+            KERNEL_OUT,
+        ])
         .output()
         .context("cannot run patch tool")?;
     if !status.status.success() {

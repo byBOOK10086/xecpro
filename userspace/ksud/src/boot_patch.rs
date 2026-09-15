@@ -18,7 +18,10 @@ use regex_lite::Regex;
 
 use crate::assets;
 
-#[cfg(target_arch = "aarch64")]
+// KPM patching only exists on Android/aarch64 (see `main.rs`): the module reaches
+// into `crate::utils`, libc and the susfs helpers, which the host-side boot-image
+// patcher builds (macOS / musl) do not provide.
+#[cfg(all(target_arch = "aarch64", target_os = "android"))]
 use crate::kpm_patch::{BootPatchKpmArgs, patch_kpm};
 
 #[cfg(target_os = "android")]
@@ -517,7 +520,7 @@ pub struct BootPatchArgs {
     ramdisk: bool,
 
     /// Also apply the KPatch-Next (KPM) kernel patch on top of the patched image
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(all(target_arch = "aarch64", target_os = "android"))]
     #[arg(long, default_value = "false")]
     kpm: bool,
 }
@@ -549,7 +552,7 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             #[cfg(not(target_os = "android"))]
             arch,
             ramdisk,
-            #[cfg(target_arch = "aarch64")]
+            #[cfg(all(target_arch = "aarch64", target_os = "android"))]
             kpm,
         } = args;
 
@@ -824,7 +827,7 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
         drop(boot_image);
         drop(boot_image_data);
 
-        #[cfg(target_arch = "aarch64")]
+        #[cfg(all(target_arch = "aarch64", target_os = "android"))]
         if kpm && flash {
             bail!("--kpm requires a boot image file to patch and cannot be combined with --flash");
         }
@@ -853,7 +856,7 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             let output_image = output_dir.join(name);
             std::fs::write(&output_image, &new_boot_bytes).context("write out new boot failed")?;
 
-            #[cfg(target_arch = "aarch64")]
+            #[cfg(all(target_arch = "aarch64", target_os = "android"))]
             if kpm {
                 println!("- Applying KPM kernel patch");
                 patch_kpm(&BootPatchKpmArgs {

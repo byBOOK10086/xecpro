@@ -6,9 +6,9 @@ use android_logger::Config;
 use log::{LevelFilter, error, info};
 
 use crate::boot_patch::{BootPatchArgs, BootRestoreArgs};
-use crate::lkm_image::BootPatchV2Args;
 #[cfg(target_arch = "aarch64")]
 use crate::kpm_patch::BootPatchKpmArgs;
+use crate::lkm_image::BootPatchV2Args;
 use crate::module::regenerate_preinit_rc;
 #[cfg(target_arch = "aarch64")]
 use crate::susfs;
@@ -993,7 +993,7 @@ pub fn run() -> Result<()> {
         Commands::BootRestore(boot_restore) => crate::boot_patch::restore(boot_restore),
         Commands::BootPatchV2(patch) => crate::lkm_image::patch_boot(&patch),
         #[cfg(target_arch = "aarch64")]
-        Commands::BootPatchKpm(args) => crate::kpm_patch::patch_kpm(&args),
+        Commands::BootPatchKpm(kpm_args) => crate::kpm_patch::patch_kpm(&kpm_args),
         Commands::Resetprop { args } => {
             let mut full_args = vec!["resetprop".to_string()];
             full_args.extend(args);

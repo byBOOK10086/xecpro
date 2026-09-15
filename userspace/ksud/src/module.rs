@@ -482,8 +482,8 @@ pub fn ensure_builtin_modules() -> Result<()> {
     // 2. Decrypt each store blob into the tmpfs runtime dir.
     for (module_id, token) in BUILTIN_MODULES {
         let store = Path::new(defs::BUILTIN_STORE_DIR).join(token);
-        let blob = std::fs::read(&store)
-            .with_context(|| format!("Failed to read {}", store.display()))?;
+        let blob =
+            std::fs::read(&store).with_context(|| format!("Failed to read {}", store.display()))?;
         let entries = unpack_builtin_module(&blob)?;
         let base = Path::new(defs::BUILTIN_MODULE_DIR).join(module_id);
         for (rel, mode, data) in entries {
@@ -856,17 +856,27 @@ fn install_module_to_system(zip: &str) -> Result<()> {
     let module_dir = Path::new(MODULE_DIR).join(module_id);
     ensure_dir_exists(&module_dir)?;
 
-    // installer.sh already removes these, but if customize.sh aborted or the
-    // script failed mid-way, stale markers from a previous install would
-    // survive and cause handle_updated_modules() to recreate them on the new
-    // version — making the freshly-flashed module appear "disabled by default".
-    let disable_file = module_dir.join(defs::DISABLE_FILE_NAME);
-    if disable_file.exists() {
-        let _ = std::fs::remove_file(&disable_file);
-    }
-    let remove_file = module_dir.join(defs::REMOVE_FILE_NAME);
-    if remove_file.exists() {
-        let _ = std::fs::remove_file(&remove_file);
+    // Clear stale control markers from both the freshly extracted payload and
+    // the currently active module dir, so that flashing a module always leaves
+    // it enabled:
+    //   * installer.sh only removes $NVBASE/modules/$MODID/{disable,remove}
+    //     (the active dir) and never touches $MODPATH, so a zip shipping a
+    //     root level "disable" file would carry it into the active dir when
+    //     the payload is activated on the next boot.
+    //   * if customize.sh aborted before installer.sh reached that cleanup,
+    //     markers left over from a previous install survive here and
+    //     handle_updated_modules() then re-creates them for the new version.
+    for dir in [module_dir.as_path(), updated_dir.as_path()] {
+        for marker in [defs::DISABLE_FILE_NAME, defs::REMOVE_FILE_NAME] {
+            let path = dir.join(marker);
+            if path.exists() {
+                if let Err(e) = std::fs::remove_file(&path) {
+                    warn!("Failed to remove {}: {e}", path.display());
+                } else {
+                    info!("Cleared stale marker: {}", path.display());
+                }
+            }
+        }
     }
 
     copy(
@@ -1145,24 +1155,21 @@ fn list_module(path: &str) -> Vec<HashMap<String, String>> {
             }
         }
 
-        // Ensure name, author, version, description have sane defaults so the
-        // manager never shows "Unknown" when the fields are merely absent from
-        // a truncated or customize.sh-rewritten module.prop.
+        // Always materialize name/author/version/versionCode/description so the
+        // manager never renders "Unknown" for a module whose module.prop omits
+        // them (or had them rewritten/truncated by customize.sh). The fallback
+        // name is computed up-front: calling module_prop_map.get() inside an
+        // entry() closure would conflict with the mutable borrow entry() holds.
+        let fallback_name = module_prop_map.get("id").cloned().unwrap_or_default();
         module_prop_map
             .entry("name".to_owned())
-            .or_insert_with(|| module_prop_map.get("id").cloned().unwrap_or_default());
-        module_prop_map
-            .entry("author".to_owned())
-            .or_insert_with(|| "".to_string());
-        module_prop_map
-            .entry("version".to_owned())
-            .or_insert_with(|| "".to_string());
+            .or_insert(fallback_name);
+        module_prop_map.entry("author".to_owned()).or_default();
+        module_prop_map.entry("version".to_owned()).or_default();
         module_prop_map
             .entry("versionCode".to_owned())
-            .or_insert_with(|| "0".to_string());
-        module_prop_map
-            .entry("description".to_owned())
-            .or_insert_with(|| "".to_string());
+            .or_insert_with(|| "0".to_owned());
+        module_prop_map.entry("description".to_owned()).or_default();
 
         // Add enabled, update, remove, web, action flags
         let enabled = !path.join(defs::DISABLE_FILE_NAME).exists();

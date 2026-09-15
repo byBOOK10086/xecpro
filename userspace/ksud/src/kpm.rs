@@ -1,10 +1,4 @@
-use std::{
-    ffi::OsStr,
-    fs,
-    os::unix::fs::PermissionsExt,
-    path::Path,
-    process::Command,
-};
+use std::{ffi::OsStr, fs, os::unix::fs::PermissionsExt, path::Path, process::Command};
 
 use anyhow::{Context, Result, bail};
 
@@ -64,13 +58,13 @@ where
     P: AsRef<Path>,
 {
     let path = path.as_ref().to_string_lossy();
-    let mut argv: Vec<&str> = vec!["kpm", "load", path.as_ref()];
+    let mut kpm_argv: Vec<&str> = vec!["kpm", "load", path.as_ref()];
     if let Some(a) = args {
         if !a.is_empty() {
-            argv.push(a);
+            kpm_argv.push(a);
         }
     }
-    let out = run_kpm_core(&argv)?;
+    let out = run_kpm_core(&kpm_argv)?;
     let out = out.trim();
     if !out.is_empty() {
         println!("{out}");

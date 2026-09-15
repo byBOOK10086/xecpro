@@ -25,9 +25,13 @@ mod defs;
 mod feature;
 #[cfg(target_os = "android")]
 mod init_event;
-#[cfg(target_arch = "aarch64")]
+// KPM / SuSFS are Android-only: they reach into `crate::utils`,
+// `crate::defs::WORKING_DIR` and the libc-backed susfs helpers, none of which
+// exist for the host-side (macOS / musl) boot-image patcher builds. Keep both
+// conditions so `cargo build` for `aarch64-apple-darwin` stays green.
+#[cfg(all(target_arch = "aarch64", target_os = "android"))]
 mod kpm;
-#[cfg(target_arch = "aarch64")]
+#[cfg(all(target_arch = "aarch64", target_os = "android"))]
 mod kpm_patch;
 #[cfg(target_os = "android")]
 mod ksucalls;
@@ -55,11 +59,11 @@ mod sepolicy;
 mod su;
 #[cfg(target_os = "android")]
 mod sulog;
-#[cfg(target_arch = "aarch64")]
+#[cfg(all(target_arch = "aarch64", target_os = "android"))]
 mod susfs;
-#[cfg(target_arch = "aarch64")]
+#[cfg(all(target_arch = "aarch64", target_os = "android"))]
 mod susfs_config;
-#[cfg(target_arch = "aarch64")]
+#[cfg(all(target_arch = "aarch64", target_os = "android"))]
 mod susfs_module;
 #[cfg(target_os = "android")]
 mod unload;

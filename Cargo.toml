@@ -22,5 +22,5 @@ lto = true
 opt-level = "z"
 panic = "abort"
 
-[profile.release.package.ksud]
+[profile.release.package.xudc]
 codegen-units = 1
