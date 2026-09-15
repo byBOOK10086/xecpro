@@ -88,6 +88,12 @@
     <string name="module_uninstall_failed">Failed to uninstall: %s</string>
     <string name="module_version">Version</string>
     <string name="module_author">Author</string>
+    <string name="module_description">Description</string>
+    <string name="module_update_url">Update URL</string>
+    <string name="webui">WebUi</string>
+    <string name="module_long_press_hint">Long press a module banner for 1 second to view details</string>
+    <string name="module_sheet_capability_hint">Action and WebUi are available only when the module provides them</string>
+    <string name="module_sheet_version_label">Version</string>
     <string name="show_system_apps">Show system apps</string>
     <string name="send_log">Send logs</string>
     <string name="safe_mode">Safe mode</string>
