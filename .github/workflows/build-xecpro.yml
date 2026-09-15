@@ -98,7 +98,52 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          # 不用 android-actions/setup-android：它会无条件执行 `sdkmanager tools`，
+          # 而 Google 已下架 tools 包，导致该 action 必然以 exit 1 收尾并中断 job。
+          # 这里直接复用 runner 镜像自带的 Android SDK + cmdline-tools。
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [ -z "${SDK_ROOT}" ] || [ ! -d "${SDK_ROOT}" ]; then
+            SDK_ROOT=""
+            for d in /usr/local/lib/android/sdk /opt/android-sdk /opt/android "$HOME/Android/Sdk" "$HOME/android-sdk"; do
+              if [ -d "$d" ]; then SDK_ROOT="$d"; break; fi
+            done
+          fi
+          if [ -z "${SDK_ROOT}" ]; then
+            echo "::error::no Android SDK found on this runner"
+            ls -la /usr/local/lib/android 2>/dev/null || true
+            exit 1
+          fi
+          echo "Android SDK root: ${SDK_ROOT}"
+          echo "ANDROID_HOME=${SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${SDK_ROOT}" >> "$GITHUB_ENV"
+
+          SDKMGR="$(find "${SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager 2>/dev/null | sort | tail -n 1)"
+          if [ -z "${SDKMGR}" ]; then
+            echo "::error::sdkmanager not found under ${SDK_ROOT}/cmdline-tools"
+            find /usr/local /opt "$HOME" -maxdepth 5 -type f -name sdkmanager 2>/dev/null | head -n 20 || true
+            exit 1
+          fi
+          echo "sdkmanager: ${SDKMGR}"
+          echo "$(dirname "${SDKMGR}")" >> "$GITHUB_PATH"
+          echo "${SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+
+          # 先接受全部 license，保证 sdkmanager 与 AGP 的自动下载都不会被卡住。
+          yes | "${SDKMGR}" --sdk_root="${SDK_ROOT}" --licenses > /dev/null 2>&1 || true
+
+          # 逐包安装：个别包名即使不存在，也不会中断其余包。
+          for pkg in "platform-tools" "platforms;android-37" "build-tools;37.0.0" "ndk;29.0.14206865"; do
+            echo "--- installing ${pkg}"
+            "${SDKMGR}" --sdk_root="${SDK_ROOT}" --install "${pkg}" \
+              || echo "::warning::sdkmanager could not install '${pkg}'; Gradle will try to auto-download it"
+          done
+
+          ls "${SDK_ROOT}/build-tools" 2>/dev/null || true
+          ls "${SDK_ROOT}/platforms" 2>/dev/null || true
+          ls "${SDK_ROOT}/ndk" 2>/dev/null || true
 
       - name: Build branded manager
         run: |
@@ -122,7 +167,45 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          # 同 build-manager：绕开必然失败的 android-actions/setup-android。
+          # repack 需要 build-tools 的 zipalign/apksigner 与 NDK 的 llvm-strip。
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [ -z "${SDK_ROOT}" ] || [ ! -d "${SDK_ROOT}" ]; then
+            SDK_ROOT=""
+            for d in /usr/local/lib/android/sdk /opt/android-sdk /opt/android "$HOME/Android/Sdk" "$HOME/android-sdk"; do
+              if [ -d "$d" ]; then SDK_ROOT="$d"; break; fi
+            done
+          fi
+          if [ -z "${SDK_ROOT}" ]; then
+            echo "::error::no Android SDK found on this runner"
+            ls -la /usr/local/lib/android 2>/dev/null || true
+            exit 1
+          fi
+          echo "Android SDK root: ${SDK_ROOT}"
+          echo "ANDROID_HOME=${SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${SDK_ROOT}" >> "$GITHUB_ENV"
+
+          SDKMGR="$(find "${SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager 2>/dev/null | sort | tail -n 1)"
+          if [ -z "${SDKMGR}" ]; then
+            echo "::error::sdkmanager not found under ${SDK_ROOT}/cmdline-tools"
+            find /usr/local /opt "$HOME" -maxdepth 5 -type f -name sdkmanager 2>/dev/null | head -n 20 || true
+            exit 1
+          fi
+          echo "sdkmanager: ${SDKMGR}"
+          echo "$(dirname "${SDKMGR}")" >> "$GITHUB_PATH"
+          echo "${SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+
+          yes | "${SDKMGR}" --sdk_root="${SDK_ROOT}" --licenses > /dev/null 2>&1 || true
+
+          for pkg in "platform-tools" "build-tools;37.0.0" "ndk;29.0.14206865"; do
+            echo "--- installing ${pkg}"
+            "${SDKMGR}" --sdk_root="${SDK_ROOT}" --install "${pkg}" \
+              || echo "::warning::sdkmanager could not install '${pkg}'; falling back to whatever the runner already has"
+          done
 
       - name: Download manager artifact
         uses: actions/download-artifact@v8
