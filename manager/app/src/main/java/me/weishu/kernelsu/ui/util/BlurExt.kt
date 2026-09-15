@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -51,6 +52,11 @@ fun rememberBlurBackdrop(enableBlur: Boolean): LayerBackdrop? {
  *
  * @param blurActive 为 `false`（用户关掉模糊、或设备不支持模糊）时玻璃层退化为不透明底色
  *   + 1dp 渐变描边，依旧不是直角色块，也不会让栏体变成半透明。
+ * @param tint 有模糊时的玻璃上覆色。默认取当前明暗档的 [Xc.colors]，需要一根"固定配色"的栏
+ *   （例：首页顶栏的白毛玻璃）时在调用点覆盖。
+ * @param solidTint 不能模糊时的不透明底色。默认取 `surface` 实色 —— 与调用方原本自己画的
+ *   `barColor` 完全一致，叠加后看不出差别；覆盖 [tint] 时通常也要一并覆盖它，
+ *   否则玻璃是白的、关掉模糊后又变回深色。
  */
 @Composable
 fun BlurredBar(
@@ -59,6 +65,8 @@ fun BlurredBar(
     shape: Shape = Xc.shapes.bar,
     inset: Dp = 12.dp,
     blurActive: Boolean = true,
+    tint: Color = Xc.colors.glassTint,
+    solidTint: Color = MiuixTheme.colorScheme.surface.copy(alpha = 1f),
     content: @Composable () -> Unit,
 ) {
     // 栏是压在滚动内容最上层的，一旦半透明，文字就会和下面的列表糊在一起。
@@ -71,7 +79,7 @@ fun BlurredBar(
             .fillMaxWidth()
             .padding(horizontal = inset),
         shape = shape,
-        tint = if (glassOn) Xc.colors.glassTint else MiuixTheme.colorScheme.surface.copy(alpha = 1f),
+        tint = if (glassOn) tint else solidTint,
         glassEnabled = glassOn,
     ) {
         content()

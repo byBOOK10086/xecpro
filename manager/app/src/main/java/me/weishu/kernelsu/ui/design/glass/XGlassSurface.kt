@@ -62,6 +62,10 @@ fun XGlassSurface(
     val shaderSupported = remember { isRuntimeShaderSupported() }
     val active = glassEnabled && backdrop != null
 
+    // 三档降级里，后两档都不能直接用半透明的 tint（会透出窗口黑底，面板塌成黑框），
+    // 需要先合成成不透明实色。算一次，两档共用。
+    val solidTint = if (tint.alpha >= 1f) tint else tint.compositeOver(surface)
+
     val glassModifier = when {
         active && shaderSupported -> Modifier
             .drawBackdrop(
@@ -94,6 +98,9 @@ fun XGlassSurface(
             }
 
         // 回退一档：毛玻璃（RenderEffect，API 31-32）
+        // 混色跟着 tint 走，而不是写死 surface：现有三档令牌下两者完全等价
+        // （半透明 tint 同色系压在 surface 上就是 surface），但"白毛玻璃"那种
+        // 与明暗档无关的 tint 如果写死 surface，在 31/32 上会被糊回深色。
         active -> Modifier
             .textureBlur(
                 backdrop = backdrop!!,
@@ -101,7 +108,7 @@ fun XGlassSurface(
                 blurRadius = 25f,
                 colors = BlurColors(
                     blendColors = listOf(
-                        BlendColorEntry(color = surface.copy(alpha = 0.87f)),
+                        BlendColorEntry(color = solidTint.copy(alpha = 0.87f)),
                     ),
                 ),
             )
@@ -113,13 +120,11 @@ fun XGlassSurface(
         // 直接 background 画上去会透出窗口底色，整块面板就塌成一块「黑框」——
         // 这正是"弹窗/栏变黑方块"的来源。把 tint 合成到不透明的 surface 上，
         // 色相保留、Alpha 归 1，与 `BlurredBar` 的无毛玻璃分支保持一致。
-        else -> {
-            val solid = if (tint.alpha >= 1f) tint else tint.compositeOver(surface)
+        else ->
             Modifier
-                .background(color = solid, shape = shape)
+                .background(color = solidTint, shape = shape)
                 .clipTo(shape)
                 .xGlassRim(shape, rimColor, rim)
-        }
     }
 
     Box(modifier = modifier.then(glassModifier), content = content)

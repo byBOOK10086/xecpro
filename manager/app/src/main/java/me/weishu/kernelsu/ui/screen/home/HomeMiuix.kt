@@ -103,15 +103,12 @@ fun HomePagerMiuix(
     val scrollBehavior = MiuixScrollBehavior()
     val enableBlur = LocalEnableBlur.current
     val backdrop = rememberBlurBackdrop(enableBlur)
-    val blurActive = backdrop != null
-    val barColor = if (blurActive) Color.Transparent else colorScheme.surface.copy(alpha = 1f)
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
             TopBar(
                 scrollBehavior = scrollBehavior,
                 backdrop = backdrop,
-                barColor = barColor,
             )
         },
         popupHost = { },
@@ -230,18 +227,33 @@ private fun UpdateCard(
     }
 }
 
+/**
+ * 首页顶栏：固定"白毛玻璃"。
+ *
+ * 深色档下 [Xc.colors.glassTint] 近黑（`0x8C131A1C`），顶栏在深色内容上就是一条黑带，
+ * 所以这里不跟着明暗档走，改用与档位无关的 [Xc.colors.glassTintWhite]。白底上的
+ * 前景必须一起换：miuix 的 `title`/`largeTitle` 默认取 `onSurface`（深色档是浅色字），
+ * 不覆盖就会白底白字。
+ */
 @Composable
 private fun TopBar(
     scrollBehavior: ScrollBehavior,
     backdrop: LayerBackdrop?,
-    barColor: Color,
 ) {
-    BlurredBar(backdrop) {
+    BlurredBar(
+        backdrop = backdrop,
+        tint = Xc.colors.glassTintWhite,
+        // 设备不支持模糊（或用户关掉）时退化成同一色的不透明底，避免"白玻璃变回深色"。
+        solidTint = Xc.colors.glassTintWhite.copy(alpha = 1f),
+    ) {
         TopAppBar(
-            color = barColor,
+            // 栏底一律由上面那层玻璃画，这里再铺一层就把玻璃盖住了。
+            color = Color.Transparent,
             title = stringResource(R.string.app_name),
+            titleColor = Xc.colors.onGlassTintWhite,
+            largeTitleColor = Xc.colors.onGlassTintWhite,
             actions = {
-                RebootListPopupMiuix()
+                RebootListPopupMiuix(iconTint = Xc.colors.onGlassTintWhite)
             },
             scrollBehavior = scrollBehavior
         )
