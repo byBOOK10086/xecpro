@@ -45,7 +45,18 @@ static int do_grant_root(void __user *arg)
 
 static int do_get_info(void __user *arg)
 {
-    struct ksu_get_info_cmd cmd = { .version = KERNEL_SU_VERSION, .flags = 0 };
+    /*
+     * Zygisk Next probes this ioctl first: a version above its accepted
+     * window marks the root implementation "Abnormal" and disables every
+     * feature. Report the clamped value to anyone that is not the manager
+     * (zygiskd runs as root, not as the manager appid), while the manager
+     * keeps seeing the real build number.
+     */
+    bool mgr = is_manager();
+    struct ksu_get_info_cmd cmd = {
+        .version = mgr ? KERNEL_SU_VERSION : KSU_COMPAT_REPORTED_VERSION,
+        .flags = 0
+    };
 
 #ifdef MODULE
     cmd.flags |= KSU_GET_INFO_FLAG_LKM;
@@ -54,7 +65,7 @@ static int do_get_info(void __user *arg)
     }
 #endif
 
-    if (is_manager()) {
+    if (mgr) {
         cmd.flags |= KSU_GET_INFO_FLAG_MANAGER;
     }
     if (ksu_late_loaded) {
@@ -76,7 +87,12 @@ static int do_get_info(void __user *arg)
 
 static int do_get_info_legacy(void __user *arg)
 {
-    struct ksu_get_info_legacy_cmd cmd = { .version = KERNEL_SU_VERSION, .flags = 0 };
+    /* Same clamping rationale as do_get_info(). */
+    bool mgr = is_manager();
+    struct ksu_get_info_legacy_cmd cmd = {
+        .version = mgr ? KERNEL_SU_VERSION : KSU_COMPAT_REPORTED_VERSION,
+        .flags = 0
+    };
 
 #ifdef MODULE
     cmd.flags |= KSU_GET_INFO_FLAG_LKM;
@@ -85,7 +101,7 @@ static int do_get_info_legacy(void __user *arg)
     }
 #endif
 
-    if (is_manager()) {
+    if (mgr) {
         cmd.flags |= KSU_GET_INFO_FLAG_MANAGER;
     }
     if (ksu_late_loaded) {

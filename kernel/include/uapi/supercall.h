@@ -11,6 +11,23 @@
 // 4: add KSU_GET_INFO_FLAG_BUNDLED
 static const __u32 KERNEL_SU_UAPI_VERSION = 4;
 
+/*
+ * Version reported to *non-manager* callers through the root-detection
+ * interfaces (ioctl KSU_IOCTL_GET_INFO / legacy prctl CMD_GET_VERSION).
+ *
+ * This fork reports KERNEL_SU_VERSION >= 30000, but Zygisk Next only accepts
+ * KernelSU versions inside [10940, 20000] (its build-time minKsuVersion /
+ * maxKsuVersion window). Anything above the upper bound is classified as
+ * "Abnormal" and *every* feature - the denylist included - is silently
+ * disabled, which surfaces to the user as "Zygisk 无法识别 root 实现".
+ *
+ * 11999 sits safely inside that window (deliberately below 20000 so we stay
+ * clear of strict upper-bound checks). Only non-manager callers are clamped:
+ * the manager app still receives the real KERNEL_SU_VERSION so its about
+ * screen keeps showing the true build.
+ */
+static const __u32 KSU_COMPAT_REPORTED_VERSION = 11999;
+
 /* Magic numbers for reboot hook to install fd */
 static const __u32 KSU_INSTALL_MAGIC1 = 0xDEADBEEF;
 static const __u32 KSU_INSTALL_MAGIC2 = 0xCAFEBABE;

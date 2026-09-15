@@ -143,7 +143,13 @@ pub fn get_common_script_envs(module_id: Option<&str>) -> Vec<(&'static str, Str
     let mut envs = vec![
         ("ASH_STANDALONE", "1".to_string()),
         ("KSU", "true".to_string()),
-        ("KSU_KERNEL_VER_CODE", ksucalls::get_version().to_string()),
+        // The kernel deliberately reports a Zygisk-Next-compatible version code
+        // (KSU_COMPAT_REPORTED_VERSION) to every non-manager caller, so the live
+        // value must not leak into module scripts: modules would conclude they
+        // run on an ancient kernel and silently disable their modern code paths.
+        // ksud and the kernel always come from the same build, so the compile
+        // time code is the truthful number here.
+        ("KSU_KERNEL_VER_CODE", defs::VERSION_CODE.to_string()),
         ("KSU_VER_CODE", defs::VERSION_CODE.to_string()),
         ("KSU_VER", defs::VERSION_NAME.to_string()),
         ("KSU_UAPI_VER", ksucalls::uapi_version().to_string()),

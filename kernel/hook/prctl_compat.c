@@ -32,15 +32,15 @@
 #define CMD_GET_VERSION 2
 #define CMD_UID_GRANTED_ROOT 12
 #define CMD_UID_SHOULD_UMOUNT 13
+#define CMD_GET_MANAGER_UID 16
 
 /*
- * Zygisk Next accepts KernelSU versions in [10940, 20000]; anything above is
- * classified as "Abnormal" and every feature (denylist included) is disabled.
- * This fork's KERNEL_SU_VERSION is >= 30000, so report a clamped value that
- * stays firmly inside the supported window. 11999 is used instead of 20000 to
- * stay clear of the upper bound (off-by-one / strict-upper checks in ZN).
+ * Version reported to Zygisk Next. ZN accepts KernelSU versions in
+ * [10940, 20000]; anything above is classified as "Abnormal" and every
+ * feature (denylist included) is disabled. KSU_COMPAT_REPORTED_VERSION is
+ * shared with the ioctl path so both interfaces agree on the same value.
  */
-#define PRCTL_COMPAT_KSU_VERSION 11999
+#define PRCTL_COMPAT_KSU_VERSION KSU_COMPAT_REPORTED_VERSION
 
 static long ksu_handle_prctl(unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5)
 {
@@ -60,10 +60,52 @@ static long ksu_handle_prctl(unsigned long arg2, unsigned long arg3, unsigned lo
 #ifdef MODULE
             version_flags |= KSU_GET_INFO_FLAG_LKM;
 #endif
+            /*
+             * Keep the flag set consistent with the ioctl path: if the manager
+             * itself ever falls back to this legacy interface it must still be
+             * recognised as the manager (otherwise its UI loses every
+             * privileged capability).
+             */
+            if (is_manager()) {
+                version_flags |= KSU_GET_INFO_FLAG_MANAGER;
+            }
             if (copy_to_user((void __user *)arg4, &version_flags, sizeof(version_flags))) {
                 pr_err("prctl compat: GET_VERSION flags copy err\n");
                 return -EFAULT;
             }
+        }
+        /*
+         * This write-back is what ZN actually tests for: it calls
+         * prctl(0xdeadbeef, CMD_GET_VERSION, &version, &flags, &reply) and
+         * treats the call as successful only when the kernel echoed the
+         * magic into the 5th argument. Without it ZN concludes "no KernelSU
+         * found" even though the version itself was copied correctly.
+         */
+        if (arg5 && copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
+            pr_err("prctl compat: GET_VERSION reply copy err\n");
+            return -EFAULT;
+        }
+        return 0;
+    }
+    case CMD_GET_MANAGER_UID: {
+        /* ZN needs the manager appid to keep it out of the denylist. */
+        u32 manager_uid = 0;
+
+        if (ksu_is_manager_appid_valid()) {
+            manager_uid = (u32)ksu_get_manager_appid() * (u32)KSU_PER_USER_RANGE;
+        }
+
+        if (!arg3) {
+            pr_err("prctl compat: GET_MANAGER_UID null arg\n");
+            return -EINVAL;
+        }
+        if (copy_to_user((void __user *)arg3, &manager_uid, sizeof(manager_uid))) {
+            pr_err("prctl compat: GET_MANAGER_UID copy err\n");
+            return -EFAULT;
+        }
+        if (arg5 && copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
+            pr_err("prctl compat: GET_MANAGER_UID reply copy err\n");
+            return -EFAULT;
         }
         return 0;
     }
