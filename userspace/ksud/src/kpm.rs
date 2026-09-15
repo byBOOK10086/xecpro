@@ -59,10 +59,10 @@ where
 {
     let path = path.as_ref().to_string_lossy();
     let mut kpm_argv: Vec<&str> = vec!["kpm", "load", path.as_ref()];
-    if let Some(a) = args {
-        if !a.is_empty() {
-            kpm_argv.push(a);
-        }
+    if let Some(a) = args
+        && !a.is_empty()
+    {
+        kpm_argv.push(a);
     }
     let out = run_kpm_core(&kpm_argv)?;
     let out = out.trim();
@@ -87,8 +87,8 @@ pub fn unload_module(name: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn info(name: String) -> Result<()> {
-    let out = run_kpm_core(&["kpm", "info", &name])?;
+pub fn info(name: &str) -> Result<()> {
+    let out = run_kpm_core(&["kpm", "info", name])?;
     print!("{out}");
     Ok(())
 }
