@@ -925,7 +925,7 @@ fun ModuleItem(
                         if (!change.pressed) {
                             animationJob?.cancel()
                             scope.launch { progress.snapTo(0f) }
-                            if (!longPressFired && !change.consumed && module.hasWebUi) {
+                            if (!longPressFired && !change.isConsumed && module.hasWebUi) {
                                 onOpenWebUi()
                             }
                             isPressed = false
