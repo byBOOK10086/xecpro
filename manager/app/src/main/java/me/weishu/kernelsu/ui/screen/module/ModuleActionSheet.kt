@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -373,7 +374,7 @@ private fun RowScope.SheetActionButton(
 
     // `filter: grayscale(.6)`：能力不满足时整体褪色，而不是只降透明度。
     fun dim(color: Color): Color =
-        if (enabled) color else Color.lerp(color, Color.Gray, 0.6f)
+        if (enabled) color else lerp(color, Color.Gray, 0.6f)
 
     val borderColor = dim(
         when {

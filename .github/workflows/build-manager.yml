@@ -236,11 +236,39 @@ jobs:
           ls "${SDK_ROOT}/ndk" 2>/dev/null || true
 
       - name: Build with Gradle
+        shell: bash
         run: |
+          set -uo pipefail
+
+          GRADLE_EXTRA=""
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            ./gradlew clean assembleRelease -PIS_PR_BUILD=true
-          else
-            ./gradlew clean assembleRelease
+            GRADLE_EXTRA="-PIS_PR_BUILD=true"
+          fi
+
+          # 日志同时落盘。kotlinc / javac 的诊断行不会被 runner 自动上报，
+          # 构建一失败就只剩一句 "exit code 1"，从 Actions 页面之外（例如
+          # check-runs/annotations API）完全看不出是哪一行代码错的。
+          # 这里把关键诊断行转成 annotation，让报错跟着 check run 一起暴露出来。
+          set +e
+          ./gradlew clean assembleRelease ${GRADLE_EXTRA} 2>&1 | tee /tmp/gradle-build.log
+          STATUS="${PIPESTATUS[0]}"
+
+          if [ "${STATUS}" -ne 0 ]; then
+            echo "===== Gradle failed with exit ${STATUS} ====="
+            emit() {
+              while IFS= read -r l; do
+                l="${l%$'\r'}"
+                l="${l//'%'/'%25'}"
+                echo "::error::${l}"
+              done
+            }
+            # 1) 编译器与 Gradle 的关键诊断行（前面带行号，便于定位日志位置）
+            grep -nE "(^|[[:space:]])[ew]: |error:|What went wrong|Execution failed for task|Could not (find|resolve|determine|create)|Caused by|SDK location" \
+              /tmp/gradle-build.log | head -n 25 | emit
+            # 2) 兜底：日志末尾通常就是根因所在
+            tail -n 20 /tmp/gradle-build.log | emit
+            echo "===== end of diagnostics ====="
+            exit "${STATUS}"
           fi
 
       - name: Upload build artifact
