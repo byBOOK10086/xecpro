@@ -58,6 +58,90 @@ fun XGlassSurface(
     glassEnabled: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    Box(
+        modifier = modifier.xGlassLayer(
+            backdrop = backdrop,
+            shape = shape,
+            tint = tint,
+            blurRadius = blurRadius,
+            refraction = refraction,
+            rimColor = rimColor,
+            rim = rim,
+            innerHighlight = innerHighlight,
+            glassEnabled = glassEnabled,
+        ),
+        content = content,
+    )
+}
+
+/**
+ * 玻璃**卡体**：把一枚 miuix `Card` 的实心底换成真玻璃。
+ *
+ * 和 [xGlassRim] 的关系：`xGlassRim` 只画那一圈 1dp 渐变亮边，卡体实色仍由 miuix
+ * `Card` 自己铺 —— 所以引擎再强，卡片上也看不到折射。本函数把「卡体」也接进玻璃管线，
+ * 亮边由内部一并画出，**调用点不要再叠 `.xGlassRim(...)`**。
+ *
+ * 用法（两件事必须同时做，少一件就看不到玻璃）：
+ *
+ * ```
+ * Card(
+ *     modifier = modifier.xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+ *     // 必要：miuix Card 的底色画在 modifier 链内侧，不清空就会盖住玻璃与亮边
+ *     colors = CardDefaults.defaultColors(color = Color.Transparent),
+ * ) { ... }
+ * ```
+ *
+ * @param backdrop 页面级 `rememberBlurBackdrop` 的产物。为 `null`（设备不支持 /
+ *   用户关掉模糊 / 预览）时自动降到不透明实色 + 亮边，与 [XGlassSurface] 同一套兜底。
+ * @param tint 玻璃上覆色。默认沿用 `glassTint`；语义色卡片可传同色系的低透明度版本，
+ *   例如状态卡的 `Xc.colors.success.copy(alpha = 0.22f)` —— 传不透明的 `successTint`
+ *   会把折射整个遮死。
+ */
+@Composable
+internal fun Modifier.xGlassBody(
+    backdrop: LayerBackdrop?,
+    shape: Shape = Xc.shapes.md,
+    tint: Color = Xc.colors.glassTint,
+    blurRadius: Dp = 8.dp,
+    refraction: Dp = 20.dp,
+    rimColor: Color = Xc.colors.glassRim,
+    rim: Boolean = true,
+    innerHighlight: Boolean = true,
+    glassEnabled: Boolean = true,
+): Modifier = this.xGlassLayer(
+    backdrop = backdrop,
+    shape = shape,
+    tint = tint,
+    blurRadius = blurRadius,
+    refraction = refraction,
+    rimColor = rimColor,
+    rim = rim,
+    innerHighlight = innerHighlight,
+    glassEnabled = glassEnabled,
+)
+
+/**
+ * 玻璃绘制的**唯一实现**：三档降级链。
+ *
+ * 之所以抽屉成一个函数，是因为卡片、栏、弹层必须逐像素同源 —— 各写一份必然漂移，
+ * 而"某处玻璃看起来不一样"这种问题几乎无法定位。所有玻璃入口
+ * （[XGlassSurface] / [xGlassBody]）都只是把参数原样转交到这里。
+ *
+ * 顺序上它必须挂在调用方 `modifier` 的**内侧**：外层的 `padding` 决定玻璃贴哪条边，
+ * 内层的 `clip` 才把折射外扩出的取样区裁回圆角。
+ */
+@Composable
+private fun Modifier.xGlassLayer(
+    backdrop: LayerBackdrop?,
+    shape: Shape,
+    tint: Color,
+    blurRadius: Dp,
+    refraction: Dp,
+    rimColor: Color,
+    rim: Boolean,
+    innerHighlight: Boolean,
+    glassEnabled: Boolean,
+): Modifier {
     val surface = Xc.colors.surface
     val shaderSupported = remember { isRuntimeShaderSupported() }
     val active = glassEnabled && backdrop != null
@@ -66,8 +150,8 @@ fun XGlassSurface(
     // 需要先合成成不透明实色。算一次，两档共用。
     val solidTint = if (tint.alpha >= 1f) tint else tint.compositeOver(surface)
 
-    val glassModifier = when {
-        active && shaderSupported -> Modifier
+    return when {
+        active && shaderSupported -> this
             .drawBackdrop(
                 backdrop = backdrop!!,
                 shape = { shape },
@@ -101,7 +185,7 @@ fun XGlassSurface(
         // 混色跟着 tint 走，而不是写死 surface：现有三档令牌下两者完全等价
         // （半透明 tint 同色系压在 surface 上就是 surface），但"白毛玻璃"那种
         // 与明暗档无关的 tint 如果写死 surface，在 31/32 上会被糊回深色。
-        active -> Modifier
+        active -> this
             .textureBlur(
                 backdrop = backdrop!!,
                 shape = shape,
@@ -121,13 +205,11 @@ fun XGlassSurface(
         // 这正是"弹窗/栏变黑方块"的来源。把 tint 合成到不透明的 surface 上，
         // 色相保留、Alpha 归 1，与 `BlurredBar` 的无毛玻璃分支保持一致。
         else ->
-            Modifier
+            this
                 .background(color = solidTint, shape = shape)
                 .clipTo(shape)
                 .xGlassRim(shape, rimColor, rim)
     }
-
-    Box(modifier = modifier.then(glassModifier), content = content)
 }
 
 /**
@@ -143,8 +225,10 @@ private fun Modifier.clipTo(shape: Shape): Modifier = this.clip(shape)
  * 玻璃边：上亮下暗的 1dp 渐变描边。
  * 比纯色描边贵不了多少，但能立刻把"一块半透明色"变成"一片玻璃"。
  *
- * 公开给各屏的 `Card` 用 —— 它们大多是 miuix `Card`，圆角由 miuix 自己裁，
- * 缺的就是这圈亮边，所以这里只需要一个 `shape`：`.xGlassRim(Xc.shapes.md)`。
+ * 它是 [xGlassLayer] 内部三档共用的收尾（所以玻璃体自己就带边框），另留给
+ * 「卡体暂时还不是玻璃」的调用点直接挂 —— 圆角由 miuix `Card` 自己裁，
+ * 缺的就是这圈亮边，因此只需要一个 `shape`：`.xGlassRim(Xc.shapes.md)`。
+ * 卡体也要换成真玻璃时改用 [xGlassBody]，两边不要同时挂，亮边会叠成两层。
  * `rimColor` / `rim` 留默认值正是为了这个单参数用法；需要临时关掉亮边时
  * 才显式传 `rim = false`。
  */

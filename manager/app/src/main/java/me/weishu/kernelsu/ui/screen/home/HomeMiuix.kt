@@ -68,7 +68,7 @@ import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
 import me.weishu.kernelsu.ui.component.miuix.WarningCard
 import me.weishu.kernelsu.ui.component.rebootlistpopup.RebootListPopupMiuix
 import me.weishu.kernelsu.ui.component.statustag.StatusTag
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -170,15 +170,18 @@ fun HomePagerMiuix(
                         StatusCard(
                             state = state,
                             actions = actions,
+                            backdrop = backdrop,
                         )
                         InfoCard(
                             systemInfo = state.systemInfo,
                             downloadCount = state.latestVersionInfo.downloadCount,
                             modifier = Modifier.fillMaxWidth(),
+                            backdrop = backdrop,
                         )
                         SupportLinks(
                             onOpenUrl = actions.onOpenUrl,
                             modifier = Modifier.fillMaxWidth(),
+                            backdrop = backdrop,
                         )
                         Spacer(
                             Modifier.height(
@@ -261,10 +264,18 @@ private fun TopBar(
     }
 }
 
+/**
+ * 首页状态卡。
+ *
+ * `backdrop` 由 `HomePagerMiuix` 透传（本组件是 private，自己拿不到页面级那一份）。
+ * 默认 `null`，所以各处 `@Preview` 与任何旧调用点都不必改：为 `null` 时玻璃自动降级成
+ * 不透明实色 + 亮边，预览里也不会去构造 AGSL 着色器。
+ */
 @Composable
 private fun StatusCard(
     state: HomeUiState,
     actions: HomeActions,
+    backdrop: LayerBackdrop? = null,
 ) {
     Column {
         when {
@@ -290,9 +301,21 @@ private fun StatusCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Card(
-                        modifier = Modifier.fillMaxWidth().xGlassRim(Xc.shapes.md),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            // 语义色改从 tint 走。不能直接传不透明的 `successTint`：那是
+                            // "实色压 surface" 合成出来的纯色，盖在模糊之上会把折射遮死。
+                            // 传同色相的低透明度版本，有玻璃时是 22% 的绿压在模糊画面上；
+                            // 没玻璃时 `compositeOver(surface)` 复合回正好是原来的 successTint。
+                            .xGlassBody(
+                                backdrop = backdrop,
+                                shape = Xc.shapes.md,
+                                tint = Xc.colors.success.copy(alpha = if (Xc.colors.isDark) 0.22f else 0.15f),
+                            ),
                         colors = CardDefaults.defaultColors(
-                            color = Xc.colors.successTint
+                            // 卡底必须透明：miuix Card 的底色画在本 modifier 链内侧，
+                            // 留着就会把玻璃与亮边一起盖住。
+                            color = Color.Transparent
                         ),
                         onClick = {
                             if (!state.isLateLoadMode) {
@@ -378,7 +401,10 @@ private fun StatusCard(
             state.kernelVersion.isGKI() -> {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Card(
-                        modifier = Modifier.weight(1f).xGlassRim(Xc.shapes.md),
+                        modifier = Modifier
+                            .weight(1f)
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                         onClick = {
                             if (!state.isLateLoadMode) {
                                 actions.onInstallClick()
@@ -414,7 +440,8 @@ private fun StatusCard(
 
             else -> {
                 Card(
-                    modifier = Modifier.xGlassRim(Xc.shapes.md),
+                    modifier = Modifier.xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                    colors = CardDefaults.defaultColors(color = Color.Transparent),
                     onClick = {
                         if (!state.isLateLoadMode) {
                             actions.onInstallClick()
@@ -445,11 +472,15 @@ private fun StatusCard(
 private fun SupportLinks(
     onOpenUrl: (String) -> Unit,
     modifier: Modifier = Modifier,
+    backdrop: LayerBackdrop? = null,
 ) {
     val learnMoreUrl = stringResource(R.string.home_learn_kernelsu_url)
     var showDevelopers by remember { mutableStateOf(false) }
 
-    Card(modifier = modifier.xGlassRim(Xc.shapes.md)) {
+    Card(
+        modifier = modifier.xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+        colors = CardDefaults.defaultColors(color = Color.Transparent),
+    ) {
         ArrowPreference(
             title = stringResource(R.string.home_support_title),
             summary = stringResource(R.string.home_support_content),
@@ -506,6 +537,7 @@ private fun InfoCard(
     systemInfo: SystemInfo,
     downloadCount: Long = 0,
     modifier: Modifier = Modifier,
+    backdrop: LayerBackdrop? = null,
 ) {
     @Composable
     fun InfoText(
@@ -563,7 +595,12 @@ private fun InfoCard(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Card(modifier = Modifier.fillMaxWidth().xGlassRim(Xc.shapes.md)) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+            colors = CardDefaults.defaultColors(color = Color.Transparent),
+        ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 InfoText(
                     icon = Icons.Filled.Tag,
@@ -595,7 +632,12 @@ private fun InfoCard(
                 )
             }
         }
-        Card(modifier = Modifier.fillMaxWidth().xGlassRim(Xc.shapes.md)) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+            colors = CardDefaults.defaultColors(color = Color.Transparent),
+        ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 InfoText(
                     icon = Icons.Filled.Security,

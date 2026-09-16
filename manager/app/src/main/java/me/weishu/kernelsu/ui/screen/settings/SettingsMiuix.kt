@@ -44,12 +44,13 @@ import me.weishu.kernelsu.ui.component.KsuIsValid
 import me.weishu.kernelsu.ui.component.dialog.rememberLoadingDialog
 import me.weishu.kernelsu.ui.component.miuix.SendLogDialog
 import me.weishu.kernelsu.ui.component.uninstalldialog.UninstallDialog
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -111,7 +112,8 @@ fun SettingPagerMiuix(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth()
-                            .xGlassRim(Xc.shapes.md),
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_check_update),
@@ -149,7 +151,8 @@ fun SettingPagerMiuix(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth()
-                            .xGlassRim(Xc.shapes.md),
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         ArrowPreference(
                             title = stringResource(id = R.string.settings_theme),
@@ -171,7 +174,8 @@ fun SettingPagerMiuix(
                             modifier = Modifier
                                 .padding(top = 12.dp)
                                 .fillMaxWidth()
-                                .xGlassRim(Xc.shapes.md),
+                                .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                            colors = CardDefaults.defaultColors(color = Color.Transparent),
                         ) {
                             val profileTemplate = stringResource(id = R.string.settings_profile_template)
                             ArrowPreference(
@@ -195,7 +199,8 @@ fun SettingPagerMiuix(
                             modifier = Modifier
                                 .padding(top = 12.dp)
                                 .fillMaxWidth()
-                                .xGlassRim(Xc.shapes.md),
+                                .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                            colors = CardDefaults.defaultColors(color = Color.Transparent),
                         ) {
                             val suCompatModeItems = listOf(
                                 stringResource(id = R.string.settings_mode_enable_by_default),
@@ -329,7 +334,8 @@ fun SettingPagerMiuix(
                             modifier = Modifier
                                 .padding(top = 12.dp)
                                 .fillMaxWidth()
-                                .xGlassRim(Xc.shapes.md),
+                                .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                            colors = CardDefaults.defaultColors(color = Color.Transparent),
                         ) {
                             SwitchPreference(
                                 title = stringResource(id = R.string.settings_umount_modules_default),
@@ -383,7 +389,8 @@ fun SettingPagerMiuix(
                             modifier = Modifier
                                 .padding(top = 12.dp)
                                 .fillMaxWidth()
-                                .xGlassRim(Xc.shapes.md),
+                                .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                            colors = CardDefaults.defaultColors(color = Color.Transparent),
                         ) {
                             val uninstall = stringResource(id = R.string.settings_uninstall)
                             ArrowPreference(
@@ -410,7 +417,8 @@ fun SettingPagerMiuix(
                         modifier = Modifier
                             .padding(vertical = 12.dp)
                             .fillMaxWidth()
-                            .xGlassRim(Xc.shapes.md),
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         ArrowPreference(
                             title = stringResource(id = R.string.send_log),
