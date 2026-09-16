@@ -67,7 +67,7 @@ import com.materialkolor.rememberDynamicColorScheme
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.bottombar.useNavigationRail
 import me.weishu.kernelsu.ui.component.miuix.ScaleDialog
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.design.token.XcRadius
 import me.weishu.kernelsu.ui.design.token.xcColorsFor
@@ -76,6 +76,7 @@ import me.weishu.kernelsu.ui.theme.keyColorOptions
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -181,7 +182,8 @@ fun ColorPaletteScreenMiuix(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth()
-                            .xGlassRim(Xc.shapes.md),
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_monet),
@@ -288,7 +290,8 @@ fun ColorPaletteScreenMiuix(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth()
-                            .xGlassRim(Xc.shapes.md),
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             SwitchPreference(
@@ -364,7 +367,8 @@ fun ColorPaletteScreenMiuix(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth()
-                            .xGlassRim(Xc.shapes.md),
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                             SwitchPreference(

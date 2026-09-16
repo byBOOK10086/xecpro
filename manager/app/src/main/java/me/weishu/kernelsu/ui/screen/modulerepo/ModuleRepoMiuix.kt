@@ -85,7 +85,7 @@ import me.weishu.kernelsu.ui.component.miuix.SearchBarFake
 import me.weishu.kernelsu.ui.component.miuix.SearchBox
 import me.weishu.kernelsu.ui.component.miuix.SearchPager
 import me.weishu.kernelsu.ui.component.miuix.deferredTopPadding
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
@@ -94,6 +94,7 @@ import me.weishu.kernelsu.ui.util.download
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import me.weishu.kernelsu.ui.util.rememberContentReady
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -266,7 +267,8 @@ fun ModuleRepoScreenMiuix(
                                 .fillMaxWidth()
                                 .padding(horizontal = 12.dp)
                                 .padding(bottom = 12.dp)
-                                .xGlassRim(Xc.shapes.md),
+                                .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                            colors = CardDefaults.defaultColors(color = Color.Transparent),
                             insideMargin = PaddingValues(16.dp),
                             showIndication = true,
                             pressFeedbackType = PressFeedbackType.Sink,
@@ -441,7 +443,8 @@ fun ModuleRepoScreenMiuix(
                                         .fillMaxWidth()
                                         .padding(horizontal = 12.dp)
                                         .padding(bottom = 12.dp)
-                                        .xGlassRim(Xc.shapes.md),
+                                        .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                                    colors = CardDefaults.defaultColors(color = Color.Transparent),
                                     insideMargin = PaddingValues(16.dp),
                                     showIndication = true,
                                     onClick = { actions.onOpenRepoDetail(module) }) {
@@ -661,7 +664,8 @@ fun ReleasesPage(
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp)
                             .padding(bottom = 12.dp)
-                            .xGlassRim(Xc.shapes.md)
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         Column {
                             Row(
@@ -934,7 +938,8 @@ fun InfoPage(
                         text = stringResource(R.string.module_author), modifier = Modifier.padding(top = 6.dp)
                     )
                     Card(
-                        modifier = Modifier.padding(horizontal = 12.dp).xGlassRim(Xc.shapes.md),
+                        modifier = Modifier.padding(horizontal = 12.dp).xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                         insideMargin = PaddingValues(16.dp)
                     ) {
                         Column {
@@ -990,7 +995,8 @@ fun InfoPage(
                             .fillMaxWidth()
                             .padding(horizontal = 12.dp)
                             .padding(bottom = 12.dp)
-                            .xGlassRim(Xc.shapes.md),
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                         insideMargin = PaddingValues(16.dp)
                     ) {
                         Row(

@@ -29,6 +29,7 @@ internal data class InstallScreenActions(
     val onDownloadFile: () -> Unit,
     val onSelectBootImage: () -> Unit,
     val onSelectBootImageForKpm: () -> Unit,
+    val onSelectAnyKernel: () -> Unit,
     val onUploadLkm: () -> Unit,
     val onClearLkm: () -> Unit,
     val onSelectPartition: (Int) -> Unit,

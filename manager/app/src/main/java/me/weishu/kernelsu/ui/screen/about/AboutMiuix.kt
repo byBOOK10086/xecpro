@@ -60,8 +60,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.onEach
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.miuix.effect.BgEffectBackground
-import me.weishu.kernelsu.ui.component.miuix.effect.ColorBlendToken
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.theme.isInDarkTheme
@@ -187,10 +186,6 @@ private fun AboutContent(
     val effectBackground =
         remember(enableBlur) { isRuntimeShaderSupported() && enableBlur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM }
 
-    val blendColors = remember(isInDark) {
-        if (isInDark) ColorBlendToken.Overlay_Thin_Light
-        else ColorBlendToken.Pured_Regular_Light
-    }
     val logoBlend = remember(isInDark) {
         if (isInDark) {
             listOf(
@@ -421,22 +416,8 @@ private fun AboutContent(
                     Card(
                         modifier = Modifier
                             .padding(horizontal = 12.dp)
-                            .xGlassRim(Xc.shapes.md)
-                            .then(
-                                if (enableBlur) {
-                                    Modifier.textureBlur(
-                                        backdrop = backdrop,
-                                        shape = Xc.shapes.md,
-                                        blurRadius = 60f,
-                                        colors = BlurColors(blendColors = blendColors),
-                                        enabled = true,
-                                    )
-                                } else Modifier
-                            ),
-                        colors = CardDefaults.defaultColors(
-                            if (enableBlur) Color.Transparent else colorScheme.surfaceContainer,
-                            Color.Transparent,
-                        ),
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         state.links.forEach {
                             ArrowPreference(

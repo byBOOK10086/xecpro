@@ -13,6 +13,41 @@ use rustix::process::chdir;
 use std::path::Path;
 use std::process::Command;
 
+/// Provision the built-in modules: extract the bundled binaries they are
+/// executed with, materialize them into the RAM-only module dir and apply their
+/// SELinux rules.
+fn provision_builtin_modules() {
+    // Built-in scripts run through the bundled busybox, so the binaries have to
+    // be extracted before any of them runs.
+    if let Err(e) = assets::ensure_binaries(true) {
+        warn!("Failed to extract bin assets: {e}");
+    }
+
+    if let Err(e) = crate::module::ensure_builtin_modules() {
+        warn!("ensure built-in modules failed: {e}");
+    }
+
+    if crate::module::load_builtin_sepolicy_rule().is_err() {
+        warn!("load built-in sepolicy.rule failed");
+    }
+}
+
+/// Run the built-in modules' `<stage>.sh` scripts.
+///
+/// Only used on paths where the regular module pipeline is deliberately skipped
+/// because an external Magisk installation was detected. Built-in modules are
+/// shipped by this kernel itself, so leaving them on that skip path silently
+/// disables Zygisk whenever a stray `magisk` binary happens to be in PATH.
+fn exec_builtin_stage(stage: &str, block: bool) {
+    if stage == "post-fs-data" {
+        provision_builtin_modules();
+    }
+
+    if let Err(e) = crate::module::exec_builtin_stage_script(stage, block) {
+        warn!("Failed to exec built-in {stage} scripts: {e}");
+    }
+}
+
 pub fn on_post_data_fs() -> Result<()> {
     if let Err(e) = ksucalls::ensure_uapi_version_matched() {
         error!("{e:#}, skip on_post_fs_data");
@@ -46,8 +81,14 @@ pub fn on_post_data_fs() -> Result<()> {
     #[cfg(unix)]
     let _ = catch_bootlog("dmesg", &["dmesg", "-w", "-r"]);
 
-    if utils::has_magisk() {
+    if utils::has_magisk_installed() {
         warn!("Magisk detected, skip post-fs-data!");
+        // Built-in modules belong to this kernel, not to Magisk: they still have
+        // to be provisioned and started, otherwise a stray `magisk` binary in
+        // PATH silently disables Zygisk for the whole boot.
+        if !crate::utils::is_safe_mode() {
+            exec_builtin_stage("post-fs-data", true);
+        }
         return Ok(());
     }
 
@@ -148,13 +189,16 @@ pub fn on_post_data_fs() -> Result<()> {
 pub fn run_stage(stage: &str, block: bool) {
     utils::umask(0);
 
-    if utils::has_magisk() {
-        warn!("Magisk detected, skip {stage}");
+    if crate::utils::is_safe_mode() {
+        warn!("safe mode, skip {stage} scripts");
         return;
     }
 
-    if crate::utils::is_safe_mode() {
-        warn!("safe mode, skip {stage} scripts");
+    if utils::has_magisk_installed() {
+        warn!("Magisk detected, skip {stage}");
+        // Built-in modules ship with this kernel and must not be skipped along
+        // with the external Magisk module pipeline (see `exec_builtin_stage`).
+        exec_builtin_stage(stage, block);
         return;
     }
 

@@ -56,7 +56,7 @@ import me.weishu.kernelsu.ui.component.profile.AppProfileConfig
 import me.weishu.kernelsu.ui.component.profile.RootProfileConfig
 import me.weishu.kernelsu.ui.component.profile.TemplateConfig
 import me.weishu.kernelsu.ui.component.statustag.StatusTag
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -67,6 +67,7 @@ import me.weishu.kernelsu.ui.util.setSepolicy
 import me.weishu.kernelsu.ui.viewmodel.SuperUserViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
@@ -175,6 +176,7 @@ fun AppProfileScreenMiuix(
 @Composable
 private fun AppProfileInner(
     modifier: Modifier = Modifier,
+    backdrop: LayerBackdrop? = null,
     packageName: String,
     appLabel: String,
     appIcon: @Composable (() -> Unit),
@@ -203,7 +205,8 @@ private fun AppProfileInner(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .padding(bottom = 12.dp)
-                .xGlassRim(Xc.shapes.md),
+                .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+            colors = CardDefaults.defaultColors(color = Color.Transparent),
             insideMargin = PaddingValues(start = 12.dp, end = 16.dp, top = 10.dp, bottom = 10.dp)
         ) {
             Row(
@@ -313,7 +316,8 @@ private fun AppProfileInner(
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
                     .padding(bottom = 12.dp)
-                    .xGlassRim(Xc.shapes.md),
+                    .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                colors = CardDefaults.defaultColors(color = Color.Transparent),
             ) {
                 SwitchPreference(
                     startAction = {
@@ -343,7 +347,7 @@ private fun AppProfileInner(
         }
         val nonRootMode = if (profile.nonRootUseDefault) Mode.Default else Mode.Custom
         val dropdownMode = if (isRootGranted) rootMode else nonRootMode
-        ProfileBox(dropdownMode, isRootGranted) { mode ->
+        ProfileBox(dropdownMode, isRootGranted, backdrop = backdrop) { mode ->
             if (isRootGranted) {
                 when (mode) {
                     Mode.Default, Mode.Custom -> {
@@ -401,7 +405,8 @@ private fun AppProfileInner(
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
                     .padding(bottom = if (rootMode != Mode.Default) 12.dp else 0.dp)
-                    .xGlassRim(Xc.shapes.md),
+                    .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                colors = CardDefaults.defaultColors(color = Color.Transparent),
             ) {
                 AnimatedVisibility(
                     visible = rootMode == Mode.Template,
@@ -439,7 +444,8 @@ private fun AppProfileInner(
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
                     .padding(bottom = if (nonRootMode != Mode.Default) 12.dp else 0.dp)
-                    .xGlassRim(Xc.shapes.md),
+                    .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                colors = CardDefaults.defaultColors(color = Color.Transparent),
             ) {
                 AnimatedVisibility(
                     visible = nonRootMode == Mode.Custom,
@@ -466,7 +472,8 @@ private fun AppProfileInner(
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp)
                     .padding(bottom = 12.dp)
-                    .xGlassRim(Xc.shapes.md),
+                    .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                colors = CardDefaults.defaultColors(color = Color.Transparent),
             ) {
                 Spacer(Modifier.height(3.dp))
                 affectedApps.forEach { app ->
@@ -578,6 +585,7 @@ private fun TopBar(
 private fun ProfileBox(
     mode: Mode,
     hasTemplate: Boolean,
+    backdrop: LayerBackdrop? = null,
     onModeChange: (Mode) -> Unit,
 ) {
     val defaultText = stringResource(R.string.profile_default)
@@ -608,7 +616,8 @@ private fun ProfileBox(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .xGlassRim(Xc.shapes.md),
+            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+        colors = CardDefaults.defaultColors(color = Color.Transparent),
     ) {
         OverlayDropdownPreference(
             title = stringResource(R.string.profile),

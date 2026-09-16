@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.dialog.rememberConfirmDialog
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -50,6 +50,7 @@ import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -124,7 +125,8 @@ internal fun InstallScreenMiuix(
             ) {
                 item {
                     Card(
-                        modifier = Modifier.fillMaxWidth().xGlassRim(Xc.shapes.md),
+                        modifier = Modifier.fillMaxWidth().xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         SelectInstallMethod(
                             state = uiState,
@@ -132,6 +134,7 @@ internal fun InstallScreenMiuix(
                             onDownloadFile = actions.onDownloadFile,
                             onSelectBootImage = actions.onSelectBootImage,
                             onSelectBootImageForKpm = actions.onSelectBootImageForKpm,
+                            onSelectAnyKernel = actions.onSelectAnyKernel,
                         )
                     }
                     AnimatedVisibility(
@@ -154,7 +157,8 @@ internal fun InstallScreenMiuix(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 12.dp)
-                                .xGlassRim(Xc.shapes.md),
+                                .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                            colors = CardDefaults.defaultColors(color = Color.Transparent),
                         ) {
                             OverlayDropdownPreference(
                                 items = partitionItems,
@@ -185,7 +189,8 @@ internal fun InstallScreenMiuix(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 12.dp)
-                                .xGlassRim(Xc.shapes.md),
+                                .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                            colors = CardDefaults.defaultColors(color = Color.Transparent),
                         ) {
                             CheckboxPreference(
                                 title = stringResource(id = R.string.install_force_backup),
@@ -199,7 +204,8 @@ internal fun InstallScreenMiuix(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp)
-                            .xGlassRim(Xc.shapes.md),
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         BasicComponent(
                             title = stringResource(id = R.string.install_upload_lkm_file),
@@ -246,7 +252,8 @@ internal fun InstallScreenMiuix(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp)
-                            .xGlassRim(Xc.shapes.md),
+                            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
                     ) {
                         BasicComponent(
                             title = stringResource(id = R.string.advanced_options),
@@ -309,6 +316,7 @@ private fun SelectInstallMethod(
     onDownloadFile: () -> Unit,
     onSelectBootImage: () -> Unit,
     onSelectBootImageForKpm: () -> Unit,
+    onSelectAnyKernel: () -> Unit,
 ) {
     val confirmDialog = rememberConfirmDialog(
         onConfirm = {
@@ -323,6 +331,7 @@ private fun SelectInstallMethod(
             is InstallMethod.SelectFile -> onSelectBootImage()
             is InstallMethod.SelectFileForKpm -> onSelectBootImageForKpm()
             is InstallMethod.DownloadFile -> onDownloadFile()
+            is InstallMethod.AnyKernel -> onSelectAnyKernel()
             is InstallMethod.DirectInstall -> onSelected(option)
             is InstallMethod.DirectInstallToInactiveSlot -> confirmDialog.showConfirm(dialogTitle, dialogContent)
         }

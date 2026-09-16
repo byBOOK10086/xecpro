@@ -73,12 +73,14 @@ fun InstallScreen() {
     val selectFileTipNoGki = stringResource(id = R.string.select_file_tip_nogki)
     val selectFileKpmTip = stringResource(id = R.string.select_file_kpm_tip)
     val downloadFileMsg = stringResource(id = R.string.download_dialog_msg)
-    val installMethodOptions = remember(rootAvailable, isAbDevice, isGkiDevice, selectFileTip, selectFileTipNoGki, selectFileKpmTip, downloadFileMsg) {
+    val anyKernelTip = stringResource(id = R.string.install_anykernel_tip)
+    val installMethodOptions = remember(rootAvailable, isAbDevice, isGkiDevice, selectFileTip, selectFileTipNoGki, selectFileKpmTip, downloadFileMsg, anyKernelTip) {
         buildList {
             add(InstallMethod.SelectFile(summary = if (isGkiDevice) selectFileTip else selectFileTipNoGki))
             add(InstallMethod.SelectFileForKpm(summary = selectFileKpmTip))
             add(InstallMethod.DownloadFile(summary = downloadFileMsg))
             if (rootAvailable && isGkiDevice) {
+                add(InstallMethod.AnyKernel(summary = anyKernelTip))
                 add(InstallMethod.DirectInstall)
                 if (isAbDevice) add(InstallMethod.DirectInstallToInactiveSlot)
             }
@@ -128,6 +130,9 @@ fun InstallScreen() {
                         )
                         is InstallMethod.SelectFileForKpm -> FlashIt.FlashBootKpm(
                             boot = method.uri ?: return@let
+                        )
+                        is InstallMethod.AnyKernel -> FlashIt.FlashAnyKernel(
+                            uri = method.uri ?: return@let
                         )
                         else -> FlashIt.FlashBoot(
                             boot = if (method is InstallMethod.SelectFile) method.uri else null,
@@ -222,6 +227,15 @@ fun InstallScreen() {
             }
         }
     }
+    val selectAnyKernelLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (it.resultCode == Activity.RESULT_OK) {
+            it.data?.data?.let { uri ->
+                installMethod = InstallMethod.AnyKernel(uri, summary = anyKernelTip)
+            }
+        }
+    }
 
     val state = InstallUiState(
         installMethod = installMethod,
@@ -252,6 +266,9 @@ fun InstallScreen() {
         onSelectBootImageForKpm = {
             selectKpmImageLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/octet-stream" })
         },
+        onSelectAnyKernel = {
+            selectAnyKernelLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/zip" })
+        },
         onUploadLkm = {
             selectLkmLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply { type = "application/octet-stream" })
         },
@@ -275,6 +292,7 @@ fun InstallScreen() {
                 is InstallMethod.DownloadFile -> false
                 is InstallMethod.SelectFile -> true
                 is InstallMethod.SelectFileForKpm -> false
+                is InstallMethod.AnyKernel -> false
                 else -> isKmiUnknown
             }
             if (!isLkmSelected && isKmiUnresolved) {

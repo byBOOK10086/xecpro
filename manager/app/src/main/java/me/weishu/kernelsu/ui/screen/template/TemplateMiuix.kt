@@ -64,12 +64,13 @@ import me.weishu.kernelsu.R
 import me.weishu.kernelsu.data.model.TemplateInfo
 import me.weishu.kernelsu.ui.component.ListPopupDefaults
 import me.weishu.kernelsu.ui.component.miuix.DropdownItem
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -259,6 +260,7 @@ fun AppProfileTemplateScreenMiuix(
                         TemplateItem(
                             template = app,
                             onClick = { actions.onOpenTemplate(app) },
+                            backdrop = backdrop,
                         )
                     }
                     item {
@@ -279,9 +281,11 @@ fun AppProfileTemplateScreenMiuix(
 private fun TemplateItem(
     template: TemplateInfo,
     onClick: () -> Unit,
+    backdrop: LayerBackdrop? = null,
 ) {
     Card(
-        modifier = Modifier.padding(bottom = 12.dp).xGlassRim(Xc.shapes.md),
+        modifier = Modifier.padding(bottom = 12.dp).xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+        colors = CardDefaults.defaultColors(color = Color.Transparent),
         onClick = onClick,
         showIndication = true,
         pressFeedbackType = PressFeedbackType.Sink

@@ -30,6 +30,12 @@ internal sealed class InstallMethod : Parcelable {
         override val summary: String?
     ) : InstallMethod()
 
+    data class AnyKernel(
+        val uri: Uri? = null,
+        @get:StringRes override val label: Int = R.string.install_anykernel,
+        override val summary: String?
+    ) : InstallMethod()
+
     data object DirectInstall : InstallMethod() {
         override val label: Int
             get() = R.string.direct_install

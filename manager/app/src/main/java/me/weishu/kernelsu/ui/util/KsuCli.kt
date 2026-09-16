@@ -29,6 +29,7 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
+import java.util.zip.ZipFile
 
 /**
  * @author weishu
@@ -259,6 +260,99 @@ fun flashKpmModule(
         file.delete()
 
         return FlashResult(result)
+    }
+}
+
+private const val AK3_UPDATER_ENTRY = "META-INF/com/google/android/update-binary"
+
+/**
+ * 从 AnyKernel3 压缩包中取出 `update-binary`（AK3 的入口脚本）。
+ */
+private fun extractAnyKernelUpdater(zip: File, dest: File): Boolean {
+    return try {
+        ZipFile(zip).use { zipFile ->
+            var entry = zipFile.getEntry(AK3_UPDATER_ENTRY)
+            if (entry == null) {
+                val entries = zipFile.entries()
+                while (entries.hasMoreElements()) {
+                    val candidate = entries.nextElement()
+                    val name = candidate.name
+                    if (name.equals("update-binary", ignoreCase = true) ||
+                        name.endsWith("/update-binary", ignoreCase = true)
+                    ) {
+                        entry = candidate
+                        break
+                    }
+                }
+            }
+            if (entry == null) return false
+            zipFile.getInputStream(entry).use { input ->
+                dest.outputStream().use { output -> input.copyTo(output) }
+            }
+        }
+        dest.length() > 0L
+    } catch (e: Throwable) {
+        Log.e("XECKernelPro", "extract update-binary failed", e)
+        false
+    }
+}
+
+/**
+ * 刷入第三方 AnyKernel3 包（例如第三方 GKI 内核）。
+ *
+ * 与 suk / KernelSU-Next 管理器一致：把 zip 拷进 app 私有目录，按 AK3 约定的
+ * `update-binary <api> <outfd> <zipfile>` 调用它，并把 `AKHOME` / `POSTINSTALL`
+ * 指向私有目录，让 AK3 在应用内完成刷写（脚本检测到 BOOTMODE 后会跳过
+ * `setup_env` / `restore_env`，不会破坏当前挂载）。
+ */
+fun flashAnyKernel(
+    uri: Uri,
+    onStdout: (String) -> Unit,
+    onStderr: (String) -> Unit
+): FlashResult {
+    val resolver = ksuApp.contentResolver
+    val workDir = File(ksuApp.cacheDir, "anykernel3_${System.currentTimeMillis()}")
+    if (!workDir.mkdirs() && !workDir.isDirectory) {
+        return FlashResult(1, "Failed to create a temporary directory.", false)
+    }
+
+    val zipFile = File(workDir, "anykernel3.zip")
+    return try {
+        val input = resolver.openInputStream(uri)
+            ?: return FlashResult(1, "Failed to open the selected file.", false)
+        input.use { source ->
+            zipFile.outputStream().use { output -> source.copyTo(output) }
+        }
+        if (zipFile.length() == 0L) {
+            return FlashResult(1, "The selected file is empty.", false)
+        }
+
+        val updater = File(workDir, "update-binary")
+        if (!extractAnyKernelUpdater(zipFile, updater)) {
+            return FlashResult(1, "Not a valid AnyKernel3 package: update-binary not found.", false)
+        }
+
+        // AK3 脚本在解压阶段依赖 PATH 中的 unzip（Android 自带 shell 没有），
+        // 所以先把内核自带的 busybox 软链成 unzip 并前置到 PATH。
+        val workDirPath = workDir.absolutePath
+        val zipPath = zipFile.absolutePath
+        val cmd = "BB='/data/adb/ksu/bin/busybox'; " +
+            "[ -f \"\$BB\" ] || BB='/data/adb/magisk/busybox'; " +
+            "[ -f \"\$BB\" ] || BB='/system/bin/busybox'; " +
+            "[ -f \"\$BB\" ] || BB='/system/xbin/busybox'; " +
+            "[ -f \"\$BB\" ] || { echo 'busybox not found, cannot install AnyKernel3 package' >&2; exit 1; }; " +
+            "W='$workDirPath'; " +
+            "rm -rf \"\$W/tmp\"; mkdir -p \"\$W/tmp/bin\" \"\$W/bin\"; " +
+            "ln -sf \"\$BB\" \"\$W/bin/unzip\"; " +
+            "export POSTINSTALL=\"\$W\"; " +
+            "export AKHOME=\"\$W/tmp\"; " +
+            "export PATH=\"\$W/bin:/system/bin:/system/xbin:\$PATH\"; " +
+            "\"\$BB\" ash \"\$W/update-binary\" 3 1 '$zipPath'"
+        val result = flashWithIO(cmd, onStdout, onStderr)
+        Log.i("XECKernelPro", "flash anykernel3 $uri result: $result")
+        FlashResult(result)
+    } finally {
+        workDir.deleteRecursively()
     }
 }
 

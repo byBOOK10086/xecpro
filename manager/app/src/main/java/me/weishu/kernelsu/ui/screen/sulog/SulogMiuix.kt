@@ -73,7 +73,7 @@ import me.weishu.kernelsu.ui.component.miuix.SearchBox
 import me.weishu.kernelsu.ui.component.miuix.SearchPager
 import me.weishu.kernelsu.ui.component.miuix.WarningCard
 import me.weishu.kernelsu.ui.component.statustag.StatusTag
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -82,6 +82,7 @@ import me.weishu.kernelsu.ui.util.SulogEventFilter
 import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -94,6 +95,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
@@ -327,7 +329,8 @@ fun SulogScreenMiuix(
                                     .fillMaxWidth()
                                     .padding(horizontal = 12.dp)
                                     .padding(bottom = 12.dp)
-                                    .xGlassRim(Xc.shapes.md),
+                                    .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                                colors = CardDefaults.defaultColors(color = Color.Transparent),
                             ) {
                                 OverlayDropdownPreference(
                                     title = stringResource(R.string.sulog_log_files),
@@ -346,6 +349,7 @@ fun SulogScreenMiuix(
                         sulogEntriesSection(
                             entries = state.visibleEntries,
                             errorMessage = state.errorMessage,
+                            backdrop = backdrop,
                             onEntryClick = { selectedEntry = it },
                         )
 
@@ -425,6 +429,7 @@ private fun SulogStatusSection(
 private fun LazyListScope.sulogEntriesSection(
     entries: List<SulogEntry>,
     errorMessage: String?,
+    backdrop: LayerBackdrop? = null,
     onEntryClick: (SulogEntry) -> Unit,
 ) {
     when {
@@ -439,6 +444,7 @@ private fun LazyListScope.sulogEntriesSection(
         else -> itemsIndexed(entries, key = { index, entry -> "$index-${entry.key}" }) { index, entry ->
             SulogEntryCard(
                 entry = entry,
+                backdrop = backdrop,
                 onClick = { onEntryClick(entry) },
             )
         }
@@ -448,6 +454,7 @@ private fun LazyListScope.sulogEntriesSection(
 @Composable
 private fun SulogEntryCard(
     entry: SulogEntry,
+    backdrop: LayerBackdrop? = null,
     onClick: () -> Unit,
 ) {
     Card(
@@ -455,7 +462,8 @@ private fun SulogEntryCard(
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp)
-            .xGlassRim(Xc.shapes.md),
+            .xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+        colors = CardDefaults.defaultColors(color = Color.Transparent),
         onClick = onClick,
         showIndication = true,
         insideMargin = PaddingValues(16.dp),

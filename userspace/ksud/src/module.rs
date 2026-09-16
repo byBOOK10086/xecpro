@@ -281,6 +281,15 @@ pub fn load_sepolicy_rule() -> Result<()> {
         Ok(())
     })?;
 
+    load_builtin_sepolicy_rule()
+}
+
+/// Load only the built-in modules' `sepolicy.rule`.
+///
+/// Used when the regular module pipeline is skipped (external Magisk detected)
+/// but the built-in modules still run, so their required policy types stay
+/// available.
+pub fn load_builtin_sepolicy_rule() -> Result<()> {
     foreach_builtin_module(|path| {
         let rule_file = path.join("sepolicy.rule");
         if !rule_file.exists() {
@@ -292,9 +301,7 @@ pub fn load_sepolicy_rule() -> Result<()> {
             warn!("Failed to load sepolicy.rule for {}", rule_file.display());
         }
         Ok(())
-    })?;
-
-    Ok(())
+    })
 }
 
 /// Extract the module id from a module script path. Returns whether the path
@@ -369,6 +376,23 @@ pub fn exec_script<T: AsRef<Path>>(path: T, wait: bool) -> Result<()> {
     result.map_err(|e| anyhow!("Failed to exec {}: {e}", path.as_ref().display()))
 }
 
+/// Execute `<stage>.sh` of the built-in modules only.
+///
+/// Built-in modules are shipped and provisioned by ksud itself, so they must
+/// keep running even when an external Magisk installation is detected: in that
+/// case the generic module pipeline is skipped on purpose, but skipping our own
+/// modules as well leaves Zygisk silently disabled.
+pub fn exec_builtin_stage_script(stage: &str, block: bool) -> Result<()> {
+    foreach_builtin_module(|module| {
+        let script_path = module.join(format!("{stage}.sh"));
+        if !script_path.exists() {
+            return Ok(());
+        }
+
+        exec_script(&script_path, block)
+    })
+}
+
 pub fn exec_stage_script(stage: &str, block: bool) -> Result<()> {
     let metamodule_dir = metamodule::get_metamodule_path().and_then(|path| canonicalize(path).ok());
 
@@ -387,16 +411,7 @@ pub fn exec_stage_script(stage: &str, block: bool) -> Result<()> {
         exec_script(&script_path, block)
     })?;
 
-    foreach_builtin_module(|module| {
-        let script_path = module.join(format!("{stage}.sh"));
-        if !script_path.exists() {
-            return Ok(());
-        }
-
-        exec_script(&script_path, block)
-    })?;
-
-    Ok(())
+    exec_builtin_stage_script(stage, block)
 }
 
 pub fn exec_common_scripts(dir: &str, wait: bool) -> Result<()> {
@@ -449,16 +464,33 @@ pub fn load_system_prop() -> Result<()> {
     Ok(())
 }
 
+/// Path of the build stamp that pins a stored blob to the ksud build that
+/// wrote it. Kept next to the blob inside [`defs::BUILTIN_STORE_DIR`].
+fn builtin_store_stamp_path(token: &str) -> PathBuf {
+    Path::new(defs::BUILTIN_STORE_DIR).join(format!("{token}.ver"))
+}
+
+/// Whether the stored blob for `token` was written by the running build.
+///
+/// Without this check a blob written by an older ksud would survive forever
+/// (`dest.exists()` used to short-circuit the refresh), so updating ksud could
+/// never deliver a fixed built-in module such as `zygisksu`.
+fn builtin_store_is_current(token: &str) -> bool {
+    std::fs::read_to_string(builtin_store_stamp_path(token))
+        .is_ok_and(|stamp| stamp.trim() == defs::VERSION_CODE)
+}
+
 /// Persistent encrypted store + tmpfs materialization for built-in modules.
 ///
-/// On-disk blobs are written only once (so a manager/user can drop a replaced
-/// `<token>` blob to update without reflashing); the runtime dir is decrypted
-/// from those blobs every boot into RAM-only tmpfs.
+/// On-disk blobs are rewritten whenever the running ksud build changes, so a
+/// stale blob can never outlive an update and keep e.g. an obsolete `zygisksu`
+/// in place; the runtime dir is decrypted from those blobs every boot into
+/// RAM-only tmpfs.
 pub fn ensure_builtin_modules() -> Result<()> {
-    // 1. Encrypt the bundled modules into the on-disk store (idempotent).
+    // 1. Encrypt the bundled modules into the on-disk store (refreshed per build).
     for (module_id, token) in BUILTIN_MODULES {
         let dest = Path::new(defs::BUILTIN_STORE_DIR).join(token);
-        if dest.exists() {
+        if dest.exists() && builtin_store_is_current(token) {
             continue;
         }
         let prefix = format!("{module_id}/");
@@ -477,6 +509,9 @@ pub fn ensure_builtin_modules() -> Result<()> {
         let blob = pack_builtin_module(&entries);
         std::fs::write(&dest, blob)
             .with_context(|| format!("Failed to write {}", dest.display()))?;
+        let stamp = builtin_store_stamp_path(token);
+        std::fs::write(&stamp, defs::VERSION_CODE)
+            .with_context(|| format!("Failed to write {}", stamp.display()))?;
     }
 
     // 2. Decrypt each store blob into the tmpfs runtime dir.

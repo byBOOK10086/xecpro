@@ -222,6 +222,16 @@ pub fn has_magisk() -> bool {
     which::which("magisk").is_ok()
 }
 
+/// Whether a real Magisk *installation* is present.
+///
+/// [`has_magisk`] only probes `PATH`, which is also satisfied by a stray
+/// `magisk` binary shipped by some module. Acting on that alone skips the whole
+/// module pipeline - built-in modules, and therefore Zygisk, included - on
+/// devices that never ran Magisk, so require Magisk's own data dir as well.
+pub fn has_magisk_installed() -> bool {
+    PathBuf::from(defs::ADB_DIR).join("magisk").exists() && has_magisk()
+}
+
 // Mirror the daemon onto every path a KernelSU-aware consumer may probe.
 //
 // The daemon itself is renamed to `xudc`, but Zygisk Next / ReZygisk decide

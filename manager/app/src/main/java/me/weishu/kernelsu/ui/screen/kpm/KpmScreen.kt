@@ -36,7 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.component.ObserveAsEvents
-import me.weishu.kernelsu.ui.design.glass.xGlassRim
+import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
 import me.weishu.kernelsu.ui.navigation3.Route
@@ -47,6 +47,7 @@ import me.weishu.kernelsu.ui.util.rememberBlurBackdrop
 import me.weishu.kernelsu.ui.viewmodel.KpmViewModel
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon as MiuixIcon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -159,7 +160,11 @@ private fun KpmPagerMiuix(
                     KpmStatusCardMiuix(uiState)
                     KpmModuleListMiuix(uiState.modules)
                     if (!uiState.active) {
-                        Card(modifier = Modifier.xGlassRim(Xc.shapes.md), onClick = onEmbed) {
+                        Card(
+                            modifier = Modifier.xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                            colors = CardDefaults.defaultColors(color = Color.Transparent),
+                            onClick = onEmbed,
+                        ) {
                             BasicComponent(
                                 title = stringResource(R.string.kpm_embed),
                                 summary = stringResource(R.string.kpm_embed_hint),
@@ -173,7 +178,11 @@ private fun KpmPagerMiuix(
                             )
                         }
                     }
-                    Card(modifier = Modifier.xGlassRim(Xc.shapes.md), onClick = onFlash) {
+                    Card(
+                        modifier = Modifier.xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+                        colors = CardDefaults.defaultColors(color = Color.Transparent),
+                        onClick = onFlash,
+                    ) {
                         BasicComponent(
                             title = if (uiState.isFlashing) stringResource(R.string.processing) else stringResource(R.string.kpm_flash),
                             startAction = {

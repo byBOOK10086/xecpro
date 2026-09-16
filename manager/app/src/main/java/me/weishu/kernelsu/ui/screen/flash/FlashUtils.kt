@@ -37,6 +37,7 @@ import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.util.FlashResult
 import me.weishu.kernelsu.ui.util.LkmSelection
 import me.weishu.kernelsu.ui.util.downloadBoot
+import me.weishu.kernelsu.ui.util.flashAnyKernel
 import me.weishu.kernelsu.ui.util.flashModule
 import me.weishu.kernelsu.ui.util.installBoot
 import me.weishu.kernelsu.ui.util.installBootKpm
@@ -110,6 +111,9 @@ sealed class FlashIt : Parcelable {
     ) : FlashIt()
 
     @Parcelize
+    data class FlashAnyKernel(val uri: Uri) : FlashIt()
+
+    @Parcelize
     data class FlashModules(val uris: List<Uri>) : FlashIt()
 
     @Parcelize
@@ -180,6 +184,12 @@ fun flashIt(
 
         FlashIt.FlashRestore -> restoreBoot(onStdout, onStderr)
         FlashIt.FlashUninstall -> uninstallPermanently(onStdout, onStderr)
+
+        is FlashIt.FlashAnyKernel -> flashAnyKernel(
+            flashIt.uri,
+            onStdout,
+            onStderr
+        )
     }
 }
 
