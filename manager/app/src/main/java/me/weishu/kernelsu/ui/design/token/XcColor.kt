@@ -26,16 +26,6 @@ data class XcColors(
     val glassTint: Color,
     /** 玻璃 1px 描边，用于在没有模糊的设备上依然能分辨层次。 */
     val glassRim: Color,
-    /**
-     * 「白毛玻璃」上覆色：与当前明暗档无关，固定一档亮玻璃。
-     *
-     * 给的是"必须有白玻璃"的位置用的（首页顶栏）。深色档的 [glassTint] 近黑，
-     * 压在深色内容上就是一条黑带；这一档不走 `if (isDark)`，三档取值相同，
-     * 免得同一个顶栏在深浅模式下变成两种颜色。
-     */
-    val glassTintWhite: Color,
-    /** [glassTintWhite] 上的前景色（标题 / 图标），近黑。 */
-    val onGlassTintWhite: Color,
     val text: Color,
     val textSecondary: Color,
     val textMuted: Color,
@@ -95,18 +85,6 @@ private fun Color.over(base: Color, alpha: Float): Color = Color(
     alpha = 1f,
 )
 
-/**
- * 「白毛玻璃」的唯一取值，三档明暗共用。
- *
- * alpha 取 0.9 而不是 [XcDarkBase]/[XcLightBase] 里的 0.55：这两个档的玻璃都压在同色系的
- * 内容上，半透就够了；白玻璃要压在深色内容（首页深色底）上还要读成"白"，只能让上覆色
- * 近乎不透光，剩下的那点透明交给底下的模糊去做"毛"的质感。
- */
-private val WhiteGlassTint = Color(0xE6FFFFFF)
-
-/** 白毛玻璃上的前景色：浅色档的 [XcColors.text] 同值（近黑），19:1 起步的对比度。 */
-private val WhiteGlassForeground = Color(0xFF161D1F)
-
 private val XcDarkBase = XcColors(
     isDark = true,
     backdrop = Color(0xFF0B0F10),
@@ -115,8 +93,6 @@ private val XcDarkBase = XcColors(
     surfaceMuted = Color(0xFF1A2225),
     glassTint = Color(0x8C131A1C),
     glassRim = Color(0xFF263033),
-    glassTintWhite = WhiteGlassTint,
-    onGlassTintWhite = WhiteGlassForeground,
     text = Color(0xFFE7EDEE),
     textSecondary = Color(0xFFBAC6C8),
     textMuted = Color(0xFF8A9799),
@@ -136,8 +112,6 @@ private val XcLightBase = XcColors(
     surfaceMuted = Color(0xFFEDF1F2),
     glassTint = Color(0x8CFFFFFF),
     glassRim = Color(0xFFDCE3E5),
-    glassTintWhite = WhiteGlassTint,
-    onGlassTintWhite = WhiteGlassForeground,
     text = Color(0xFF161D1F),
     textSecondary = Color(0xFF485356),
     textMuted = Color(0xFF788486),

@@ -228,12 +228,15 @@ private fun UpdateCard(
 }
 
 /**
- * 首页顶栏：固定"白毛玻璃"。
+ * 首页顶栏：完全透明的毛玻璃。
  *
- * 深色档下 [Xc.colors.glassTint] 近黑（`0x8C131A1C`），顶栏在深色内容上就是一条黑带，
- * 所以这里不跟着明暗档走，改用与档位无关的 [Xc.colors.glassTintWhite]。白底上的
- * 前景必须一起换：miuix 的 `title`/`largeTitle` 默认取 `onSurface`（深色档是浅色字），
- * 不覆盖就会白底白字。
+ * 上覆色留空（[Color.Transparent]），栏底整块交给模糊 / 折射去画：玻璃照旧采样下方
+ * 内容做模糊与折射，只是不再压任何颜色，滚动时标题像是直接浮在页面上。换成透明是因为
+ * 之前那层"白毛玻璃"的 `0xE6FFFFFF` 在浅色内容上会糊成一块发白的板子，和页面对不上。
+ *
+ * 前景跟着明暗档走（[Xc.colors.text]）：透明底下的画面就是页面本身，深色档配浅色字、
+ * 浅色档配深色字，和页面正文一致；这里不能再沿用固定的近黑前景，否则深色档看不见标题。
+ * 设备不支持模糊（或用户关掉）时 [BlurredBar] 会用不透明的 `surface` 兜底，`text` 同样成立。
  */
 @Composable
 private fun TopBar(
@@ -242,18 +245,16 @@ private fun TopBar(
 ) {
     BlurredBar(
         backdrop = backdrop,
-        tint = Xc.colors.glassTintWhite,
-        // 设备不支持模糊（或用户关掉）时退化成同一色的不透明底，避免"白玻璃变回深色"。
-        solidTint = Xc.colors.glassTintWhite.copy(alpha = 1f),
+        tint = Color.Transparent,
     ) {
         TopAppBar(
             // 栏底一律由上面那层玻璃画，这里再铺一层就把玻璃盖住了。
             color = Color.Transparent,
             title = stringResource(R.string.app_name),
-            titleColor = Xc.colors.onGlassTintWhite,
-            largeTitleColor = Xc.colors.onGlassTintWhite,
+            titleColor = Xc.colors.text,
+            largeTitleColor = Xc.colors.text,
             actions = {
-                RebootListPopupMiuix(iconTint = Xc.colors.onGlassTintWhite)
+                RebootListPopupMiuix(iconTint = Xc.colors.text)
             },
             scrollBehavior = scrollBehavior
         )
