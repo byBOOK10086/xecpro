@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -339,14 +340,23 @@ private fun SelectInstallMethod(
 
     Column {
         state.installMethodOptions.forEach { option ->
+            // 需要 root + GKI 的三项始终在列表里，条件不满足时只是变灰 + 显示原因，
+            // 而不是整项消失（消失就是用户报的"没看见 GKI 功能"）。
+            val gated = option is InstallMethod.AnyKernel ||
+                    option is InstallMethod.DirectInstall ||
+                    option is InstallMethod.DirectInstallToInactiveSlot
+            val blockedReason = state.gatedInstallBlockedReason.takeIf { gated }
+            val available = blockedReason == null
             val interactionSource = remember { MutableInteractionSource() }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
+                    .alpha(if (available) 1f else 0.45f)
                     .toggleable(
                         value = option.javaClass == state.installMethod?.javaClass,
-                        onValueChange = { onClick(option) },
+                        onValueChange = { if (available) onClick(option) },
+                        enabled = available,
                         role = Role.RadioButton,
                         indication = LocalIndication.current,
                         interactionSource = interactionSource
@@ -354,9 +364,9 @@ private fun SelectInstallMethod(
             ) {
                 CheckboxPreference(
                     title = stringResource(id = option.label),
-                    summary = option.summary,
+                    summary = blockedReason ?: option.summary,
                     checked = option.javaClass == state.installMethod?.javaClass,
-                    onCheckedChange = { onClick(option) },
+                    onCheckedChange = { if (available) onClick(option) },
                 )
             }
         }

@@ -65,25 +65,42 @@ fun InstallScreen() {
     val currentKmi by produceState(initialValue = "") { value = getCurrentKmi() }
     val partitions by produceState(initialValue = emptyList()) { value = getAvailablePartitions() }
     val defaultPartition by produceState(initialValue = "") { value = getDefaultPartition() }
-    val rootAvailable by produceState(initialValue = false) { value = rootAvailable() }
+    // root 与 GKI 用 null 表示「尚未探测完成」：探测期间这几项按可用渲染，
+    // 结果回来后再决定是否降级成「可见但不可用」，避免首帧闪一下灰态。
+    val rootAvailable by produceState<Boolean?>(initialValue = null) { value = rootAvailable() }
     val isAbDevice by produceState(initialValue = false) { value = isAbDevice() }
-    val isGkiDevice by produceState(initialValue = false) { value = getKernelVersion().isGKI() }
+    val isGkiDevice by produceState<Boolean?>(initialValue = null) { value = getKernelVersion().isGKI() }
 
     val selectFileTip = stringResource(id = R.string.select_file_tip, defaultPartition)
     val selectFileTipNoGki = stringResource(id = R.string.select_file_tip_nogki)
     val selectFileKpmTip = stringResource(id = R.string.select_file_kpm_tip)
     val downloadFileMsg = stringResource(id = R.string.download_dialog_msg)
     val anyKernelTip = stringResource(id = R.string.install_anykernel_tip)
-    val installMethodOptions = remember(rootAvailable, isAbDevice, isGkiDevice, selectFileTip, selectFileTipNoGki, selectFileKpmTip, downloadFileMsg, anyKernelTip) {
+    val installRequiresRoot = stringResource(id = R.string.install_requires_root)
+    val installRequiresGki = stringResource(id = R.string.install_requires_gki)
+
+    // AnyKernel3 / 直接安装 / 安装到未使用槽位这三项以前被
+    // `rootAvailable && isGkiDevice` 在 buildList 阶段整体丢弃，条件不满足时
+    // 界面上不留任何痕迹，用户会以为这个版本干脆没有 GKI 功能。现在三项始终
+    // 入列，只在条件不满足时降级成「可见但不可用」，并把原因写进 summary。
+    // `null`（尚未探测完成）视为可用，避免首帧闪灰；只有明确探测出为 false 才降级。
+    // 这里用 `== false` 而不是 `!rootAvailable`：这两个值来自 produceState 的委托属性，
+    // 委托属性不支持 smart cast，取反后仍是 Boolean? 会编译不过。
+    val gatedInstallBlockedReason: String? = when {
+        rootAvailable == false -> installRequiresRoot
+        isGkiDevice == false -> installRequiresGki
+        else -> null
+    }
+    // `isGkiDevice` 必须留在 key 里：探测完成时它从 null 变成 true/false，
+    // 下面 SelectFile 的 summary 要跟着从「非 GKI」提示换成 GKI 提示。
+    val installMethodOptions = remember(isAbDevice, isGkiDevice, selectFileTip, selectFileTipNoGki, selectFileKpmTip, downloadFileMsg, anyKernelTip) {
         buildList {
-            add(InstallMethod.SelectFile(summary = if (isGkiDevice) selectFileTip else selectFileTipNoGki))
+            add(InstallMethod.SelectFile(summary = if (isGkiDevice == true) selectFileTip else selectFileTipNoGki))
             add(InstallMethod.SelectFileForKpm(summary = selectFileKpmTip))
             add(InstallMethod.DownloadFile(summary = downloadFileMsg))
-            if (rootAvailable && isGkiDevice) {
-                add(InstallMethod.AnyKernel(summary = anyKernelTip))
-                add(InstallMethod.DirectInstall)
-                if (isAbDevice) add(InstallMethod.DirectInstallToInactiveSlot)
-            }
+            add(InstallMethod.AnyKernel(summary = anyKernelTip))
+            add(InstallMethod.DirectInstall)
+            if (isAbDevice) add(InstallMethod.DirectInstallToInactiveSlot)
         }
     }
 
@@ -214,7 +231,7 @@ fun InstallScreen() {
     ) {
         if (it.resultCode == Activity.RESULT_OK) {
             it.data?.data?.let { uri ->
-                installMethod = InstallMethod.SelectFile(uri, summary = if (isGkiDevice) selectFileTip else selectFileTipNoGki)
+                installMethod = InstallMethod.SelectFile(uri, summary = if (isGkiDevice == true) selectFileTip else selectFileTipNoGki)
             }
         }
     }
@@ -247,6 +264,7 @@ fun InstallScreen() {
         currentKmi = currentKmi,
         slotSuffix = slotSuffix,
         installMethodOptions = installMethodOptions,
+        gatedInstallBlockedReason = gatedInstallBlockedReason,
         canSelectPartition = installMethod is InstallMethod.DirectInstall ||
             installMethod is InstallMethod.DirectInstallToInactiveSlot ||
             installMethod is InstallMethod.DownloadFile,

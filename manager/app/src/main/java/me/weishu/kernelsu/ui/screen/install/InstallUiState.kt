@@ -14,6 +14,15 @@ internal data class InstallUiState(
     val currentKmi: String,
     val slotSuffix: String,
     val installMethodOptions: List<InstallMethod>,
+    /**
+     * 需要 root + GKI 才能用的那几项（AnyKernel3 / 直接安装 / 安装到未使用槽位）
+     * 为什么不可用；`null` 表示可用。
+     *
+     * 这几项以前在条件不满足时直接不进 [installMethodOptions]，界面上不留痕迹，
+     * 看起来就像"这个版本没有 GKI 功能"。现在它们始终在列表里，靠这个字段把
+     * 原因落到 summary 上，并渲染成不可用状态。
+     */
+    val gatedInstallBlockedReason: String?,
     val canSelectPartition: Boolean,
     val advancedOptionsShown: Boolean,
     val allowShell: Boolean,

@@ -30,11 +30,27 @@ class SettingsRepositoryImpl : SettingsRepository {
 
     private companion object {
         private const val INTENT_TOKEN_KEY = "intent_token"
+        private const val KEY_COLOR_MODE = "color_mode"
+        private const val KEY_WHITE_GLASS_MIGRATED = "white_glass_default_migrated"
         private val secureRandom = SecureRandom()
     }
 
     private val prefs by lazy {
         ksuApp.getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
+    }
+
+    init {
+        // 一次性迁移到「白色基础液态玻璃」默认档，详见 themeMode 的说明。
+        // 只迁移仍停在旧默认值（DARK）的存量：显式选过 AMOLED / MONET_DARK
+        // 的用户保持原样，迁移标记保证只跑一次。
+        if (!prefs.getBoolean(KEY_WHITE_GLASS_MIGRATED, false)) {
+            prefs.edit {
+                putBoolean(KEY_WHITE_GLASS_MIGRATED, true)
+                if (prefs.getInt(KEY_COLOR_MODE, ColorMode.DARK.value) == ColorMode.DARK.value) {
+                    putInt(KEY_COLOR_MODE, ColorMode.LIGHT.value)
+                }
+            }
+        }
     }
 
     override var checkUpdate: Boolean
@@ -45,11 +61,13 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("module_check_update", true)
         set(value) = prefs.edit { putBoolean("module_check_update", value) }
 
+    // XEC Fluid Glass 走「白色基础液态玻璃」：玻璃令牌在浅色档是
+    // 0x8CFFFFFF 叠纯白 surface，落在近白壁纸上是通透的白玻璃；深色档的
+    // 0x8C131A1C 叠 0xFF131A1C 会合成近黑实色，压在同样的近白壁纸上就是
+    // 一整屏黑框。因此缺省档位为浅色（存量迁移见上面的 init 块）。
     override var themeMode: Int
-        // XEC Fluid Glass 是深色优先的设计语言，默认直接进深色档，
-        // 否则系统处于浅色时用户看到的是"和原版几乎一样"的浅色 miuix。
-        get() = prefs.getInt("color_mode", ColorMode.DARK.value)
-        set(value) = prefs.edit { putInt("color_mode", value) }
+        get() = prefs.getInt(KEY_COLOR_MODE, ColorMode.LIGHT.value)
+        set(value) = prefs.edit { putInt(KEY_COLOR_MODE, value) }
 
     override var miuixMonet: Boolean
         get() = prefs.getBoolean("miuix_monet", false)
