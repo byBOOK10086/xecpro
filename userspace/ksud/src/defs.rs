@@ -48,6 +48,14 @@ mod android {
     pub const DISABLE_FILE_NAME: &str = "disable";
     pub const UPDATE_FILE_NAME: &str = "update";
     pub const REMOVE_FILE_NAME: &str = "remove";
+
+    // Not a KernelSU (nor Magisk) convention: Zygisk Next drops this file into
+    // its own module dir when its daemon fails to come up, right next to the
+    // `disable` marker it writes for the same failure. Both of them are
+    // leftovers of a failed run rather than a functional setting, and while
+    // they are present the module is skipped on every later boot, so they are
+    // cleaned up again — see `clear_zygisk_failure_markers`.
+    pub const ABORT_MSG_FILE_NAME: &str = ".abort_msg";
     pub const MODULE_INIT_RC_DIR: &str = "initrc";
 
     // Module config system

@@ -27,6 +27,11 @@ fn provision_builtin_modules() {
         warn!("ensure built-in modules failed: {e}");
     }
 
+    // Drop Zygisk Next's failure leftovers (disable + .abort_msg) before its
+    // stage scripts run, so a previous failed daemon start cannot keep Zygisk
+    // disabled for this boot as well.
+    crate::module::clear_zygisk_failure_markers();
+
     if crate::module::load_builtin_sepolicy_rule().is_err() {
         warn!("load built-in sepolicy.rule failed");
     }
@@ -122,6 +127,11 @@ pub fn on_post_data_fs() -> Result<()> {
     if let Err(e) = crate::module::ensure_builtin_modules() {
         warn!("ensure built-in modules failed: {e}");
     }
+
+    // Clear Zygisk Next's failure leftovers (disable + .abort_msg) so that a
+    // failed daemon start on a previous boot cannot keep Zygisk disabled here.
+    // Runs before the module set is enumerated / the preinit rc is refreshed.
+    crate::module::clear_zygisk_failure_markers();
 
     if let Err(e) = handle_updated_modules() {
         warn!("handle updated modules failed: {e}");

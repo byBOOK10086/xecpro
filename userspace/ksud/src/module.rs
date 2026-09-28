@@ -767,6 +767,61 @@ pub fn handle_updated_modules() -> Result<()> {
     Ok(())
 }
 
+/// Zygisk Next's own persistent directory (its runtime state, not a module).
+const ZYGISK_STATE_DIR: &str = "/data/adb/zygisksu";
+
+/// Remove the failure leftovers a Zygisk Next style module writes when its
+/// daemon cannot start:
+///
+/// * `disable` — while it exists the module counts as disabled and is skipped
+///   on every boot, so Zygisk stays dead even after the real problem is fixed.
+/// * `.abort_msg` — the abort reason of that failed run
+///   (see [`defs::ABORT_MSG_FILE_NAME`]).
+///
+/// KernelSU never creates either of them on a failure path, so their presence
+/// in a Zygisk directory always means "the daemon failed at least once". Both
+/// are cleared here before the module set is enumerated, so a single bad boot
+/// can no longer disable Zygisk permanently. Only Zygisk-owned locations are
+/// touched: the `disable` marker of any other module is a user decision.
+pub fn clear_zygisk_failure_markers() {
+    // Directory ids that look like Zygisk Next (`zygisksu`, `Zygisk-Next`, ...)
+    // are matched on the substring "ygisk", which covers both spellings.
+    for root in [
+        defs::MODULE_DIR,
+        defs::MODULE_UPDATE_DIR,
+        defs::BUILTIN_MODULE_DIR,
+    ] {
+        let Ok(entries) = std::fs::read_dir(root) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let name = entry.file_name();
+            if name.to_string_lossy().contains("ygisk") {
+                clear_zygisk_markers_in(&entry.path());
+            }
+        }
+    }
+
+    // Zygisk Next also stores a copy of these markers outside the module tree.
+    clear_zygisk_markers_in(Path::new(ZYGISK_STATE_DIR));
+}
+
+/// Remove `disable` + `.abort_msg` from a single Zygisk directory.
+fn clear_zygisk_markers_in(dir: &Path) {
+    for marker in [defs::DISABLE_FILE_NAME, defs::ABORT_MSG_FILE_NAME] {
+        let path = dir.join(marker);
+        // `symlink_metadata` deliberately: a symlink is not a real marker.
+        let is_real_file = std::fs::symlink_metadata(&path).is_ok_and(|meta| meta.is_file());
+        if !is_real_file {
+            continue;
+        }
+        match std::fs::remove_file(&path) {
+            Ok(()) => info!("Cleared stale Zygisk marker: {}", path.display()),
+            Err(e) => warn!("Failed to remove {}: {e}", path.display()),
+        }
+    }
+}
+
 fn install_module_to_system(zip: &str) -> Result<()> {
     ensure_boot_completed()?;
 
