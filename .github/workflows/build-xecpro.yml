@@ -321,9 +321,12 @@ jobs:
         with:
           tag_name: ${{ steps.tag.outputs.tag_name }}
           generate_release_notes: true
+          # 只上传 aarch64 的 xudc / ksuinit。
+          # 此前同时列出 x86_64 目录，而两个目录里的文件名都是 xudc / ksuinit，
+          # action-gh-release 上传第二个同名文件时要去 PATCH 已存在 asset 的元数据，
+          # 拿到 404 后抛错：job 失败、Release 停在 draft 状态，公开 API 读不到，
+          # 管理器的检查更新因此完全无感。Android 设备是 arm64，保留 aarch64 即可。
           files: |
             artifacts/manager/*.apk
             artifacts/ksud-aarch64/*
-            artifacts/ksud-x86_64/*
             artifacts/ksuinit-aarch64/*
-            artifacts/ksuinit-x86_64/*
