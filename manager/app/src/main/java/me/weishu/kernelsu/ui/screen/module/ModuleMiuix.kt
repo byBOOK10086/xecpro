@@ -892,6 +892,11 @@ fun ModuleItem(
             .background(neon.cardBg)
             .border(width = 1.dp, color = borderColor, shape = Xc.shapes.sm)
             .pointerInput(module.id) {
+                // 取消阈值必须不晚于父级（HorizontalPager / LazyColumn）的 touchSlop：
+                // 父级拖拽判定用的就是系统 touchSlop，我们若比它迟钝，手指一微动父级就
+                // 先翻页，而长按计时器还在跑，跑满后弹出面板时页面已经翻到 KPM——这就是
+                // 「长按模块没弹面板、反而跳到 KPM 页」的成因。
+                val moveThresholdPx = minOf(10.dp.toPx(), viewConfiguration.touchSlop)
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     isPressed = true
@@ -907,10 +912,32 @@ fun ModuleItem(
                         }
                     }
 
-                    val moveThresholdPx = 10.dp.toPx()
                     while (true) {
                         val event = awaitPointerEvent()
-                        val change = event.changes.first()
+                        val change = event.changes.firstOrNull() ?: break
+
+                        if (longPressFired) {
+                            // 长按已触发：接管这一串指针事件。既不让父级 Pager 再抢走而
+                            // 翻页，也吞掉这次抬手，避免面板刚弹出又被当成一次短按
+                            // （设计文档《模块页霓虹玻璃卡片与长按操作面板》6.1）。
+                            event.changes.forEach { it.consume() }
+                            if (!change.pressed) {
+                                animationJob?.cancel()
+                                scope.launch { progress.snapTo(0f) }
+                                isPressed = false
+                                break
+                            }
+                            continue
+                        }
+
+                        // 事件已被父级消费 = 父级正在拖拽，这是滑动而不是长按，立刻收手，
+                        // 不能让它跑满 1000ms 再弹面板。
+                        if (change.isConsumed) {
+                            animationJob?.cancel()
+                            scope.launch { progress.snapTo(0f) }
+                            isPressed = false
+                            break
+                        }
 
                         val dx = abs(change.position.x - down.position.x)
                         val dy = abs(change.position.y - down.position.y)
@@ -919,17 +946,17 @@ fun ModuleItem(
                             animationJob?.cancel()
                             scope.launch { progress.snapTo(0f) }
                             isPressed = false
-                            return@awaitEachGesture
+                            break
                         }
 
                         if (!change.pressed) {
                             animationJob?.cancel()
                             scope.launch { progress.snapTo(0f) }
-                            if (!longPressFired && !change.isConsumed && module.hasWebUi) {
+                            if (!change.isConsumed && module.hasWebUi) {
                                 onOpenWebUi()
                             }
                             isPressed = false
-                            return@awaitEachGesture
+                            break
                         }
                     }
                 }
