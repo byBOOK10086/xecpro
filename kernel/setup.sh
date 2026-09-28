@@ -39,7 +39,9 @@ perform_cleanup() {
 # Sets up or update KernelSU environment
 setup_kernelsu() {
     echo "[+] Setting up KernelSU..."
-    test -d "$GKI_ROOT/KernelSU" || git clone https://github.com/byBOOK10086/xecpro && echo "[+] Repository cloned."
+    # 注意：本仓库名为 xecpro，clone 时必须显式指定目标目录为 KernelSU，
+    # 否则默认会克隆到 ./xecpro，导致下一行 cd "$GKI_ROOT/KernelSU" 失败。
+    test -d "$GKI_ROOT/KernelSU" || git clone https://github.com/byBOOK10086/xecpro "$GKI_ROOT/KernelSU" && echo "[+] Repository cloned."
     cd "$GKI_ROOT/KernelSU"
     git stash && echo "[-] Stashed current changes."
     if [ "$(git status | grep -Po 'v\d+(\.\d+)*' | head -n1)" ]; then
