@@ -228,6 +228,16 @@ struct ksu_hook_type_cmd {
     char hook_type[32]; // Output: hook type string
 };
 
+/*
+ * 98 号命令的结构体。Zygisk Next / ReZygisk 在探测「当前 root 实现是什么」时按
+ * 这个布局读取：字段名 mode、长度 16、内容是 hook 模式字符串。
+ * 它跟上面 101 号命令的 ksu_hook_type_cmd 是不兼容的两套协议（命令号、字段名、
+ * 长度都不同），只提供 101 号会让对方的探测落空。
+ */
+struct ksu_get_hook_mode_cmd {
+    char mode[16]; // Output: "Tracepoint" / "Kprobes" / "Inline (SUSFS)"
+};
+
 struct ksu_enable_kpm_cmd {
     __u8 enabled; // Output: true if KPM is enabled
 };
@@ -248,6 +258,8 @@ struct ksu_kpm_cmd {
 };
 
 // Other IOCTL command definitions
+// 98 号：Zygisk Next / ReZygisk 的 root 实现探测命令（对应 ksu_get_hook_mode_cmd）
+static const __u32 KSU_IOCTL_GET_HOOK_MODE = _IOC(_IOC_READ, 'K', 98, 0);
 static const __u32 KSU_IOCTL_GET_FULL_VERSION = _IOC(_IOC_READ, 'K', 100, 0);
 static const __u32 KSU_IOCTL_HOOK_TYPE = _IOC(_IOC_READ, 'K', 101, 0);
 static const __u32 KSU_IOCTL_ENABLE_KPM = _IOC(_IOC_READ, 'K', 102, 0);

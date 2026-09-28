@@ -850,6 +850,29 @@ static int do_get_hook_type(void __user *arg)
     return 0;
 }
 
+/*
+ * 98. GET_HOOK_MODE - Zygisk Next / ReZygisk 用来确认「当前 root 实现是什么」的
+ * 探测命令。对方按 struct ksu_get_hook_mode_cmd（char mode[16]）读取，拿到的
+ * 字符串会决定它把 root 实现归为哪个变体；字符串为空则被当成认不出来。
+ *
+ * 本仓库没有启用 SUSFS，也没有手动 hook，syscall 拦截走的是 tracepoint
+ * （ksu_syscall_hook_manager_init 里 register_trace_prio_sys_enter），因此上报
+ * "Tracepoint"。这个取值必须用它认识的写法，不能自造。
+ */
+static int do_get_hook_mode(void __user *arg)
+{
+    struct ksu_get_hook_mode_cmd cmd = { 0 };
+
+    strscpy(cmd.mode, "Tracepoint", sizeof(cmd.mode));
+
+    if (copy_to_user(arg, &cmd, sizeof(cmd))) {
+        pr_err("get_hook_mode: copy_to_user failed\n");
+        return -EFAULT;
+    }
+
+    return 0;
+}
+
 // 102. ENABLE_KPM - Check if KPM is enabled
 static int do_enable_kpm(void __user *arg)
 {
@@ -1025,6 +1048,12 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
         .name = "GET_FULL_VERSION",
         .handler = do_get_full_version,
         .perm_check = always_allow
+    },
+    {
+        .cmd = KSU_IOCTL_GET_HOOK_MODE,
+        .name = "GET_HOOK_MODE",
+        .handler = do_get_hook_mode,
+        .perm_check = manager_or_root
     },
     { 
         .cmd = KSU_IOCTL_HOOK_TYPE,
