@@ -1,0 +1,208 @@
+name: Build XecHide
+
+on:
+  push:
+    branches: [ "main", "dev", "ci" ]
+    paths:
+      - '.github/workflows/build-xechide.yml'
+      - 'xechide/**'
+  pull_request:
+    branches: [ "main", "dev" ]
+    paths:
+      - '.github/workflows/build-xechide.yml'
+      - 'xechide/**'
+  workflow_dispatch:
+
+jobs:
+  build-xechide:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./xechide
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          # com.v7878.vmtools 只以源码形式提供（external/AndroidVMTools）
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # 不用 android-actions/setup-android@v4：它会无条件执行 `sdkmanager tools`，
+      # 而 Google 已下架 tools 包，该 action 必然 exit 1 并中断 job。
+      # 改为复用 runner 镜像自带的 Android SDK + cmdline-tools，逐包安装。
+      - name: Setup Android SDK
+        shell: bash
+        working-directory: .
+        run: |
+          set -uo pipefail
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [ -z "${SDK_ROOT}" ] || [ ! -d "${SDK_ROOT}" ]; then
+            SDK_ROOT=""
+            for d in /usr/local/lib/android/sdk /opt/android-sdk /opt/android "$HOME/Android/Sdk" "$HOME/android-sdk"; do
+              if [ -d "$d" ]; then SDK_ROOT="$d"; break; fi
+            done
+          fi
+          if [ -z "${SDK_ROOT}" ]; then
+            echo "::error::no Android SDK found on this runner"
+            ls -la /usr/local/lib/android 2>/dev/null || true
+            exit 1
+          fi
+          echo "Android SDK root: ${SDK_ROOT}"
+          echo "ANDROID_HOME=${SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${SDK_ROOT}" >> "$GITHUB_ENV"
+
+          SDKMGR="$(find "${SDK_ROOT}/cmdline-tools" -maxdepth 3 -type f -name sdkmanager 2>/dev/null | sort | tail -n 1)"
+          if [ -z "${SDKMGR}" ]; then
+            echo "::error::sdkmanager not found under ${SDK_ROOT}/cmdline-tools"
+            find /usr/local /opt "$HOME" -maxdepth 5 -type f -name sdkmanager 2>/dev/null | head -n 20 || true
+            exit 1
+          fi
+          echo "sdkmanager: ${SDKMGR}"
+          echo "$(dirname "${SDKMGR}")" >> "$GITHUB_PATH"
+          echo "${SDK_ROOT}/platform-tools" >> "$GITHUB_PATH"
+
+          yes | "${SDKMGR}" --sdk_root="${SDK_ROOT}" --licenses > /dev/null 2>&1 || true
+
+          # 版本与 xechide/build.gradle.kts 的 targetSdkVer(37) 保持一致
+          for pkg in "platform-tools" "platforms;android-37" "build-tools;37.0.0"; do
+            echo "--- installing ${pkg}"
+            "${SDKMGR}" --sdk_root="${SDK_ROOT}" --install "${pkg}" \
+              || echo "::warning::sdkmanager could not install '${pkg}'; Gradle will try to auto-download it"
+          done
+
+          ls "${SDK_ROOT}/build-tools" 2>/dev/null || true
+          ls "${SDK_ROOT}/platforms" 2>/dev/null || true
+
+      - name: Build with Gradle
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          # kotlinc / javac 的诊断行不会被 runner 自动上报，构建一失败就只剩一句
+          # "exit code 1"。这里把关键诊断行转成 annotation，让报错能跟着 check run 暴露。
+          set +e
+          ./gradlew clean assembleRelease 2>&1 | tee /tmp/gradle-xechide.log
+          STATUS="${PIPESTATUS[0]}"
+
+          if [ "${STATUS}" -ne 0 ]; then
+            echo "===== Gradle failed with exit ${STATUS} ====="
+            emit() {
+              while IFS= read -r l; do
+                l="${l%$'\r'}"
+                l="${l//'%'/'%25'}"
+                echo "::error::${l}"
+              done
+            }
+            grep -nE "(^|[[:space:]])[ew]: |error:|What went wrong|Execution failed for task|Could not (find|resolve|determine|create)|Caused by|SDK location" \
+              /tmp/gradle-xechide.log | head -n 25 | emit
+            tail -n 20 /tmp/gradle-xechide.log | emit
+            echo "===== end of diagnostics ====="
+            exit "${STATUS}"
+          fi
+
+      # 刷入前先把包验一遍。模块 zip 缺 customize.sh 时，管理器只会给一句
+      # "not a valid package"，排查成本很高；在这里断言比在手机上试要便宜得多。
+      #
+      # 产物结构由 ZygoteLoader 决定（见 plugin/.../ZygoteLoaderDecorator.java）：
+      #   module.prop / customize.sh / classes*.dex / zygisk/<abi>.so / packages/<pkg>
+      #   以及 APK 的 assets/ 被摊平到模块根目录（9.cfg、uninstall.sh、customize.d/）。
+      # 它刻意不生成 META-INF：ksud 的 installer.sh 走 Magisk 兼容路径，只认 customize.sh。
+      - name: Verify module package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ZIP=$(find zygote/build/outputs/magisk -type f -name "*.zip" | head -n 1)
+          if [ -z "${ZIP}" ]; then
+            echo "::error::no module zip produced under zygote/build/outputs/magisk"
+            find zygote/build -name "*.zip" || true
+            exit 1
+          fi
+          echo "module zip: ${ZIP}"
+
+          echo "--- entries ---"
+          unzip -l "${ZIP}"
+
+          missing=0
+          for entry in "module.prop" "customize.sh" "uninstall.sh" "9.cfg" \
+                       "packages/android" \
+                       "customize.d/00-verify-resources.sh" \
+                       "customize.d/10-check-zygisk.sh" \
+                       "customize.d/20-install-config.sh"; do
+            if unzip -Z1 "${ZIP}" | grep -qx "${entry}"; then
+              echo "ok   ${entry}"
+            else
+              echo "::error::missing entry in module zip: ${entry}"
+              missing=1
+            fi
+          done
+
+          if ! unzip -Z1 "${ZIP}" | grep -qE '^zygisk/[^/]+\.so$'; then
+            echo "::error::no zygisk/<abi>.so inside module zip"
+            missing=1
+          fi
+
+          if ! unzip -Z1 "${ZIP}" | grep -qE '^classes[0-9]*\.dex$'; then
+            echo "::error::no classes.dex inside module zip"
+            missing=1
+          fi
+
+          # entrypoint 是运行时按字符串反射查找的，被混淆或改名都会导致注入后什么都不发生
+          unzip -p "${ZIP}" module.prop > /tmp/module.prop
+          cat /tmp/module.prop
+          for kv in "id=sysfwk_zygisk" \
+                    "entrypoint=com.xecpro.xechide.zygote.HideEntry"; do
+            if grep -qx "${kv}" /tmp/module.prop; then
+              echo "ok   module.prop ${kv}"
+            else
+              echo "::error::module.prop missing '${kv}'"
+              missing=1
+            fi
+          done
+
+          # attachNativeLibs 由插件按 APK 里除 libzygisk_loader.so 外是否还有 .so 自动推导，
+          # 断言具体取值会把「换了一个带 native 库的依赖」误报成结构错误，这里只校验键存在。
+          if grep -q '^attachNativeLibs=' /tmp/module.prop; then
+            echo "ok   module.prop $(grep '^attachNativeLibs=' /tmp/module.prop)"
+          else
+            echo "::error::module.prop missing 'attachNativeLibs'"
+            missing=1
+          fi
+
+          # 配置必须是合法的 BCFG 容器，否则设备上引擎会静默回退到空配置。
+          # 解析直接用工程自带的 codec，避免在 CI 里再抄一遍格式、日后漂移。
+          unzip -p "${ZIP}" 9.cfg > /tmp/9.cfg
+          if ! python3 tools/make_default_config.py --dump /tmp/9.cfg > /tmp/9.dump.json; then
+            echo "::error::9.cfg is not a valid BCFG container"
+            missing=1
+          else
+            cat /tmp/9.dump.json
+            for expect in '"enabled": true' 'com.xecpro.kernel' 'com.scottyab.rootbeer'; do
+              if grep -qF "${expect}" /tmp/9.dump.json; then
+                echo "ok   9.cfg ${expect}"
+              else
+                echo "::error::9.cfg missing '${expect}'"
+                missing=1
+              fi
+            done
+          fi
+
+          exit "${missing}"
+
+      - name: Upload module
+        uses: actions/upload-artifact@v7
+        with:
+          name: xechide-module
+          path: xechide/zygote/build/outputs/magisk/**/*.zip
+          if-no-files-found: error

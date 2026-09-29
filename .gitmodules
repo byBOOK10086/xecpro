@@ -1,0 +1,3 @@
+[submodule "xechide/external/AndroidVMTools"]
+	path = xechide/external/AndroidVMTools
+	url = https://github.com/aerath-stuff/AndroidVMTools
