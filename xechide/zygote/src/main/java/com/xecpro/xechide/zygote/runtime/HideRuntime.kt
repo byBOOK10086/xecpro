@@ -1,6 +1,5 @@
 package com.xecpro.xechide.zygote.runtime
 
-import android.os.UserHandle
 import com.xecpro.xechide.common.BlobCodec
 import com.xecpro.xechide.common.ConfigJson
 import com.xecpro.xechide.common.HideConfig
@@ -20,6 +19,11 @@ class HideRuntime(val loader: ClassLoader?) {
 
     private companion object {
         const val TAG = "HideRuntime"
+
+        /** AOSP 里 UserHandle.PER_USER_RANGE 就是 100000，跨版本稳定；直接算术取值可绕开隐藏 API 限制 */
+        const val PER_USER_RANGE = 100000
+
+        fun userIdOf(uid: Int): Int = uid / PER_USER_RANGE
     }
 
     val bridge = PmBridge(loader)
@@ -84,8 +88,7 @@ class HideRuntime(val loader: ClassLoader?) {
 
         hiddenTargets[callingUid]?.let { if (it.contains(targetPackage)) return true }
 
-        val userId = UserHandle.getUserId(callingUid)
-        val isSystem = isSystemPackage(targetPackage, userId)
+        val isSystem = isSystemPackage(targetPackage, userIdOf(callingUid))
 
         for (caller in packagesForUid(callingUid)) {
             if (rules.shouldHide(caller, targetPackage, isSystem)) {
@@ -102,8 +105,7 @@ class HideRuntime(val loader: ClassLoader?) {
     fun installSourceActionForUid(callingUid: Int, targetPackage: String): RuleEngine.SourceAction {
         if (!config.enabled || callingUid == Names.UID_SYSTEM) return RuleEngine.SourceAction.DISABLED
 
-        val userId = UserHandle.getUserId(callingUid)
-        val isSystem = isSystemPackage(targetPackage, userId)
+        val isSystem = isSystemPackage(targetPackage, userIdOf(callingUid))
 
         for (caller in packagesForUid(callingUid)) {
             val action = rules.installSourceAction(caller, targetPackage, isSystem)
@@ -119,7 +121,7 @@ class HideRuntime(val loader: ClassLoader?) {
 
         for (caller in packagesForUid(callingUid)) {
             if (!rules.activityGuardEnabled(caller)) continue
-            if (rules.shouldHide(caller, targetPackage, isSystemPackage(targetPackage, UserHandle.getUserId(callingUid)))) {
+            if (rules.shouldHide(caller, targetPackage, isSystemPackage(targetPackage, userIdOf(callingUid)))) {
                 return true
             }
         }
