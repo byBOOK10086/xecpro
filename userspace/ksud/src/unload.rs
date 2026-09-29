@@ -40,7 +40,7 @@ fn find_su_domain_pids() -> Vec<i32> {
     pids
 }
 
-/// Find PIDs of processes holding ksu_driver or ksu_fdwrapper file descriptors.
+/// Find PIDs of processes holding xecpro_driver or xecpro_fdwrapper file descriptors.
 /// Returns a list of PIDs excluding our own.
 fn find_ksu_fd_holders() -> Vec<i32> {
     let my_pid = std::process::id() as i32;
@@ -101,7 +101,7 @@ fn close_ksu_fds() {
         };
         if let Ok(target) = fs::read_link(entry.path()) {
             let target_str = target.to_string_lossy();
-            if target_str.contains("[ksu_driver") || target_str.contains("[ksu_fdwrapper]") {
+            if target_str.contains("[xecpro_driver") || target_str.contains("[xecpro_fdwrapper]") {
                 info!("unload: closing fd {fd} -> {target_str}");
                 unsafe {
                     libc::close(fd);
