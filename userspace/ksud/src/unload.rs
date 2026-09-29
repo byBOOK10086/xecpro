@@ -68,7 +68,9 @@ fn find_ksu_fd_holders() -> Vec<i32> {
             let link_path = fd_entry.path();
             if let Ok(target) = fs::read_link(&link_path) {
                 let target_str = target.to_string_lossy();
-                if target_str.contains("[xecpro_driver") || target_str.contains("[xecpro_fdwrapper]") {
+                if target_str.contains("[xecpro_driver")
+                    || target_str.contains("[xecpro_fdwrapper]")
+                {
                     pids.push(pid);
                     break;
                 }

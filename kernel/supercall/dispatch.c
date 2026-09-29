@@ -53,10 +53,7 @@ static int do_get_info(void __user *arg)
      * keeps seeing the real build number.
      */
     bool mgr = is_manager();
-    struct ksu_get_info_cmd cmd = {
-        .version = mgr ? KERNEL_SU_VERSION : KSU_COMPAT_REPORTED_VERSION,
-        .flags = 0
-    };
+    struct ksu_get_info_cmd cmd = { .version = mgr ? KERNEL_SU_VERSION : KSU_COMPAT_REPORTED_VERSION, .flags = 0 };
 
 #ifdef MODULE
     cmd.flags |= KSU_GET_INFO_FLAG_LKM;
@@ -89,10 +86,8 @@ static int do_get_info_legacy(void __user *arg)
 {
     /* Same clamping rationale as do_get_info(). */
     bool mgr = is_manager();
-    struct ksu_get_info_legacy_cmd cmd = {
-        .version = mgr ? KERNEL_SU_VERSION : KSU_COMPAT_REPORTED_VERSION,
-        .flags = 0
-    };
+    struct ksu_get_info_legacy_cmd cmd = { .version = mgr ? KERNEL_SU_VERSION : KSU_COMPAT_REPORTED_VERSION,
+                                           .flags = 0 };
 
 #ifdef MODULE
     cmd.flags |= KSU_GET_INFO_FLAG_LKM;
