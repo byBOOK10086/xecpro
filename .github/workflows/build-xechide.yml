@@ -116,8 +116,9 @@ jobs:
       #
       # 产物结构由 ZygoteLoader 决定（见 plugin/.../ZygoteLoaderDecorator.java）：
       #   module.prop / customize.sh / classes*.dex / zygisk/<abi>.so / packages/<pkg>
-      #   以及 APK 的 assets/ 被摊平到模块根目录（9.cfg、uninstall.sh、customize.d/）。
-      # 它刻意不生成 META-INF：ksud 的 installer.sh 走 Magisk 兼容路径，只认 customize.sh。
+      #   以及 APK 的 assets/ 被摊平到模块根目录（9.cfg、uninstall.sh、post-fs-data.sh、customize.d/、webroot/）。
+      # META-INF/com/google/android/{update-binary,updater-script} 由插件的运行时资源提供，
+      # 因此管理器会把它当 Magisk 兼容包安装，实际动作落在 customize.sh 上。
       - name: Verify module package
         shell: bash
         run: |
@@ -136,7 +137,11 @@ jobs:
 
           missing=0
           for entry in "module.prop" "customize.sh" "uninstall.sh" "9.cfg" \
+                       "post-fs-data.sh" \
                        "packages/android" \
+                       "webroot/index.html" \
+                       "META-INF/com/google/android/update-binary" \
+                       "META-INF/com/google/android/updater-script" \
                        "customize.d/00-verify-resources.sh" \
                        "customize.d/10-check-zygisk.sh" \
                        "customize.d/20-install-config.sh"; do
@@ -196,6 +201,57 @@ jobs:
                 missing=1
               fi
             done
+          fi
+
+          # WebUI 是模块唯一的图形界面入口，必须能被 KernelSU 管理器识别。
+          # 同时校验它与 common/BlobCodec.kt 的字节级契约没有漂移。
+          unzip -p "${ZIP}" webroot/index.html > /tmp/index.html
+          WEBUI_BYTES=$(wc -c < /tmp/index.html)
+          echo "webroot/index.html 大小: ${WEBUI_BYTES} 字节"
+          if [ "${WEBUI_BYTES}" -lt 8192 ]; then
+            echo "::error::webroot/index.html 过小（${WEBUI_BYTES} 字节），可能未正确打包"
+            missing=1
+          fi
+          for expect in 'BCFG' 'xdcv1' 'hide.json' '/data/adb/ksu/cfg/9.cfg' \
+                        '/data/system/sysfwk/9.cfg' \
+                        'protectEssentialPackages' 'hideAccessibility' \
+                        'hideDeveloperOptions' 'hideInputMethods' \
+                        'getPackagesInfo|pm list packages' ; do
+            if grep -qE "${expect}" /tmp/index.html; then
+              echo "ok   webui ${expect}"
+            else
+              echo "::error::webroot/index.html missing '${expect}'"
+              missing=1
+            fi
+          done
+
+          # 规则文件要真正到达 hook 侧：system_server（uid 1000）读不到 /data/adb，
+          # 只能读 /data/system 下的镜像，所以 canonical 写入点与三个发布点缺一不可。
+          # 漏掉发布逻辑时，设备上表现为「配置永远不生效」，而引擎不会报任何错。
+          unzip -p "${ZIP}" post-fs-data.sh > /tmp/post-fs-data.sh
+          unzip -p "${ZIP}" customize.d/20-install-config.sh > /tmp/20-install-config.sh
+          unzip -p "${ZIP}" uninstall.sh > /tmp/uninstall.sh
+          check_mirror() {
+            if grep -qF "$2" "$1"; then
+              echo "ok   $(basename "$1") 含 $2"
+            else
+              echo "::error::$(basename "$1") 未包含 '${2}'"
+              missing=1
+            fi
+          }
+          check_mirror /tmp/post-fs-data.sh '/data/system/sysfwk/9.cfg'
+          check_mirror /tmp/post-fs-data.sh '/data/adb/ksu/cfg/9.cfg'
+          check_mirror /tmp/20-install-config.sh '/data/system/sysfwk/9.cfg'
+          check_mirror /tmp/uninstall.sh '/data/system/sysfwk'
+
+          # 插件会为模块根的每个资源生成 sha256 校验，webroot 必须在其中，
+          # 否则说明资源没有被摊平到模块根，管理器将看不到入口。
+          unzip -p "${ZIP}" customize.d/00-verify-resources.sh > /tmp/verify.sh
+          if grep -q 'webroot/index.html' /tmp/verify.sh; then
+            echo "ok   00-verify-resources.sh 覆盖 webroot/index.html"
+          else
+            echo "::error::00-verify-resources.sh 未覆盖 webroot/index.html"
+            missing=1
           fi
 
           exit "${missing}"

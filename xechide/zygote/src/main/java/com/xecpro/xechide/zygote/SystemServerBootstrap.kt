@@ -9,6 +9,7 @@ import com.xecpro.xechide.zygote.hook.ActivityGuardHook
 import com.xecpro.xechide.zygote.hook.HookKit
 import com.xecpro.xechide.zygote.hook.InstallSourceHook
 import com.xecpro.xechide.zygote.hook.PmsHook
+import com.xecpro.xechide.zygote.hook.SettingsHideHook
 import com.xecpro.xechide.zygote.runtime.HideRuntime
 import com.xecpro.xechide.zygote.util.FrameKit.argument
 import com.xecpro.xechide.zygote.util.Names
@@ -101,6 +102,7 @@ object SystemServerBootstrap {
                 PmsHook(kit, state),
                 InstallSourceHook(kit, state),
                 ActivityGuardHook(kit, state),
+                SettingsHideHook(kit, state),
             )
 
             for (hook in hooks) {

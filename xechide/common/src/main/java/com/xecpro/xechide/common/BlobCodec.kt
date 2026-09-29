@@ -28,6 +28,21 @@ object BlobCodec {
     /** 配置文件的落盘位置：与内置模块 blob 同一目录，编号顺延 */
     const val CONFIG_PATH = "/data/adb/ksu/cfg/9.cfg"
 
+    /**
+     * hook 侧（uid 1000）实际能读到的位置。
+     *
+     * canonical 路径在 /data/adb 下：该目录 0700 root，标签 `adb_data_file`，仓库自带的
+     * sepolicy 也只给 root 的 zygote 放行。system_server 既过不了 DAC、也不在允许域里，
+     * 直接读恒为 EACCES（且会被 runCatching 静默成「未配置」）。
+     *
+     * 因此由 root 侧（安装脚本、开机脚本、管理器保存配置后）把同一份 BCFG blob 原样发布到这里：
+     * 目录 0755 + 文件 0644，标签 `system_data_file` 对 system_server 放行。
+     */
+    const val MIRROR_PATH = "/data/system/sysfwk/9.cfg"
+
+    /** 读取优先级：先取 hook 侧可读的镜像，再退回 canonical */
+    val READ_PATHS = arrayOf(MIRROR_PATH, CONFIG_PATH)
+
     data class Entry(val path: String, val mode: Int, val data: ByteArray) {
         override fun equals(other: Any?): Boolean =
             other is Entry && path == other.path && mode == other.mode && data.contentEquals(other.data)

@@ -22,6 +22,15 @@ data class HideConfig(
     /** 是否对所有作用域应用做安装源伪造 */
     var spoofInstallSource: Boolean = true,
 
+    /**
+     * 白名单模式下的关键包保护。
+     *
+     * 白名单模式（「除列表外全部隐藏」）最容易出事的地方是连 android / systemui /
+     * permissioncontroller / GMS 一起隐藏，目标应用随即崩溃或无限重试。
+     * 打开后这些包在白名单模式下始终可见，除非被显式写进 oppositePackages。
+     */
+    var protectEssentialPackages: Boolean = true,
+
     /** 新装应用默认套用的规则；null 表示不自动套用 */
     var defaultRule: AppRule? = null,
 
@@ -58,6 +67,15 @@ data class HideConfig(
 
         /** 相对全局开关反转 Activity 启动保护 */
         var invertActivityGuard: Boolean = false,
+
+        /** 对目标应用隐藏「已安装的无障碍服务」列表（HMA 的 hide accessibility services） */
+        var hideAccessibility: Boolean = false,
+
+        /** 对目标应用隐藏开发者选项已开启的状态（development_settings_enabled / adb_enabled） */
+        var hideDeveloperOptions: Boolean = false,
+
+        /** 对目标应用隐藏「已启用的输入法」列表 */
+        var hideInputMethods: Boolean = false,
 
         /** 引用的模板名 */
         var templates: MutableSet<String> = mutableSetOf(),

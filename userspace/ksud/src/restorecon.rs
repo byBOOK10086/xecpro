@@ -7,7 +7,13 @@ use anyhow::{Context, Ok};
 use extattr::{Flags as XattrFlags, lsetxattr};
 
 pub const SYSTEM_CON: &str = "u:object_r:system_file:s0";
-pub const KSU_CON: &str = "u:object_r:ksu_file:s0";
+/// 与 kernel/selinux/selinux.h 的 `KSU_FILE_CONTEXT` 必须逐字一致。
+///
+/// 内核侧的类型名已经跟着整体改名走（`KERNEL_SU_FILE = "xecpro_file"`，见 selinux/rules.c
+/// 的 `ksu_type(db, KERNEL_SU_FILE, "file_type")`），设备上的策略里并不存在 `ksu_file`
+/// 这个类型；继续按旧名打标签，`lsetxattr` 会以 EINVAL 失败，`restorecon()` 直接
+/// 在第一步返回错误，后面 `restore_syscon_if_unlabeled(MODULE_DIR)` 也就永远不执行。
+pub const KSU_CON: &str = "u:object_r:xecpro_file:s0";
 pub const UNLABEL_CON: &str = "u:object_r:unlabeled:s0";
 
 const SELINUX_XATTR: &str = "security.selinux";

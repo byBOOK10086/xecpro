@@ -35,6 +35,22 @@ object Names {
 
     const val CONSTRUCTOR = "<init>"
 
+    // ---- 设置项隐藏的 hook 目标 ----
+
+    const val ACCESSIBILITY_MANAGER_SERVICE =
+        "com.android.server.accessibility.AccessibilityManagerService"
+    const val INPUT_METHOD_MANAGER_SERVICE =
+        "com.android.server.inputmethod.InputMethodManagerService"
+
+    /**
+     * 设置项存储。AOSP 的 SettingsProvider 声明在 `system` 进程里，
+     * 因此可以直接在 system_server 内拦下 GET_global / GET_secure 这类读取。
+     */
+    const val SETTINGS_PROVIDER = "com.android.providers.settings.SettingsProvider"
+
+    /** [android.provider.Settings.NameValueTable.VALUE]，call() 返回值放在这个 key 下 */
+    const val SETTINGS_VALUE_KEY = "value"
+
     /** 应用商店包名：伪造「用户安装」来源时统一指向它 */
     const val PLAY_STORE = "com.android.vending"
 

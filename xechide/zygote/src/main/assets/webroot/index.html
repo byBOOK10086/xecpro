@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>XecHide 管理器</title>
+<style>
+  :root {
+    --bg: #101114;
+    --card: #1a1c21;
+    --card-2: #22252b;
+    --line: #2c3038;
+    --fg: #e9ecf1;
+    --fg-dim: #9aa2af;
+    --accent: #4c8dff;
+    --accent-soft: #1e3a63;
+    --danger: #ff5d5d;
+    --ok: #3ddc84;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    padding: 0 14px calc(96px + env(safe-area-inset-bottom));
+    background: var(--bg);
+    color: var(--fg);
+    font: 15px/1.5 -apple-system, "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "Microsoft YaHei", sans-serif;
+  }
+  header {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 10px;
+    padding: calc(10px + env(safe-area-inset-top)) 0 10px;
+    background: linear-gradient(var(--bg) 78%, transparent);
+  }
+  header h1 { font-size: 18px; margin: 0; flex: 1; letter-spacing: .4px; }
+  header h1 small { display: block; font-size: 11px; color: var(--fg-dim); font-weight: 400; letter-spacing: 0; }
+  .pill {
+    font-size: 11px; padding: 3px 9px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--fg-dim); white-space: nowrap;
+  }
+  .pill.ok { color: var(--ok); border-color: #234a35; background: #16241d; }
+  .pill.bad { color: var(--danger); border-color: #4a2323; background: #241616; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
+  }
+  .card > h2 {
+    font-size: 13px; margin: 0 0 10px; color: var(--fg-dim);
+    font-weight: 600; letter-spacing: .6px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card > h2 .count { color: var(--fg-dim); font-weight: 400; letter-spacing: 0; text-transform: none; }
+  .card > h2 .spacer { flex: 1; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .row .label { flex: 1; min-width: 0; }
+  .row .label b { display: block; font-size: 14px; font-weight: 500; }
+  .row .label span { display: block; font-size: 11.5px; color: var(--fg-dim); margin-top: 1px; }
+  .switch { position: relative; width: 46px; height: 27px; flex: none; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; }
+  .switch i {
+    position: absolute; inset: 0; border-radius: 999px; background: #363b45;
+    transition: background .18s; pointer-events: none;
+  }
+  .switch i::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 21px; height: 21px;
+    border-radius: 50%; background: #fff; transition: transform .18s;
+  }
+  .switch input:checked + i { background: var(--accent); }
+  .switch input:checked + i::after { transform: translateX(19px); }
+  button {
+    font: inherit; color: var(--fg); background: var(--card-2);
+    border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 13px; cursor: pointer;
+  }
+  button:active { transform: scale(.97); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.ghost { background: transparent; }
+  button.danger { color: var(--danger); border-color: #3d2424; }
+  button.sm { padding: 5px 10px; font-size: 12.5px; border-radius: 9px; }
+  .btnbar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--card-2); border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px 9px; font-size: 12.5px;
+    max-width: 100%;
+  }
+  .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip b { color: var(--fg-dim); font-weight: 400; cursor: pointer; padding: 0 1px; }
+  .chip.preset { background: var(--accent-soft); border-color: #2c4a7a; }
+  .chip.essential { border-style: dashed; color: var(--fg-dim); }
+  .empty { color: var(--fg-dim); font-size: 13px; padding: 6px 0; }
+  details.rule { border: 1px solid var(--line); border-radius: 12px; margin-top: 10px; overflow: hidden; }
+  details.rule > summary {
+    list-style: none; cursor: pointer; padding: 11px 12px;
+    display: flex; align-items: center; gap: 8px; background: var(--card-2);
+  }
+  details.rule > summary::-webkit-details-marker { display: none; }
+  details.rule > summary .name { flex: 1; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  details.rule > summary .tag { font-size: 11px; color: var(--fg-dim); }
+  details.rule .body { padding: 4px 12px 12px; }
+  details.rule[open] > summary { border-bottom: 1px solid var(--line); }
+  .sub { font-size: 11.5px; color: var(--fg-dim); margin: 10px 0 4px; letter-spacing: .3px; }
+  input[type=text], select {
+    font: inherit; width: 100%; color: var(--fg); background: #14161a;
+    border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px;
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  /* 应用选择器 */
+  .sheet {
+    position: fixed; inset: 0; z-index: 60; display: none;
+    background: rgba(0,0,0,.6); backdrop-filter: blur(2px);
+  }
+  .sheet.on { display: block; }
+  .sheet .panel {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    background: var(--bg);
+    padding: calc(10px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom));
+  }
+  .sheet .panel > .head { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .sheet .panel > .head b { flex: 1; font-size: 15px; }
+  .filters { display: flex; gap: 8px; margin-bottom: 10px; }
+  .filters select { width: auto; flex: none; }
+  .list { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: 12px; }
+  .item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .item:last-child { border-bottom: 0; }
+  .item.sel { background: var(--accent-soft); }
+  .item img, .item .ico {
+    width: 30px; height: 30px; border-radius: 8px; flex: none; background: #2a2e36;
+    display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--fg-dim);
+  }
+  .item .meta { flex: 1; min-width: 0; }
+  .item .meta b { display: block; font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .meta span { display: block; font-size: 11px; color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .mark { color: var(--accent); font-size: 16px; width: 18px; text-align: center; }
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(transparent, var(--bg) 40%);
+    display: flex; gap: 8px;
+  }
+  .bar button { flex: 1; }
+  #toast {
+    position: fixed; left: 50%; bottom: calc(78px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(10px);
+    background: #2b3038; border: 1px solid var(--line); color: var(--fg);
+    padding: 9px 14px; border-radius: 999px; font-size: 13px;
+    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 90;
+    max-width: 88vw; text-align: center;
+  }
+  #toast.on { opacity: 1; transform: translateX(-50%); }
+</style>
+</head>
+<body>
+<header>
+  <h1>XecHide 管理器<small id="cfgPath" title="前者是规则源文件，后者是发布给 system_server 读取的副本">/data/adb/ksu/cfg/9.cfg → /data/system/sysfwk/9.cfg</small></h1>
+  <span class="pill" id="status">读取中…</span>
+</header>
+
+<div class="card">
+  <h2>全局开关</h2>
+  <div id="globals"></div>
+</div>
+
+<div class="card">
+  <h2>默认规则<span class="count" id="defaultHint"></span></h2>
+  <div id="defaultRule"></div>
+</div>
+
+<div class="card">
+  <h2>应用规则<span class="count" id="scopeCount"></span><span class="spacer"></span>
+    <button class="sm" id="addScope">添加应用</button>
+  </h2>
+  <div id="scopeList"></div>
+</div>
+
+<div class="card">
+  <h2>模板<span class="count" id="tplCount"></span><span class="spacer"></span>
+    <button class="sm" id="addTpl">新建</button>
+  </h2>
+  <div id="tplList"></div>
+  <div class="sub">内置预设（规则里直接用它的名字即可引用，无需复制包名）</div>
+  <div class="chips" id="presetChips"></div>
+</div>
+
+<div class="bar">
+  <button class="primary" id="save">保存并生效</button>
+  <button class="ghost" id="reload">重新读取</button>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="panel">
+    <div class="head">
+      <b>选择应用</b>
+      <button class="sm" id="pickAll">全选可见</button>
+      <button class="sm primary" id="pickDone">确定</button>
+      <button class="sm ghost" id="pickCancel">取消</button>
+    </div>
+    <div class="filters">
+      <input type="text" id="pickSearch" placeholder="搜索包名或名称">
+      <select id="pickKind">
+        <option value="user">用户应用</option>
+        <option value="system">系统应用</option>
+        <option value="both">全部</option>
+      </select>
+    </div>
+    <div class="list" id="pickList"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ---------- KernelSU WebUI 桥 ---------- */
+const KS = window.ksu || window.kernelsu || null;
+
+function exec(cmd) {
+  return new Promise((resolve) => {
+    if (!KS || typeof KS.exec !== "function") {
+      resolve({ errno: -1, stdout: "", stderr: "未检测到 KernelSU WebUI 接口" });
+      return;
+    }
+    try {
+      // 旧版是 exec(cmd, callback)，新版是 exec(cmd) 返回 Promise
+      if (KS.exec.length >= 2) {
+        KS.exec(cmd, (errno, stdout, stderr) => resolve({ errno: errno, stdout: stdout, stderr: stderr }));
+        return;
+      }
+      const r = KS.exec(cmd);
+      if (r && typeof r.then === "function") {
+        r.then((res) => resolve(res || {}), (e) => resolve({ errno: -1, stdout: "", stderr: String(e) }));
+      } else {
+        resolve(r || { errno: 0, stdout: "", stderr: "" });
+      }
+    } catch (e) {
+      resolve({ errno: -1, stdout: "", stderr: String(e) });
+    }
+  });
+}
+
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("on");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove("on"), 2200);
+  if (KS && typeof KS.toast === "function") { try { KS.toast(msg); } catch (e) {} }
+}
+
+/* ---------- BCFG 容器编解码（与 common/BlobCodec.kt 完全一致） ---------- */
+const MAGIC = [0x42, 0x43, 0x46, 0x47];                 // "BCFG"
+const XOR_KEY = [0x78, 0x64, 0x63, 0x76, 0x31];         // "xdcv1"
+const ENTRY_NAME = "hide.json";
+const ENTRY_MODE = 0o644;
+const CFG_PATH = "/data/adb/ksu/cfg/9.cfg";
+/* 同一份 blob 要再发布给 system_server（uid 1000）读：它读不到 /data/adb 下的文件 */
+const MIRROR_DIR = "/data/system/sysfwk";
+const MIRROR_PATH = MIRROR_DIR + "/9.cfg";
+
+function xorBytes(bytes) {
+  const out = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) out[i] = bytes[i] ^ XOR_KEY[i % XOR_KEY.length];
+  return out;
+}
+
+function packBlob(text) {
+  const data = new TextEncoder().encode(text);
+  const path = new TextEncoder().encode(ENTRY_NAME);
+  const size = 4 + 1 + 4 + 2 + path.length + 4 + 4 + data.length;
+  const buf = new Uint8Array(size);
+  const dv = new DataView(buf.buffer);
+  let off = 0;
+  buf.set(MAGIC, off); off += 4;
+  dv.setUint8(off, 1); off += 1;
+  dv.setUint32(off, 1, true); off += 4;
+  dv.setUint16(off, path.length, true); off += 2;
+  buf.set(path, off); off += path.length;
+  dv.setUint32(off, ENTRY_MODE, true); off += 4;
+  dv.setUint32(off, data.length, true); off += 4;
+  buf.set(data, off);
+  return xorBytes(buf);
+}
+
+function unpackBlob(bytes) {
+  const raw = xorBytes(bytes);
+  if (raw.length < 9) return null;
+  for (let i = 0; i < 4; i++) if (raw[i] !== MAGIC[i]) return null;
+  const dv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
+  const count = dv.getUint32(5, true);
+  let off = 9;
+  for (let i = 0; i < count; i++) {
+    if (off + 2 > raw.length) return null;
+    const plen = dv.getUint16(off, true); off += 2;
+    const name = new TextDecoder().decode(raw.subarray(off, off + plen)); off += plen;
+    const mode = dv.getUint32(off, true); off += 4;
+    const dlen = dv.getUint32(off, true); off += 4;
+    if (off + dlen > raw.length) return null;
+    if (name === ENTRY_NAME) return new TextDecoder().decode(raw.subarray(off, off + dlen));
+    off += dlen;
+  }
+  return null;
+}
+
+function bytesToBase64(bytes) {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(s);
+}
+
+function base64ToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+/* ---------- 配置模型 ---------- */
+const PRESETS = {
+  root: ["com.topjohnwu.magisk", "io.github.huskydg.magisk", "me.weishu.kernelsu", "com.xecpro.kernel",
+    "eu.chainfire.supersu", "com.noshufou.android.su", "com.noshufou.android.su.elite", "com.koushikdutta.superuser",
+    "com.thirdparty.superuser", "com.yellowes.su", "com.kingroot.kinguser", "com.kingo.root",
+    "com.smedialink.oneclickroot", "com.zhiqupk.root.global", "com.alephzain.framaroot", "com.geohot.towelroot",
+    "me.phh.superuser", "org.superuser", "com.apkmodifier.pro", "com.termux", "com.termux.api"],
+  detector: ["com.scottyab.rootbeer", "com.joeykrim.rootcheck", "com.saurik.substrate", "com.zachspong.temprootremovejb",
+    "com.amphoras.hidemyroot", "com.amphoras.hidemyrootadfree", "com.formyhm.hideroot", "com.formyhm.hiderootPremium",
+    "com.devadvance.rootcloak", "com.devadvance.rootcloakplus", "com.rootcloak", "com.rootcloakpremium",
+    "com.rootcloakshortcut", "com.rootcloakshortcutpro", "com.cyberalpha.rootcloak", "com.ramdroid.appquarantine",
+    "com.ramdroid.appquarantinepro", "com.byapps.hidemyroot", "com.oasisfeng.island", "com.oasisfeng.island.fdroid"],
+  xposed: ["de.robv.android.xposed.installer", "org.meowcat.edxposed.manager", "com.solohsu.android.edxp.manager",
+    "org.lsposed.manager", "org.lsposed.lspatch", "io.github.lsposed.manager", "com.variable.apkhook"],
+  shizuku: ["moe.shizuku.privileged.api", "moe.shizuku.redirect", "rikka.shizuku", "moe.shizuku.fontprovider"],
+  automation: ["com.oasisfeng.greenify", "com.llamalab.automate", "net.dinglisch.android.taskerm",
+    "com.teslacoilsw.launcher", "ch.deletescape.lawnchair.plah"]
+};
+const PRESET_LABEL = { root: "Root 管理器", detector: "Root 检测器", xposed: "Xposed/LSPosed", shizuku: "Shizuku", automation: "自动化/启动器" };
+
+const ESSENTIAL = ["android", "com.android.systemui", "com.android.settings", "com.android.permissioncontroller",
+  "com.google.android.permissioncontroller", "com.android.providers.settings", "com.android.providers.media",
+  "com.android.providers.downloads", "com.android.shell", "com.google.android.gms", "com.google.android.gsf"];
+
+const DEFAULT_CFG = {
+  version: 1, enabled: true, blockActivityLaunch: true, spoofInstallSource: true, protectEssentialPackages: true,
+  defaultRule: {
+    whitelist: false, excludeSystemApps: true, hideInstallSource: false, hideSystemInstallSource: false,
+    invertActivityGuard: false, hideAccessibility: false, hideDeveloperOptions: false, hideInputMethods: false,
+    templates: [], packages: ["com.xecpro.kernel", "me.weishu.kernelsu", "com.topjohnwu.magisk",
+      "io.github.huskydg.magisk", "eu.chainfire.supersu", "com.scottyab.rootbeer", "com.joeykrim.rootcheck",
+      "org.lsposed.manager", "moe.shizuku.privileged.api", "rikka.shizuku"], oppositePackages: []
+  },
+  templates: {}, scope: {}
+};
+
+function emptyRule() {
+  return {
+    whitelist: false, excludeSystemApps: true, hideInstallSource: false, hideSystemInstallSource: false,
+    invertActivityGuard: false, hideAccessibility: false, hideDeveloperOptions: false, hideInputMethods: false,
+    templates: [], packages: [], oppositePackages: []
+  };
+}
+
+function normalizeRule(raw) {
+  const base = emptyRule();
+  if (!raw || typeof raw !== "object") return base;
+  for (const k of Object.keys(base)) {
+    if (Array.isArray(base[k])) {
+      base[k] = Array.isArray(raw[k]) ? raw[k].slice() : base[k];
+    } else if (typeof raw[k] === "boolean") {
+      base[k] = raw[k];
+    }
+  }
+  return base;
+}
+
+let CFG = null;          // 当前内存里的配置（保留未知字段）
+let PACKAGES = { user: [], system: [] };
+let LABELS = {};
+
+function normalizeConfig(raw) {
+  const cfg = (raw && typeof raw === "object") ? raw : {};
+  const out = Object.assign({}, DEFAULT_CFG, cfg);
+  out.version = 1;
+  out.enabled = cfg.enabled !== false;
+  out.blockActivityLaunch = cfg.blockActivityLaunch !== false;
+  out.spoofInstallSource = cfg.spoofInstallSource !== false;
+  out.protectEssentialPackages = cfg.protectEssentialPackages !== false;
+  out.defaultRule = normalizeRule(cfg.defaultRule);
+  out.templates = {};
+  const tpls = (cfg.templates && typeof cfg.templates === "object") ? cfg.templates : {};
+  for (const name of Object.keys(tpls)) {
+    const t = tpls[name] || {};
+    out.templates[name] = { packages: Array.isArray(t.packages) ? t.packages.slice() : [] };
+  }
+  out.scope = {};
+  const scope = (cfg.scope && typeof cfg.scope === "object") ? cfg.scope : {};
+  for (const pkg of Object.keys(scope)) out.scope[pkg] = normalizeRule(scope[pkg]);
+  return out;
+}
+
+/* ---------- 读写设备上的配置 ---------- */
+async function readBlobText(path) {
+  const r = await exec("base64 " + path + " 2>/dev/null");
+  const b64 = (r.stdout || "").replace(/\s+/g, "");
+  if (!b64) return null;
+  return unpackBlob(base64ToBytes(b64));
+}
+
+async function readConfig() {
+  // canonical 是源头；万一被清掉（手动清理设备状态等），退回 system_server 实际读的那份镜像。
+  const text = await readBlobText(CFG_PATH) || await readBlobText(MIRROR_PATH);
+  if (!text) return null;
+  return JSON.parse(text);
+}
+
+async function writeConfig(cfg) {
+  const blob = packBlob(JSON.stringify(cfg));
+  const b64 = bytesToBase64(blob);
+  const tmp = CFG_PATH + ".new";
+
+  // canonical 是源头，镜像只是发布给 uid 1000 的副本；发布失败不该把「保存」判成失败，
+  // 所以整段用 ( ... || true ) 兜住，退出码以 canonical 的落地结果为准。
+  const publish = "mkdir -p " + MIRROR_DIR + " && cp -f " + CFG_PATH + " " + MIRROR_PATH +
+    " && chmod 0755 " + MIRROR_DIR + " && chmod 0644 " + MIRROR_PATH;
+
+  const cmd = "mkdir -p /data/adb/ksu/cfg && printf '%s' '" + b64 + "' | base64 -d > " + tmp +
+    " && chmod 0600 " + tmp + " && mv -f " + tmp + " " + CFG_PATH +
+    " && ( ( " + publish + " ) >/dev/null 2>&1 || true )";
+  const r = await exec(cmd);
+  return r.errno === 0 && !(r.stderr || "").trim();
+}
+
+/* ---------- 应用列表 ---------- */
+function parsePackages(out) {
+  const list = [];
+  for (const line of (out || "").split("\n")) {
+    const m = /^package:(.+)$/.exec(line.trim());
+    if (m) list.push(m[1].trim());
+  }
+  return list.sort();
+}
+
+async function loadPackages() {
+  const [u, s] = await Promise.all([
+    exec("pm list packages -3 2>/dev/null"),
+    exec("pm list packages -s 2>/dev/null")
+  ]);
+  PACKAGES.user = parsePackages(u.stdout);
+  PACKAGES.system = parsePackages(s.stdout);
+  // 管理器若暴露了带名称的接口就顺手用上，失败不影响功能
+  if (KS && typeof KS.getPackagesInfo === "function") {
+    try {
+      const raw = KS.getPackagesInfo();
+      const text = (raw && typeof raw.then === "function") ? await raw : raw;
+      const arr = typeof text === "string" ? JSON.parse(text) : text;
+      if (Array.isArray(arr)) {
+        for (const it of arr) {
+          if (it && it.packageName && it.label) LABELS[it.packageName] = it.label;
+        }
+      }
+    } catch (e) { /* 忽略 */ }
+  }
+}
+
+function labelOf(pkg) { return LABELS[pkg] || pkg; }
+function iconUrl(pkg) { return "ksu://icon/" + pkg; }
+
+/* ---------- 渲染 ---------- */
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+
+function switchRow(title, desc, get, set) {
+  const row = el("div", "row");
+  const label = el("div", "label");
+  label.appendChild(el("b", null, title));
+  if (desc) label.appendChild(el("span", null, desc));
+  const sw = el("label", "switch");
+  const input = el("input");
+  input.type = "checkbox";
+  input.checked = !!get();
+  input.addEventListener("change", () => { set(input.checked); });
+  sw.appendChild(input);
+  sw.appendChild(el("i"));
+  row.appendChild(label);
+  row.appendChild(sw);
+  return row;
+}
+
+function renderGlobals() {
+  const box = document.getElementById("globals");
+  box.textContent = "";
+  box.appendChild(switchRow("启用隐藏", "关闭后所有 hook 直接放行", () => CFG.enabled, v => CFG.enabled = v));
+  box.appendChild(switchRow("Activity 启动保护", "被隐藏的应用无法被目标应用拉起", () => CFG.blockActivityLaunch, v => CFG.blockActivityLaunch = v));
+  box.appendChild(switchRow("安装来源伪造", "由规则决定是否对目标应用生效", () => CFG.spoofInstallSource, v => CFG.spoofInstallSource = v));
+  box.appendChild(switchRow("关键包保护", "白名单模式下豁免系统必需包，避免目标应用崩溃", () => CFG.protectEssentialPackages, v => CFG.protectEssentialPackages = v));
+}
+
+function chipList(values, onRemove, cls) {
+  const box = el("div", "chips");
+  if (!values.length) { box.appendChild(el("div", "empty", "（空）")); return box; }
+  for (const v of values) {
+    const chip = el("span", "chip" + (cls ? " " + cls : ""));
+    chip.appendChild(el("span", null, v));
+    if (onRemove) {
+      const x = el("b", null, "×");
+      x.addEventListener("click", () => onRemove(v));
+      chip.appendChild(x);
+    }
+    box.appendChild(chip);
+  }
+  return box;
+}
+
+/** 规则编辑器：默认规则与应用规则共用同一套控件 */
+function ruleEditor(key, rule, onChange) {
+  const wrap = el("div");
+
+  wrap.appendChild(switchRow("白名单模式", "只隐藏列表内的应用（关键包与系统应用按下面的开关豁免）", () => rule.whitelist, v => { rule.whitelist = v; onChange(); }));
+  wrap.appendChild(switchRow("排除系统应用", "白名单模式下不隐藏系统应用", () => rule.excludeSystemApps, v => { rule.excludeSystemApps = v; onChange(); }));
+  wrap.appendChild(switchRow("伪造安装来源", "让目标应用看到的安装来源不是本机安装器", () => rule.hideInstallSource, v => { rule.hideInstallSource = v; onChange(); }));
+  wrap.appendChild(switchRow("含系统应用来源", "连系统应用的安装来源一起伪造", () => rule.hideSystemInstallSource, v => { rule.hideSystemInstallSource = v; onChange(); }));
+  wrap.appendChild(switchRow("反转启动保护", "对该应用反向控制 Activity 拦截", () => rule.invertActivityGuard, v => { rule.invertActivityGuard = v; onChange(); }));
+  wrap.appendChild(switchRow("隐藏无障碍服务", "让目标应用看不到已安装的无障碍服务", () => rule.hideAccessibility, v => { rule.hideAccessibility = v; onChange(); }));
+  wrap.appendChild(switchRow("隐藏开发者选项", "让目标应用读到开发者选项已关闭、adb 未启用", () => rule.hideDeveloperOptions, v => { rule.hideDeveloperOptions = v; onChange(); }));
+  wrap.appendChild(switchRow("隐藏输入法列表", "让目标应用看不到已启用的输入法", () => rule.hideInputMethods, v => { rule.hideInputMethods = v; onChange(); }));
+
+  wrap.appendChild(el("div", "sub", "引用模板 / 预设"));
+  wrap.appendChild(chipList(rule.templates, v => { rule.templates = rule.templates.filter(x => x !== v); onChange(); }));
+  const tplBar = el("div", "btnbar");
+  for (const name of Object.keys(PRESETS)) {
+    const b = el("button", "sm", "+ " + PRESET_LABEL[name]);
+    b.addEventListener("click", () => {
+      if (!rule.templates.includes(name)) { rule.templates.push(name); onChange(); }
+    });
+    tplBar.appendChild(b);
+  }
+  const custom = Object.keys(CFG.templates);
+  for (const name of custom) {
+    if (PRESETS[name]) continue;
+    const b = el("button", "sm", "+ " + name);
+    b.addEventListener("click", () => {
+      if (!rule.templates.includes(name)) { rule.templates.push(name); onChange(); }
+    });
+    tplBar.appendChild(b);
+  }
+  wrap.appendChild(tplBar);
+
+  wrap.appendChild(el("div", "sub", "隐藏列表（" + rule.packages.length + "）"));
+  wrap.appendChild(chipList(rule.packages, v => { rule.packages = rule.packages.filter(x => x !== v); onChange(); }));
+  const addBtn = el("button", "sm", "从应用列表添加");
+  addBtn.addEventListener("click", () => {
+    openPicker(rule.packages, (picked) => {
+      for (const p of picked) if (!rule.packages.includes(p)) rule.packages.push(p);
+      onChange();
+    });
+  });
+  const manualBtn = el("button", "sm ghost", "手动输入");
+  manualBtn.addEventListener("click", () => {
+    const v = prompt("输入包名");
+    if (v && v.trim() && !rule.packages.includes(v.trim())) { rule.packages.push(v.trim()); onChange(); }
+  });
+  const bars = el("div", "btnbar");
+  bars.style.marginTop = "8px";
+  bars.appendChild(addBtn);
+  bars.appendChild(manualBtn);
+  wrap.appendChild(bars);
+
+  wrap.appendChild(el("div", "sub", "反向例外（" + rule.oppositePackages.length + "）"));
+  wrap.appendChild(chipList(rule.oppositePackages, v => { rule.oppositePackages = rule.oppositePackages.filter(x => x !== v); onChange(); }));
+  const oppBtn = el("button", "sm", "添加反向例外");
+  oppBtn.addEventListener("click", () => {
+    openPicker(rule.oppositePackages, (picked) => {
+      for (const p of picked) if (!rule.oppositePackages.includes(p)) rule.oppositePackages.push(p);
+      onChange();
+    });
+  });
+  const oppBar = el("div", "btnbar");
+  oppBar.style.marginTop = "8px";
+  oppBar.appendChild(oppBtn);
+  wrap.appendChild(oppBar);
+
+  return wrap;
+}
+
+let renderTick = 0;
+function rerender() { renderTick++; renderAll(); }
+
+function renderDefaultRule() {
+  const box = document.getElementById("defaultRule");
+  box.textContent = "";
+  const hint = document.getElementById("defaultHint");
+  const rule = CFG.defaultRule;
+  hint.textContent = rule ? "（对所有应用生效）" : "（未设置）";
+  if (!rule) {
+    box.appendChild(el("div", "empty", "没有默认规则：只有下面单独配置过的应用会看到隐藏效果。"));
+    const b = el("button", "sm primary", "创建默认规则");
+    b.addEventListener("click", () => { CFG.defaultRule = emptyRule(); renderAll(); });
+    box.appendChild(b);
+    return;
+  }
+  const det = el("details", "rule");
+  det.open = true;
+  const sum = el("summary");
+  sum.appendChild(el("span", "name", "默认规则"));
+  sum.appendChild(el("span", "tag", (rule.packages.length + rule.templates.length) + " 项"));
+  det.appendChild(sum);
+  const body = el("div", "body");
+  body.appendChild(ruleEditor(rule, () => { renderAll(); }));
+  const del = el("button", "sm danger", "删除默认规则");
+  del.addEventListener("click", () => { CFG.defaultRule = null; renderAll(); });
+  body.appendChild(del);
+  det.appendChild(body);
+  box.appendChild(det);
+}
+
+function renderScope() {
+  const box = document.getElementById("scopeList");
+  box.textContent = "";
+  const keys = Object.keys(CFG.scope).sort();
+  document.getElementById("scopeCount").textContent = "（" + keys.length + "）";
+  if (!keys.length) {
+    box.appendChild(el("div", "empty", "还没有单独配置的应用。默认规则会覆盖所有应用，这里用于给某个应用单独定制。"));
+    return;
+  }
+  for (const pkg of keys) {
+    const rule = CFG.scope[pkg];
+    const det = el("details", "rule");
+    const sum = el("summary");
+    const meta = el("span", "name", labelOf(pkg));
+    sum.appendChild(meta);
+    sum.appendChild(el("span", "tag", rule.whitelist ? "白名单" : "黑名单"));
+    det.appendChild(sum);
+    const body = el("div", "body");
+    body.appendChild(el("div", "sub", pkg));
+    body.appendChild(ruleEditor(rule, () => { renderAll(); }));
+    const del = el("button", "sm danger", "移除该应用");
+    del.addEventListener("click", () => { delete CFG.scope[pkg]; renderAll(); });
+    const bar = el("div", "btnbar");
+    bar.style.marginTop = "8px";
+    bar.appendChild(del);
+    body.appendChild(bar);
+    det.appendChild(body);
+    box.appendChild(det);
+  }
+}
+
+function renderTemplates() {
+  const box = document.getElementById("tplList");
+  box.textContent = "";
+  const names = Object.keys(CFG.templates).sort();
+  document.getElementById("tplCount").textContent = "（" + names.length + "）";
+  if (!names.length) {
+    box.appendChild(el("div", "empty", "还没有自定义模板。模板是一组包名，规则里按名字引用即可复用。"));
+  }
+  for (const name of names) {
+    const t = CFG.templates[name];
+    const det = el("details", "rule");
+    const sum = el("summary");
+    sum.appendChild(el("span", "name", name));
+    sum.appendChild(el("span", "tag", t.packages.length + " 个包"));
+    det.appendChild(sum);
+    const body = el("div", "body");
+    body.appendChild(chipList(t.packages, v => { t.packages = t.packages.filter(x => x !== v); renderAll(); }));
+    const bar = el("div", "btnbar");
+    bar.style.marginTop = "8px";
+    const add = el("button", "sm", "添加包名");
+    add.addEventListener("click", () => {
+      openPicker(t.packages, (picked) => { for (const p of picked) if (!t.packages.includes(p)) t.packages.push(p); renderAll(); });
+    });
+    const del = el("button", "sm danger", "删除模板");
+    del.addEventListener("click", () => { delete CFG.templates[name]; renderAll(); });
+    const rename = el("button", "sm ghost", "重命名");
+    rename.addEventListener("click", () => {
+      const v = prompt("模板名", name);
+      if (!v || !v.trim() || v === name) return;
+      CFG.templates[v.trim()] = CFG.templates[name];
+      delete CFG.templates[name];
+      renderAll();
+    });
+    bar.appendChild(add);
+    bar.appendChild(rename);
+    bar.appendChild(del);
+    body.appendChild(bar);
+    det.appendChild(body);
+    box.appendChild(det);
+  }
+
+  const presetBox = document.getElementById("presetChips");
+  presetBox.textContent = "";
+  for (const name of Object.keys(PRESETS)) {
+    const chip = el("span", "chip preset");
+    chip.appendChild(el("span", null, name + " · " + PRESETS[name].length));
+    const add = el("b", null, "→模板");
+    add.addEventListener("click", () => {
+      CFG.templates[name] = { packages: PRESETS[name].slice() };
+      toast("已复制预设 " + name + " 为模板");
+      renderAll();
+    });
+    chip.appendChild(add);
+    presetBox.appendChild(chip);
+  }
+  const essBox = el("div", "chips");
+  for (const name of ESSENTIAL) essBox.appendChild(el("span", "chip essential", name));
+  presetBox.appendChild(el("div", "empty", "关键包（白名单模式下自动豁免）："));
+  presetBox.appendChild(essBox);
+}
+
+function renderAll() {
+  if (!CFG) return;
+  renderGlobals();
+  renderDefaultRule();
+  renderScope();
+  renderTemplates();
+}
+
+/* ---------- 应用选择器 ---------- */
+let pickState = null;
+
+function openPicker(selected, onDone) {
+  pickState = { selected: new Set(selected || []), onDone: onDone };
+  document.getElementById("pickSearch").value = "";
+  document.getElementById("sheet").classList.add("on");
+  renderPicker();
+}
+
+function closePicker() {
+  document.getElementById("sheet").classList.remove("on");
+  pickState = null;
+}
+
+function renderPicker() {
+  if (!pickState) return;
+  const kind = document.getElementById("pickKind").value;
+  const q = document.getElementById("pickSearch").value.trim().toLowerCase();
+  const list = document.getElementById("pickList");
+  list.textContent = "";
+
+  let all = [];
+  if (kind === "user") all = PACKAGES.user.slice();
+  else if (kind === "system") all = PACKAGES.system.slice();
+  else all = PACKAGES.user.concat(PACKAGES.system);
+
+  if (q) {
+    all = all.filter(p => p.toLowerCase().includes(q) || (LABELS[p] || "").toLowerCase().includes(q));
+  }
+  all = all.slice(0, 400);
+
+  if (!all.length) {
+    list.appendChild(el("div", "empty", "没有匹配的应用（运行 pm list packages 可能被拒绝）"));
+    return;
+  }
+
+  for (const pkg of all) {
+    const item = el("div", "item" + (pickState.selected.has(pkg) ? " sel" : ""));
+    const img = el("img");
+    img.src = iconUrl(pkg);
+    img.alt = "";
+    img.addEventListener("error", () => {
+      const fb = el("div", "ico", pkg.slice(0, 1).toUpperCase());
+      img.replaceWith(fb);
+    });
+    const meta = el("div", "meta");
+    meta.appendChild(el("b", null, labelOf(pkg)));
+    meta.appendChild(el("span", null, pkg));
+    const mark = el("div", "mark", pickState.selected.has(pkg) ? "✓" : "");
+    item.appendChild(img);
+    item.appendChild(meta);
+    item.appendChild(mark);
+    item.addEventListener("click", () => {
+      if (pickState.selected.has(pkg)) pickState.selected.delete(pkg);
+      else pickState.selected.add(pkg);
+      item.classList.toggle("sel");
+      mark.textContent = pickState.selected.has(pkg) ? "✓" : "";
+    });
+    list.appendChild(item);
+  }
+}
+
+/* ---------- 事件绑定 ---------- */
+function bind() {
+  document.getElementById("pickSearch").addEventListener("input", renderPicker);
+  document.getElementById("pickKind").addEventListener("change", renderPicker);
+  document.getElementById("pickCancel").addEventListener("click", closePicker);
+  document.getElementById("pickAll").addEventListener("click", () => {
+    if (!pickState) return;
+    const kind = document.getElementById("pickKind").value;
+    const q = document.getElementById("pickSearch").value.trim().toLowerCase();
+    let all = kind === "user" ? PACKAGES.user.slice() : kind === "system" ? PACKAGES.system.slice() : PACKAGES.user.concat(PACKAGES.system);
+    if (q) all = all.filter(p => p.toLowerCase().includes(q));
+    for (const p of all) pickState.selected.add(p);
+    renderPicker();
+  });
+  document.getElementById("pickDone").addEventListener("click", () => {
+    if (!pickState) return;
+    const done = pickState.onDone;
+    const picked = Array.from(pickState.selected);
+    closePicker();
+    done(picked);
+  });
+
+  document.getElementById("addScope").addEventListener("click", () => {
+    openPicker([], (picked) => {
+      for (const pkg of picked) if (!CFG.scope[pkg]) CFG.scope[pkg] = emptyRule();
+      renderAll();
+    });
+  });
+
+  document.getElementById("addTpl").addEventListener("click", () => {
+    const v = prompt("模板名（英文/数字）");
+    if (!v || !v.trim()) return;
+    CFG.templates[v.trim()] = { packages: [] };
+    renderAll();
+  });
+
+  document.getElementById("reload").addEventListener("click", () => { load(true); });
+
+  document.getElementById("save").addEventListener("click", async () => {
+    setStatus("保存中…", null);
+    const ok = await writeConfig(CFG);
+    if (ok) {
+      setStatus("已生效", "ok");
+      toast("已保存，2 秒内自动生效");
+    } else {
+      setStatus("保存失败", "bad");
+      toast("写入失败：请确认管理器已获得 root");
+    }
+  });
+}
+
+function setStatus(text, cls) {
+  const s = document.getElementById("status");
+  s.textContent = text;
+  s.className = "pill" + (cls ? " " + cls : "");
+}
+
+/* ---------- 启动 ---------- */
+async function load(init) {
+  setStatus("读取中…", null);
+  let raw = null;
+  let err = null;
+  try {
+    raw = await readConfig();
+  } catch (e) { err = e; }
+
+  if (raw) {
+    setStatus("已读取配置", "ok");
+  } else if (err) {
+    setStatus("读取失败", "bad");
+  } else {
+    setStatus("使用默认配置", null);
+    toast("设备上没有 9.cfg，将按默认配置开始");
+  }
+
+  CFG = normalizeConfig(raw);
+  renderAll();
+
+  if (init) { loadPackages().then(renderPicker); }
+}
+
+bind();
+load(true);
+</script>
+</body>
+</html>

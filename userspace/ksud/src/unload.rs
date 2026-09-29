@@ -5,7 +5,11 @@ use std::process::Command;
 
 use crate::utils;
 
-/// Find PIDs of processes running in the KernelSU su domain (u:r:ksu:s0).
+/// Find PIDs of processes running in the KernelSU su domain.
+///
+/// 域名字符串必须与 kernel/selinux/selinux.h 的 `KERNEL_SU_DOMAIN`（当前为 "xecpro"）
+/// 保持一致，否则这里永远匹配不到任何进程，卸载流程会漏掉正在 root 会话里的 su。
+///
 /// Returns a list of PIDs excluding our own.
 fn find_su_domain_pids() -> Vec<i32> {
     let my_pid = std::process::id() as i32;
@@ -27,7 +31,7 @@ fn find_su_domain_pids() -> Vec<i32> {
         let attr_path = format!("/proc/{pid}/attr/current");
         if let Ok(context) = fs::read_to_string(&attr_path) {
             let context = context.trim().trim_end_matches('\0');
-            if context == "u:r:ksu:s0" {
+            if context == "u:r:xecpro:s0" {
                 pids.push(pid);
             }
         }

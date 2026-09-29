@@ -26,4 +26,14 @@ jobs:
         uses: ludeeus/action-shellcheck@2.0.0
         with:
           ignore_names: gradlew
-          ignore_paths: ./userspace/ksud/src/installer.sh ./.github/scripts/setup-rust-build.sh
+          # 说明：
+          #   installer.sh / setup-rust-build.sh 是上游既有豁免。
+          #   builtin/ 下的 susfs4ksu、TA_enhanced、SelinuxFix 是第三方随包脚本
+          #   （simonpunk/susfs4ksu 等），不由本项目维护，保持原样以免后续合并冲突。
+          #   本项目自有的脚本（xechide/**、kernel/**、scripts/**）仍全部纳入检查。
+          ignore_paths: >-
+            ./userspace/ksud/src/installer.sh
+            ./.github/scripts/setup-rust-build.sh
+            ./userspace/ksud/builtin/susfs4ksu
+            ./userspace/ksud/builtin/TA_enhanced
+            ./userspace/ksud/builtin/SelinuxFix

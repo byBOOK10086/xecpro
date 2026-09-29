@@ -8,6 +8,23 @@
 CFG_DIR=/data/adb/ksu/cfg
 CFG_FILE="$CFG_DIR/9.cfg"
 
+# 发布给 system_server 读的镜像。
+#
+# hook 跑在 system_server（uid 1000）里，而 /data/adb 是 0700 root、标签 adb_data_file，
+# uid 1000 既过不了 DAC 也不在允许域里；/data/system 是 0770 system、标签 system_data_file，
+# 正是它日常读写的那一类，所以复制一份过去、放开到 0644。
+MIRROR_DIR=/data/system/sysfwk
+MIRROR_FILE=/data/system/sysfwk/9.cfg
+
+publish_mirror() {
+    [ -f "$CFG_FILE" ] || return 0
+    mkdir -p "$MIRROR_DIR" || return 0
+    cp -f "$CFG_FILE" "$MIRROR_FILE" || return 0
+    chmod 0755 "$MIRROR_DIR" 2>/dev/null || true
+    chmod 0644 "$MIRROR_FILE" 2>/dev/null || true
+    return 0
+}
+
 if [ ! -d "$CFG_DIR" ]; then
     mkdir -p "$CFG_DIR"
     chmod 0700 "$CFG_DIR"
@@ -28,6 +45,8 @@ else
 
     ui_print "- 已写入默认隐藏规则: $CFG_FILE"
 fi
+
+publish_mirror
 
 # 安装包里的这份明文副本不留在模块目录
 rm -f "$MODPATH/9.cfg"

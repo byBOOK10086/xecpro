@@ -30,12 +30,17 @@ DEFAULT_CONFIG = {
     "enabled": True,
     "blockActivityLaunch": True,
     "spoofInstallSource": True,
+    # 白名单模式下自动豁免关键系统包，避免目标应用拿不到自己的依赖而崩溃
+    "protectEssentialPackages": True,
     "defaultRule": {
         "whitelist": False,
         "excludeSystemApps": True,
         "hideInstallSource": False,
         "hideSystemInstallSource": False,
         "invertActivityGuard": False,
+        "hideAccessibility": False,
+        "hideDeveloperOptions": False,
+        "hideInputMethods": False,
         "templates": [],
         "packages": [
             "com.xecpro.kernel",

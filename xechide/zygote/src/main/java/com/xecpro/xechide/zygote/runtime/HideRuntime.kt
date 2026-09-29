@@ -23,6 +23,9 @@ class HideRuntime(val loader: ClassLoader?) {
         /** AOSP 里 UserHandle.PER_USER_RANGE 就是 100000，跨版本稳定；直接算术取值可绕开隐藏 API 限制 */
         const val PER_USER_RANGE = 100000
 
+        /** 配置轮询间隔：管理器（模块 WebUI）改完 9.cfg 后最多 2 秒生效，不必重启 */
+        const val WATCH_INTERVAL_MILLIS = 2_000L
+
         fun userIdOf(uid: Int): Int = uid / PER_USER_RANGE
     }
 
@@ -55,14 +58,62 @@ class HideRuntime(val loader: ClassLoader?) {
             bridge.awaitService()
             reload()
             ready = true
+            watchConfig()
+        }
+    }
+
+    /**
+     * 盯着配置文件的变化。
+     *
+     * system_server 里没有现成的文件监听器，而管理器改完 9.cfg 之后不该要求用户重启手机，
+     * 所以这里轮询「文件大小 + 修改时间」，一变就重新加载并清缓存。
+     *
+     * canonical（/data/adb/ksu/cfg/9.cfg）与镜像（/data/system/sysfwk/9.cfg）都要盯：
+     * 镜像由 root 侧发布，大小/时间戳与 canonical 同步变化，任一变化都触发重载。
+     */
+    private fun watchConfig() {
+        val files = BlobCodec.READ_PATHS.map { File(it) }
+        val size = LongArray(files.size) { files[it].length() }
+        val modified = LongArray(files.size) { files[it].lastModified() }
+
+        while (true) {
+            try {
+                Thread.sleep(WATCH_INTERVAL_MILLIS)
+
+                var changed = false
+                files.forEachIndexed { index, file ->
+                    val currentSize = file.length()
+                    val currentModified = file.lastModified()
+                    if (currentSize != size[index] || currentModified != modified[index]) {
+                        size[index] = currentSize
+                        modified[index] = currentModified
+                        changed = true
+                    }
+                }
+
+                if (changed) reload()
+            } catch (t: Throwable) {
+                XLog.e(TAG, t) { "配置监听异常" }
+            }
         }
     }
 
     fun reload() {
-        val blob = runCatching { File(BlobCodec.CONFIG_PATH).readBytes() }.getOrNull()
+        var used: String? = null
+        var blob: ByteArray? = null
 
-        config = if (blob == null || blob.isEmpty()) {
-            XLog.i(TAG) { "未找到配置文件，按未配置处理: ${BlobCodec.CONFIG_PATH}" }
+        // 镜像优先：它才是 uid 1000 真正读得到的那一份；canonical 只是它的源头。
+        for (path in BlobCodec.READ_PATHS) {
+            val bytes = runCatching { File(path).readBytes() }.getOrNull()
+            if (!bytes.isNullOrEmpty()) {
+                blob = bytes
+                used = path
+                break
+            }
+        }
+
+        config = if (blob == null) {
+            XLog.i(TAG) { "未找到可读配置，按未配置处理: ${BlobCodec.READ_PATHS.joinToString()}" }
             HideConfig()
         } else {
             ConfigJson.decodeBlob(blob)
@@ -72,7 +123,7 @@ class HideRuntime(val loader: ClassLoader?) {
         invalidate()
 
         XLog.i(TAG) {
-            "配置已加载: 作用域 ${config.scope.size} 项 / 模板 ${config.templates.size} 项 / 总开关 ${config.enabled}"
+            "配置已加载[$used]: 作用域 ${config.scope.size} 项 / 模板 ${config.templates.size} 项 / 总开关 ${config.enabled}"
         }
     }
 
@@ -124,6 +175,18 @@ class HideRuntime(val loader: ClassLoader?) {
             if (rules.shouldHide(caller, targetPackage, isSystemPackage(targetPackage, userIdOf(callingUid)))) {
                 return true
             }
+        }
+
+        return false
+    }
+
+    /** [callingUid] 视角下是否要隐藏 [kind] 类别的系统设置项 */
+    fun shouldHideSettingFromUid(callingUid: Int, kind: RuleEngine.SettingKind): Boolean {
+        if (!config.enabled || callingUid == Names.UID_SYSTEM) return false
+        if (callingUid <= 0) return false
+
+        for (caller in packagesForUid(callingUid)) {
+            if (rules.settingHidden(caller, kind)) return true
         }
 
         return false
