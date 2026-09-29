@@ -43,6 +43,20 @@ fun Project.configureBaseExtension() {
             versionName = appVerName
         }
 
+        compileOptions {
+            sourceCompatibility = androidSourceCompatibility
+            targetCompatibility = androidTargetCompatibility
+        }
+    }
+
+    extensions.findByType<ApplicationExtension>()?.run {
+        // 只对最终打进模块 zip 的 application 开 R8。
+        //
+        // library（common）若也开 minify，会以「库自身」为单位做可达性分析：
+        // HideConfig / RuleEngine / ConfigJson 在库内没有任何引用者，全部被当成
+        // 死代码删掉，消费方 zygote 编译期就直接 Missing class。
+        // 关掉之后 common 的类作为 program class 进入 zygote 的 R8，
+        // 混淆与裁剪依旧发生在最终产物上，隐藏性不受影响。
         buildTypes {
             named("release") {
                 isMinifyEnabled = true
@@ -53,13 +67,6 @@ fun Project.configureBaseExtension() {
             }
         }
 
-        compileOptions {
-            sourceCompatibility = androidSourceCompatibility
-            targetCompatibility = androidTargetCompatibility
-        }
-    }
-
-    extensions.findByType<ApplicationExtension>()?.run {
         dependenciesInfo {
             includeInApk = false
             includeInBundle = false
