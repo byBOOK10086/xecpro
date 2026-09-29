@@ -59,7 +59,9 @@ static int ksu_install_fd_with_permissions(unsigned int fd_flags, unsigned long 
         return -ENOMEM;
 
     context->permissions = permissions;
-    name = permissions & KSU_DRIVER_PERMISSION_SU_SESSION ? "[ksu_driver_su]" : "[ksu_driver]";
+    // 该名字会出现在 /proc/<pid>/fd 的 readlink 里，必须与整体改名保持一致；
+    // ksud 的 ksucalls.rs / unload.rs 与管理器 native 层按同一组字符串查找本 fd。
+    name = permissions & KSU_DRIVER_PERMISSION_SU_SESSION ? "[xecpro_driver_su]" : "[xecpro_driver]";
 
     fd = get_unused_fd_flags(fd_flags);
     if (fd < 0) {

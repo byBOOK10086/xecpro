@@ -104,8 +104,9 @@ class HideRuntime(val loader: ClassLoader?) {
 
         // 镜像优先：它才是 uid 1000 真正读得到的那一份；canonical 只是它的源头。
         for (path in BlobCodec.READ_PATHS) {
+            // 注意：Kotlin 标准库没有 ByteArray?.isNullOrEmpty()，只能用显式判空。
             val bytes = runCatching { File(path).readBytes() }.getOrNull()
-            if (!bytes.isNullOrEmpty()) {
+            if (bytes != null && bytes.isNotEmpty()) {
                 blob = bytes
                 used = path
                 break

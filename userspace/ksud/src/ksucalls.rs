@@ -71,8 +71,10 @@ pub fn setup_sigsys_handler() {
     }
 }
 
-const DRIVER_FD_NAME: &str = "anon_inode:[ksu_driver]";
-const SU_DRIVER_FD_NAME: &str = "anon_inode:[ksu_driver_su]";
+// 这两个名字来自内核的 anon_inode_getfile()（见 kernel/supercall/supercall.c），
+// 出现在 /proc/self/fd 的 readlink 结果里，必须与内核侧逐字一致，否则找不到驱动 fd。
+const DRIVER_FD_NAME: &str = "anon_inode:[xecpro_driver]";
+const SU_DRIVER_FD_NAME: &str = "anon_inode:[xecpro_driver_su]";
 
 // Global driver fd cache
 static DRIVER_FD: OnceLock<RawFd> = OnceLock::new();

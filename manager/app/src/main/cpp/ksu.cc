@@ -21,7 +21,7 @@
 static int fd = -1;
 
 static inline int scan_driver_fd() {
-    const char *kName = "[ksu_driver]";
+    const char *kName = "[xecpro_driver]";
     DIR *dir = opendir("/proc/self/fd");
     if (!dir) {
         return -1;

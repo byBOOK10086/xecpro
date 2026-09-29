@@ -68,7 +68,7 @@ fn find_ksu_fd_holders() -> Vec<i32> {
             let link_path = fd_entry.path();
             if let Ok(target) = fs::read_link(&link_path) {
                 let target_str = target.to_string_lossy();
-                if target_str.contains("[ksu_driver") || target_str.contains("[ksu_fdwrapper]") {
+                if target_str.contains("[xecpro_driver") || target_str.contains("[xecpro_fdwrapper]") {
                     pids.push(pid);
                     break;
                 }
@@ -140,7 +140,7 @@ pub fn unload() -> Result<()> {
         kill_pids(&fd_pids, libc::SIGKILL);
     }
 
-    // 3. Close all our own ksu_driver and ksu_fdwrapper fds
+    // 3. Close all our own xecpro_driver and xecpro_fdwrapper fds
     info!("unload: closing all ksu fds...");
     close_ksu_fds();
 
