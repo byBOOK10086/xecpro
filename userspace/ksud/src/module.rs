@@ -249,17 +249,46 @@ fn foreach_active_module(f: impl FnMut(&Path) -> Result<()>) -> Result<()> {
     foreach_module(Active, f)
 }
 
+/// Whether the user has installed their own Zygisk provider (Zygisk Next,
+/// ReZygisk, ...) as a regular module under `/data/adb/modules`.
+///
+/// Presence counts regardless of enable state: a disabled user module means
+/// "the user manages Zygisk themselves" (e.g. switched it off on purpose), not
+/// "the built-in may take over" — otherwise the built-in would re-enable
+/// Zygisk behind the user's back on every toggle.
+fn user_zygisk_module_present() -> bool {
+    let Ok(dir) = std::fs::read_dir(defs::MODULE_DIR) else {
+        return false;
+    };
+    dir.flatten().any(|entry| {
+        // "ygisk" covers `zygisksu`, `Zygisk-Next` and `rezygisk` spellings.
+        entry.file_name().to_string_lossy().contains("ygisk")
+            && entry.path().join("module.prop").exists()
+    })
+}
+
 /// Iterate decrypted built-in modules under the tmpfs runtime dir. These
 /// execute like normal modules but are never enumerated by the manager panel
 /// or `adb ls modules/`, and the encrypted on-disk store is not readable.
+///
+/// The bundled Zygisk module yields entirely when the user runs their own
+/// Zygisk module: two identical zygiskd daemons race for the same socket at
+/// every post-fs-data, the loser aborts and drops `disable` + `.abort_msg`
+/// into its module dir, which the manager panel then renders as "off" no
+/// matter how often the user re-enables it.
 fn foreach_builtin_module(mut f: impl FnMut(&Path) -> Result<()>) -> Result<()> {
     let modules_dir = Path::new(defs::BUILTIN_MODULE_DIR);
     let Ok(dir) = std::fs::read_dir(modules_dir) else {
         return Ok(());
     };
+    let yield_zygisk = user_zygisk_module_present();
     for entry in dir.flatten() {
         let path = entry.path();
         if !path.is_dir() {
+            continue;
+        }
+        if yield_zygisk && entry.file_name().to_string_lossy() == "zygisksu" {
+            info!("user-installed Zygisk module detected, built-in zygisksu yields");
             continue;
         }
         f(&path)?;
@@ -771,18 +800,13 @@ pub fn handle_updated_modules() -> Result<()> {
 const ZYGISK_STATE_DIR: &str = "/data/adb/zygisksu";
 
 /// Remove the failure leftovers a Zygisk Next style module writes when its
-/// daemon cannot start:
+/// daemon cannot start.
 ///
-/// * `disable` — while it exists the module counts as disabled and is skipped
-///   on every boot, so Zygisk stays dead even after the real problem is fixed.
-/// * `.abort_msg` — the abort reason of that failed run
-///   (see [`defs::ABORT_MSG_FILE_NAME`]).
-///
-/// KernelSU never creates either of them on a failure path, so their presence
-/// in a Zygisk directory always means "the daemon failed at least once". Both
-/// are cleared here before the module set is enumerated, so a single bad boot
-/// can no longer disable Zygisk permanently. Only Zygisk-owned locations are
-/// touched: the `disable` marker of any other module is a user decision.
+/// `disable` + `.abort_msg` **together** are the signature of an aborted
+/// daemon start and get self-healed here. A `disable` marker that stands alone
+/// is a *user* decision (manager toggle) and is deliberately respected —
+/// recovery from a bad boot must not silently re-enable what the user switched
+/// off on purpose. An `.abort_msg` without `disable` is kept as a diagnostic.
 pub fn clear_zygisk_failure_markers() {
     // Directory ids that look like Zygisk Next (`zygisksu`, `Zygisk-Next`, ...)
     // are matched on the substring "ygisk", which covers both spellings.
@@ -806,8 +830,13 @@ pub fn clear_zygisk_failure_markers() {
     clear_zygisk_markers_in(Path::new(ZYGISK_STATE_DIR));
 }
 
-/// Remove `disable` + `.abort_msg` from a single Zygisk directory.
+/// Self-heal the abort signature (`disable` + `.abort_msg`) in one directory.
 fn clear_zygisk_markers_in(dir: &Path) {
+    let abort_path = dir.join(defs::ABORT_MSG_FILE_NAME);
+    let aborted = std::fs::symlink_metadata(&abort_path).is_ok_and(|meta| meta.is_file());
+    if !aborted {
+        return;
+    }
     for marker in [defs::DISABLE_FILE_NAME, defs::ABORT_MSG_FILE_NAME] {
         let path = dir.join(marker);
         // `symlink_metadata` deliberately: a symlink is not a real marker.
@@ -1074,6 +1103,16 @@ pub fn disable_module(id: &str) -> Result<()> {
 
     let disable_path = module_path.join(defs::DISABLE_FILE_NAME);
     ensure_file_exists(disable_path)?;
+
+    // A user-disabled module must survive the Zygisk self-heal at next boot,
+    // which re-enables anything carrying the abort signature (`disable` +
+    // `.abort_msg`). Dropping a leftover `.abort_msg` here marks this disable
+    // as an explicit user decision. The marker is Zygisk-owned; no KernelSU
+    // module system uses it.
+    let abort_path = module_path.join(defs::ABORT_MSG_FILE_NAME);
+    if abort_path.is_file() {
+        let _ = std::fs::remove_file(&abort_path);
+    }
 
     info!("Module {id} disabled");
 
