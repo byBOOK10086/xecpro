@@ -18,11 +18,17 @@ class InstallSourceHook(kit: HookKit, runtime: HideRuntime) : HideHook(kit, runt
 
     override val tag: String = "InstallSourceHook"
 
-    /** 应用商店安装：来源、签名都指向 Play 商店 */
+    /** 应用商店安装：来源、签名都指向 Play 商店；无 Play 的设备降级为仅伪造安装者名 */
     private val userFake: Any? by lazy {
+        val signing = runtime.bridge.playStoreSigningInfo(0)
         runtime.bridge.buildInstallSourceInfo(
             installerPackageName = Names.PLAY_STORE,
-            signingInfo = runtime.bridge.playStoreSigningInfo(0),
+            signingInfo = signing,
+            packageSource = PACKAGE_SOURCE_STORE,
+            userId = 0,
+        ) ?: runtime.bridge.buildInstallSourceInfo(
+            installerPackageName = Names.PLAY_STORE,
+            signingInfo = null,
             packageSource = PACKAGE_SOURCE_STORE,
             userId = 0,
         )

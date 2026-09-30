@@ -8,6 +8,7 @@ import com.xecpro.xechide.zygote.util.Names
 import com.xecpro.xechide.zygote.util.XLog
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
 /**
@@ -26,8 +27,13 @@ class HideRuntime(val loader: ClassLoader?) {
         /** 配置轮询间隔：管理器（模块 WebUI）改完 9.cfg 后最多 2 秒生效，不必重启 */
         const val WATCH_INTERVAL_MILLIS = 2_000L
 
+        val EMPTY_PACKAGES = emptyArray<String>()
+
         fun userIdOf(uid: Int): Int = uid / PER_USER_RANGE
     }
+
+    /** packagesForUid 的线程级重入标志（见该函数注释） */
+    private val resolvingUid = AtomicBoolean()
 
     val bridge = PmBridge(loader)
 
@@ -179,6 +185,26 @@ class HideRuntime(val loader: ClassLoader?) {
         }
 
         return false
+    }
+
+    /**
+     * uid → 包名解析。
+     *
+     * PmsHook 也挂在 `getPackagesForUid` 上，而这里走 IPackageManager 的解析必然
+     * 再次穿过该 hook：hook 回调里又要解析同一个 uid → 无限递归。同一条 binder
+     * 线程上不可能同时出现别的调用者，所以用线程级标志把重入的那一层直接返回
+     * 空数组——hook 侧视为「无调用方包名」放行，原始结果照常带回去。
+     */
+    fun packagesForUid(uid: Int): Array<String> {
+        uidPackages[uid]?.let { return it }
+        if (!resolvingUid.compareAndSet(false, true)) {
+            return EMPTY_PACKAGES
+        }
+        try {
+            return uidPackages.getOrPut(uid) { bridge.packagesForUid(uid) }
+        } finally {
+            resolvingUid.set(false)
+        }
     }
 
     /** [callingUid] 视角下是否要隐藏 [kind] 类别的系统设置项 */
