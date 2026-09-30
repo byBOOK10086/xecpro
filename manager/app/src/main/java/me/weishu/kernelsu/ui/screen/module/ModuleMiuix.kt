@@ -26,9 +26,10 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -158,7 +159,6 @@ import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
-import kotlin.math.abs
 
 @SuppressLint("StringFormatInvalid", "LocalContextGetResourceValueCall")
 @Composable
@@ -844,13 +844,20 @@ fun ModuleItem(
     val textDecoration = if (module.remove) TextDecoration.LineThrough else null
     val hasDescription = module.description.isNotBlank()
     val hasUpdate = updateUrl.isNotEmpty()
-    val scope = rememberCoroutineScope()
     val hapticFeedback = LocalHapticFeedback.current
 
-    var isPressed by remember { mutableStateOf(false) }
-    var longPressFired by remember { mutableStateOf(false) }
+    // 平台标准点击/长按手势（见卡片上的 combinedClickable）：按压进度条按
+    // longPressTimeout（默认 400ms）走满，长按触发即满格。
+    val cardInteraction = remember { MutableInteractionSource() }
+    val isPressed by cardInteraction.collectIsPressedAsState()
     val progress = remember { Animatable(0f) }
-    var animationJob by remember { mutableStateOf<Job?>(null) }
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            progress.animateTo(1f, tween(durationMillis = 400, easing = LinearEasing))
+        } else {
+            progress.snapTo(0f)
+        }
+    }
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
@@ -891,76 +898,19 @@ fun ModuleItem(
             .clip(Xc.shapes.sm)
             .background(neon.cardBg)
             .border(width = 1.dp, color = borderColor, shape = Xc.shapes.sm)
-            .pointerInput(module.id) {
-                // 取消阈值必须不晚于父级（HorizontalPager / LazyColumn）的 touchSlop：
-                // 父级拖拽判定用的就是系统 touchSlop，我们若比它迟钝，手指一微动父级就
-                // 先翻页，而长按计时器还在跑，跑满后弹出面板时页面已经翻到 KPM——这就是
-                // 「长按模块没弹面板、反而跳到 KPM 页」的成因。
-                val moveThresholdPx = minOf(10.dp.toPx(), viewConfiguration.touchSlop)
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    isPressed = true
-                    longPressFired = false
-                    animationJob?.cancel()
-                    scope.launch { progress.snapTo(0f) }
-                    animationJob = scope.launch {
-                        progress.animateTo(1f, tween(1000, easing = LinearEasing))
-                        if (isPressed) {
-                            longPressFired = true
-                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                            onLongPress()
-                        }
-                    }
-
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val change = event.changes.firstOrNull() ?: break
-
-                        if (longPressFired) {
-                            // 长按已触发：接管这一串指针事件。既不让父级 Pager 再抢走而
-                            // 翻页，也吞掉这次抬手，避免面板刚弹出又被当成一次短按
-                            // （设计文档《模块页霓虹玻璃卡片与长按操作面板》6.1）。
-                            event.changes.forEach { it.consume() }
-                            if (!change.pressed) {
-                                animationJob?.cancel()
-                                scope.launch { progress.snapTo(0f) }
-                                isPressed = false
-                                break
-                            }
-                            continue
-                        }
-
-                        // 事件已被父级消费 = 父级正在拖拽，这是滑动而不是长按，立刻收手，
-                        // 不能让它跑满 1000ms 再弹面板。
-                        if (change.isConsumed) {
-                            animationJob?.cancel()
-                            scope.launch { progress.snapTo(0f) }
-                            isPressed = false
-                            break
-                        }
-
-                        val dx = abs(change.position.x - down.position.x)
-                        val dy = abs(change.position.y - down.position.y)
-
-                        if (dx > moveThresholdPx || dy > moveThresholdPx) {
-                            animationJob?.cancel()
-                            scope.launch { progress.snapTo(0f) }
-                            isPressed = false
-                            break
-                        }
-
-                        if (!change.pressed) {
-                            animationJob?.cancel()
-                            scope.launch { progress.snapTo(0f) }
-                            if (!change.isConsumed && module.hasWebUi) {
-                                onOpenWebUi()
-                            }
-                            isPressed = false
-                            break
-                        }
-                    }
-                }
-            }
+            .combinedClickable(
+                // 平台标准语义：纹丝不动按住 longPressTimeout（默认 400ms）弹操作面板；
+                // 指头漂出 touchSlop 则长按取消、父级 HorizontalPager 正常翻页。
+                // 点击仍是打开 WebUI。此前自造 1000ms 计时器与父级同阈竞速，
+                // 微动必输、页面翻到 KPM，长按面板弹不出来。
+                interactionSource = cardInteraction,
+                indication = null,
+                onClick = { if (module.hasWebUi) onOpenWebUi() },
+                onLongClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongPress()
+                },
+            )
     ) {
         Column(
             modifier = Modifier
