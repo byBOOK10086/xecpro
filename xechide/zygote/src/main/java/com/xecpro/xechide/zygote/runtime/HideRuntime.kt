@@ -219,9 +219,6 @@ class HideRuntime(val loader: ClassLoader?) {
         return false
     }
 
-    fun packagesForUid(uid: Int): Array<String> =
-        uidPackages.getOrPut(uid) { bridge.packagesForUid(uid) }
-
     private fun isSystemPackage(packageName: String, userId: Int): Boolean =
         systemPackageCache.getOrPut(packageName) { bridge.isSystemPackage(packageName, userId) }
 }
