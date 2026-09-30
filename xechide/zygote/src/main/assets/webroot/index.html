@@ -3,212 +3,422 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>XecHide 管理器</title>
+<title>XecHide · 应用隐藏</title>
 <style>
   :root {
-    --bg: #101114;
-    --card: #1a1c21;
-    --card-2: #22252b;
-    --line: #2c3038;
-    --fg: #e9ecf1;
-    --fg-dim: #9aa2af;
-    --accent: #4c8dff;
-    --accent-soft: #1e3a63;
-    --danger: #ff5d5d;
-    --ok: #3ddc84;
-    --radius: 14px;
+    --bg: #0b0d11;
+    --card: rgba(255,255,255,.045);
+    --card2: rgba(255,255,255,.08);
+    --line: rgba(255,255,255,.09);
+    --line2: rgba(255,255,255,.16);
+    --fg: #e8ebf2;
+    --dim: #8b93a3;
+    --acc: #5ac8ff;
+    --acc2: #8f7bff;
+    --acc-grad: linear-gradient(135deg, #5ac8ff, #8f7bff);
+    --ok: #4ade80;
+    --danger: #ff6b7a;
+    --r: 16px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
   body {
     margin: 0;
-    padding: 0 14px calc(96px + env(safe-area-inset-bottom));
-    background: var(--bg);
+    padding: 0 16px calc(104px + env(safe-area-inset-bottom));
+    background:
+      radial-gradient(60vw 40vh at 85% -5%, rgba(143,123,255,.14), transparent 60%),
+      radial-gradient(70vw 45vh at -10% 5%, rgba(90,200,255,.10), transparent 60%),
+      var(--bg);
     color: var(--fg);
-    font: 15px/1.5 -apple-system, "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "Microsoft YaHei", sans-serif;
+    font: 15px/1.55 -apple-system, "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei", "Microsoft YaHei", sans-serif;
   }
+  /* ---------- 头部 ---------- */
   header {
-    position: sticky; top: 0; z-index: 20;
-    display: flex; align-items: center; gap: 10px;
-    padding: calc(10px + env(safe-area-inset-top)) 0 10px;
-    background: linear-gradient(var(--bg) 78%, transparent);
+    position: sticky; top: 0; z-index: 30;
+    margin: 0 -16px; padding: calc(12px + env(safe-area-inset-top)) 16px 10px;
+    display: flex; align-items: center; gap: 12px;
+    background: linear-gradient(rgba(11,13,17,.92), rgba(11,13,17,.78));
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
   }
-  header h1 { font-size: 18px; margin: 0; flex: 1; letter-spacing: .4px; }
-  header h1 small { display: block; font-size: 11px; color: var(--fg-dim); font-weight: 400; letter-spacing: 0; }
+  .logo {
+    width: 40px; height: 40px; border-radius: 12px; flex: none;
+    background: var(--acc-grad);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px; color: #0b0d11; letter-spacing: .5px;
+    box-shadow: 0 4px 18px rgba(120,140,255,.35);
+  }
+  header .tt { flex: 1; min-width: 0; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: .3px; display: flex; align-items: center; gap: 8px; }
+  header .paths {
+    font-size: 10.5px; color: var(--dim); margin-top: 1px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .pill {
-    font-size: 11px; padding: 3px 9px; border-radius: 999px;
-    border: 1px solid var(--line); color: var(--fg-dim); white-space: nowrap;
+    font-size: 11px; padding: 4px 10px; border-radius: 999px; flex: none;
+    border: 1px solid var(--line2); color: var(--dim); background: var(--card);
   }
-  .pill.ok { color: var(--ok); border-color: #234a35; background: #16241d; }
-  .pill.bad { color: var(--danger); border-color: #4a2323; background: #241616; }
+  .pill.ok { color: var(--ok); border-color: rgba(74,222,128,.35); background: rgba(74,222,128,.08); }
+  .pill.bad { color: var(--danger); border-color: rgba(255,107,122,.35); background: rgba(255,107,122,.08); }
+  .pill.warn { color: #fbbf24; border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.08); }
+  /* ---------- 标签页 ---------- */
+  nav {
+    position: sticky; top: calc(64px + env(safe-area-inset-top)); z-index: 29;
+    display: flex; gap: 4px; margin: 12px 0 14px; padding: 4px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 13px;
+  }
+  nav button {
+    flex: 1; border: 0; background: transparent; color: var(--dim);
+    font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 0; border-radius: 10px;
+    cursor: pointer; transition: all .15s;
+  }
+  nav button.on { color: #0b0d11; background: var(--acc-grad); }
+  .pane { display: none; }
+  .pane.on { display: block; }
+  /* ---------- 卡片 ---------- */
   .card {
     background: var(--card); border: 1px solid var(--line);
-    border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
+    border-radius: var(--r); padding: 14px; margin-bottom: 12px;
   }
   .card > h2 {
-    font-size: 13px; margin: 0 0 10px; color: var(--fg-dim);
-    font-weight: 600; letter-spacing: .6px; text-transform: uppercase;
-    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; margin: 0 0 4px; color: var(--dim); font-weight: 700;
+    letter-spacing: .8px; display: flex; align-items: center; gap: 8px;
   }
-  .card > h2 .count { color: var(--fg-dim); font-weight: 400; letter-spacing: 0; text-transform: none; }
+  .card > h2 .count { color: var(--dim); font-weight: 400; letter-spacing: 0; }
   .card > h2 .spacer { flex: 1; }
-  .row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .card .lead { font-size: 12px; color: var(--dim); margin: 0 0 6px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
   .row:first-of-type { border-top: 0; }
   .row .label { flex: 1; min-width: 0; }
-  .row .label b { display: block; font-size: 14px; font-weight: 500; }
-  .row .label span { display: block; font-size: 11.5px; color: var(--fg-dim); margin-top: 1px; }
+  .row .label b { display: block; font-size: 14px; font-weight: 600; }
+  .row .label span { display: block; font-size: 11.5px; color: var(--dim); margin-top: 2px; }
   .switch { position: relative; width: 46px; height: 27px; flex: none; }
-  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; z-index: 1; }
   .switch i {
-    position: absolute; inset: 0; border-radius: 999px; background: #363b45;
+    position: absolute; inset: 0; border-radius: 999px; background: #333945;
     transition: background .18s; pointer-events: none;
   }
   .switch i::after {
     content: ""; position: absolute; top: 3px; left: 3px; width: 21px; height: 21px;
     border-radius: 50%; background: #fff; transition: transform .18s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.4);
   }
-  .switch input:checked + i { background: var(--accent); }
+  .switch input:checked + i { background: var(--acc-grad); }
   .switch input:checked + i::after { transform: translateX(19px); }
+  .bigswitch { transform: scale(1.35); transform-origin: right center; margin-right: 8px; }
   button {
-    font: inherit; color: var(--fg); background: var(--card-2);
-    border: 1px solid var(--line); border-radius: 10px;
-    padding: 8px 13px; cursor: pointer;
+    font: inherit; color: var(--fg); background: var(--card2);
+    border: 1px solid var(--line2); border-radius: 11px;
+    padding: 9px 14px; cursor: pointer; transition: transform .12s, opacity .12s;
   }
   button:active { transform: scale(.97); }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary { background: var(--acc-grad); border-color: transparent; color: #0b0d11; font-weight: 700; }
   button.ghost { background: transparent; }
-  button.danger { color: var(--danger); border-color: #3d2424; }
-  button.sm { padding: 5px 10px; font-size: 12.5px; border-radius: 9px; }
-  .btnbar { display: flex; gap: 8px; flex-wrap: wrap; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  button.danger { color: var(--danger); border-color: rgba(255,107,122,.4); }
+  button.sm { padding: 6px 11px; font-size: 12.5px; border-radius: 9px; }
+  .btnbar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  /* 统计块 */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+  .stat {
+    background: var(--card2); border: 1px solid var(--line); border-radius: 13px;
+    padding: 10px 12px;
+  }
+  .stat b { display: block; font-size: 20px; font-weight: 800; background: var(--acc-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stat span { font-size: 11px; color: var(--dim); }
+  /* 应用卡片 */
+  .appcard {
+    display: flex; align-items: center; gap: 11px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 10px 12px; margin-bottom: 8px; cursor: pointer; transition: border-color .15s;
+  }
+  .appcard:active { border-color: var(--line2); }
+  .appcard img, .appcard .ico {
+    width: 38px; height: 38px; border-radius: 10px; flex: none; background: #22262e;
+    display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--dim); font-weight: 700;
+  }
+  .appcard .meta { flex: 1; min-width: 0; }
+  .appcard .meta b { display: block; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .appcard .meta span { display: block; font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tag {
+    font-size: 10.5px; padding: 3px 8px; border-radius: 999px; flex: none;
+    border: 1px solid var(--line2); color: var(--dim); background: var(--card2);
+  }
+  .tag.wl { color: var(--acc); border-color: rgba(90,200,255,.4); background: rgba(90,200,255,.08); }
+  .tag.bl { color: #c9a5ff; border-color: rgba(168,130,255,.4); background: rgba(168,130,255,.08); }
+  .tag.sys { color: var(--dim); }
+  /* chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   .chip {
-    display: inline-flex; align-items: center; gap: 5px;
-    background: var(--card-2); border: 1px solid var(--line);
-    border-radius: 999px; padding: 4px 9px; font-size: 12.5px;
-    max-width: 100%;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--card2); border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px 10px; font-size: 12.5px; max-width: 100%;
   }
   .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .chip b { color: var(--fg-dim); font-weight: 400; cursor: pointer; padding: 0 1px; }
-  .chip.preset { background: var(--accent-soft); border-color: #2c4a7a; }
-  .chip.essential { border-style: dashed; color: var(--fg-dim); }
-  .empty { color: var(--fg-dim); font-size: 13px; padding: 6px 0; }
-  details.rule { border: 1px solid var(--line); border-radius: 12px; margin-top: 10px; overflow: hidden; }
-  details.rule > summary {
-    list-style: none; cursor: pointer; padding: 11px 12px;
-    display: flex; align-items: center; gap: 8px; background: var(--card-2);
-  }
-  details.rule > summary::-webkit-details-marker { display: none; }
-  details.rule > summary .name { flex: 1; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  details.rule > summary .tag { font-size: 11px; color: var(--fg-dim); }
-  details.rule .body { padding: 4px 12px 12px; }
-  details.rule[open] > summary { border-bottom: 1px solid var(--line); }
-  .sub { font-size: 11.5px; color: var(--fg-dim); margin: 10px 0 4px; letter-spacing: .3px; }
+  .chip b { color: var(--dim); font-weight: 400; cursor: pointer; padding: 0 1px; }
+  .chip.tpl { border-color: rgba(90,200,255,.4); color: var(--acc); background: rgba(90,200,255,.07); }
+  .chip.opp { border-color: rgba(255,107,122,.35); color: var(--danger); background: rgba(255,107,122,.06); }
+  .chip.preset { background: rgba(143,123,255,.1); border-color: rgba(143,123,255,.4); }
+  .chip.essential { border-style: dashed; color: var(--dim); }
+  .empty { color: var(--dim); font-size: 13px; padding: 8px 0; line-height: 1.7; }
+  .sub { font-size: 11.5px; color: var(--dim); margin: 12px 0 2px; letter-spacing: .3px; font-weight: 600; }
   input[type=text], select {
-    font: inherit; width: 100%; color: var(--fg); background: #14161a;
-    border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px;
+    font: inherit; width: 100%; color: var(--fg); background: rgba(0,0,0,.35);
+    border: 1px solid var(--line2); border-radius: 11px; padding: 10px 12px; outline: none;
   }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  /* 应用选择器 */
-  .sheet {
-    position: fixed; inset: 0; z-index: 60; display: none;
-    background: rgba(0,0,0,.6); backdrop-filter: blur(2px);
+  input[type=text]:focus { border-color: var(--acc); }
+  .seg { display: flex; gap: 4px; background: rgba(0,0,0,.3); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
+  .seg button { flex: 1; border: 0; background: transparent; color: var(--dim); font-size: 13px; font-weight: 600; padding: 8px 0; border-radius: 9px; }
+  .seg button.on { background: var(--acc-grad); color: #0b0d11; }
+  /* ---------- 底部保存栏 ---------- */
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+    display: flex; gap: 10px;
+    background: linear-gradient(transparent, rgba(11,13,17,.9) 38%);
   }
+  .bar button { flex: 1; padding: 13px 0; font-size: 14.5px; border-radius: 13px; }
+  /* ---------- 弹层 ---------- */
+  .sheet { position: fixed; inset: 0; z-index: 60; display: none; background: rgba(0,0,0,.55); }
   .sheet.on { display: block; }
   .sheet .panel {
-    position: absolute; inset: 0; display: flex; flex-direction: column;
-    background: var(--bg);
-    padding: calc(10px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom));
+    position: absolute; left: 0; right: 0; bottom: 0;
+    max-height: 90%; display: flex; flex-direction: column;
+    background: #12151b; border: 1px solid var(--line); border-bottom: 0;
+    border-radius: 22px 22px 0 0;
+    padding: 8px 16px calc(14px + env(safe-area-inset-bottom));
+    animation: up .22s ease-out;
+    box-shadow: 0 -12px 40px rgba(0,0,0,.5);
   }
-  .sheet .panel > .head { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-  .sheet .panel > .head b { flex: 1; font-size: 15px; }
-  .filters { display: flex; gap: 8px; margin-bottom: 10px; }
-  .filters select { width: auto; flex: none; }
-  .list { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line); border-radius: 12px; }
-  .item {
-    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
-    border-bottom: 1px solid var(--line);
+  @keyframes up { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+  .grab { width: 40px; height: 4px; border-radius: 999px; background: var(--line2); margin: 6px auto 10px; }
+  .sheet .head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .sheet .head .t { flex: 1; min-width: 0; }
+  .sheet .head .t b { display: block; font-size: 16px; font-weight: 700; }
+  .sheet .head .t span { display: block; font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sheet .body { overflow: auto; -webkit-overflow-scrolling: touch; margin: 0 -4px; padding: 0 4px; }
+  .sheet .body .row { padding: 10px 0; }
+  .sheet .foot { display: flex; gap: 8px; margin-top: 12px; }
+  .sheet .foot button { flex: 1; }
+  /* 应用选择器（整页） */
+  #picker .panel { top: 0; max-height: none; border-radius: 0; animation: none; padding-top: calc(10px + env(safe-area-inset-top)); }
+  .plist { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; margin: 0 -16px; padding: 0 16px; }
+  .pitem {
+    display: flex; align-items: center; gap: 11px; padding: 9px 2px;
+    border-bottom: 1px solid var(--line); cursor: pointer;
   }
-  .item:last-child { border-bottom: 0; }
-  .item.sel { background: var(--accent-soft); }
-  .item img, .item .ico {
-    width: 30px; height: 30px; border-radius: 8px; flex: none; background: #2a2e36;
-    display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--fg-dim);
+  .pitem img, .pitem .ico {
+    width: 36px; height: 36px; border-radius: 9px; flex: none; background: #22262e;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--dim); font-weight: 700;
   }
-  .item .meta { flex: 1; min-width: 0; }
-  .item .meta b { display: block; font-size: 13.5px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .item .meta span { display: block; font-size: 11px; color: var(--fg-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .item .mark { color: var(--accent); font-size: 16px; width: 18px; text-align: center; }
-  .bar {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
-    background: linear-gradient(transparent, var(--bg) 40%);
-    display: flex; gap: 8px;
-  }
-  .bar button { flex: 1; }
+  .pitem .meta { flex: 1; min-width: 0; }
+  .pitem .meta b { display: block; font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pitem .meta span { display: block; font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pitem .mark { color: var(--acc); font-size: 17px; width: 22px; text-align: center; flex: none; font-weight: 700; }
+  .pitem.sel { background: rgba(90,200,255,.06); }
   #toast {
-    position: fixed; left: 50%; bottom: calc(78px + env(safe-area-inset-bottom));
+    position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom));
     transform: translateX(-50%) translateY(10px);
-    background: #2b3038; border: 1px solid var(--line); color: var(--fg);
-    padding: 9px 14px; border-radius: 999px; font-size: 13px;
+    background: #232833; border: 1px solid var(--line2); color: var(--fg);
+    padding: 10px 16px; border-radius: 999px; font-size: 13px;
     opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 90;
-    max-width: 88vw; text-align: center;
+    max-width: 88vw; text-align: center; box-shadow: 0 6px 24px rgba(0,0,0,.45);
   }
   #toast.on { opacity: 1; transform: translateX(-50%); }
+  .howto { font-size: 12.5px; color: var(--dim); line-height: 1.8; }
+  .howto b { color: var(--fg); font-weight: 600; }
 </style>
 </head>
 <body>
+
 <header>
-  <h1>XecHide 管理器<small id="cfgPath" title="前者是规则源文件，后者是发布给 system_server 读取的副本">/data/adb/ksu/cfg/9.cfg → /data/system/sysfwk/9.cfg</small></h1>
+  <div class="logo">XH</div>
+  <div class="tt">
+    <h1>XecHide</h1>
+    <div class="paths">配置 /data/adb/ksu/cfg/9.cfg · 镜像 /data/system/sysfwk/9.cfg</div>
+  </div>
   <span class="pill" id="status">读取中…</span>
 </header>
 
-<div class="card">
-  <h2>全局开关</h2>
-  <div id="globals"></div>
-</div>
+<nav>
+  <button data-pane="overview" class="on">概览</button>
+  <button data-pane="rules">规则</button>
+  <button data-pane="templates">模板</button>
+</nav>
 
-<div class="card">
-  <h2>默认规则<span class="count" id="defaultHint"></span></h2>
-  <div id="defaultRule"></div>
-</div>
+<!-- ============ 概览 ============ -->
+<section class="pane on" id="pane-overview">
+  <div class="card">
+    <div class="row" style="border:0;padding-top:2px">
+      <div class="label">
+        <b style="font-size:16px">隐藏引擎</b>
+        <span>关闭后所有 hook 直接放行，应用列表恢复原样</span>
+      </div>
+      <label class="switch bigswitch">
+        <input type="checkbox" id="masterSwitch">
+        <i></i>
+      </label>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="statScope">–</b><span>作用域应用</span></div>
+      <div class="stat"><b id="statItems">–</b><span>隐藏条目</span></div>
+      <div class="stat"><b id="statTpl">–</b><span>模板</span></div>
+    </div>
+    <div class="sub" style="margin-top:14px">环境自检</div>
+    <div id="diag" class="howto">检测中…</div>
+  </div>
 
-<div class="card">
-  <h2>应用规则<span class="count" id="scopeCount"></span><span class="spacer"></span>
-    <button class="sm" id="addScope">添加应用</button>
-  </h2>
-  <div id="scopeList"></div>
-</div>
+  <div class="card">
+    <h2>工作原理</h2>
+    <p class="howto">
+      <b>① 应用列表</b> — 在 system_server 的 AppsFilter 裁决点返回「过滤」，
+      getInstalledPackages / queryIntentActivities / getPackageInfo 等全部查询路径统一生效；
+      <b>② 安装来源</b> — 把目标应用看到的安装来源改写成应用商店或系统预装；
+      <b>③ 启动保护</b> — 被隐藏应用被显式 ComponentName 拉起时返回「类不存在」；
+      <b>④ 设置项</b> — 按规则隐藏无障碍服务、输入法列表与开发者选项状态。
+    </p>
+    <p class="howto">
+      配置改动保存后由引擎在 <b>2 秒内</b>自动热加载，无需重启手机。
+      规则语义：<b>黑名单</b>只藏列表内的应用；<b>白名单</b>只让列表内的应用可见。
+    </p>
+  </div>
+</section>
 
-<div class="card">
-  <h2>模板<span class="count" id="tplCount"></span><span class="spacer"></span>
-    <button class="sm" id="addTpl">新建</button>
-  </h2>
-  <div id="tplList"></div>
-  <div class="sub">内置预设（规则里直接用它的名字即可引用，无需复制包名）</div>
-  <div class="chips" id="presetChips"></div>
-</div>
+<!-- ============ 规则 ============ -->
+<section class="pane" id="pane-rules">
+  <div class="card">
+    <h2>全局开关</h2>
+    <div id="globals"></div>
+  </div>
+
+  <div class="card">
+    <h2>默认规则<span class="count" id="defaultHint"></span></h2>
+    <p class="lead">对所有应用生效的兜底规则；下方单独配置过的应用以自己的规则为准。</p>
+    <div id="defaultSlot"></div>
+  </div>
+
+  <div class="card">
+    <h2>应用规则<span class="count" id="scopeCount"></span><span class="spacer"></span>
+      <button class="sm primary" id="addScope">＋ 添加应用</button>
+    </h2>
+    <p class="lead">给单个应用单独定制隐藏规则，优先级高于默认规则。</p>
+    <div id="scopeList"></div>
+  </div>
+</section>
+
+<!-- ============ 模板 ============ -->
+<section class="pane" id="pane-templates">
+  <div class="card">
+    <h2>自定义模板<span class="count" id="tplCount"></span><span class="spacer"></span>
+      <button class="sm primary" id="addTpl">＋ 新建</button>
+    </h2>
+    <p class="lead">一组包名。规则里按名字引用，改一处即全局生效。</p>
+    <div id="tplList"></div>
+  </div>
+
+  <div class="card">
+    <h2>内置预设</h2>
+    <p class="lead">规则里直接引用预设名即可，也可复制成模板再改。</p>
+    <div class="chips" id="presetChips"></div>
+    <div class="sub">关键包（白名单模式下自动豁免）</div>
+    <div class="chips" id="essentialChips"></div>
+  </div>
+</section>
 
 <div class="bar">
-  <button class="primary" id="save">保存并生效</button>
   <button class="ghost" id="reload">重新读取</button>
+  <button class="primary" id="save">保存并生效</button>
 </div>
 
-<div class="sheet" id="sheet">
+<!-- 规则编辑器 -->
+<div class="sheet" id="ruleSheet">
   <div class="panel">
+    <div class="grab"></div>
     <div class="head">
-      <b>选择应用</b>
-      <button class="sm" id="pickAll">全选可见</button>
-      <button class="sm primary" id="pickDone">确定</button>
-      <button class="sm ghost" id="pickCancel">取消</button>
+      <div class="t">
+        <b id="rsTitle">规则</b>
+        <span id="rsSub"></span>
+      </div>
+      <button class="sm danger" id="rsDelete">删除</button>
     </div>
-    <div class="filters">
-      <input type="text" id="pickSearch" placeholder="搜索包名或名称">
-      <select id="pickKind">
+    <div class="body">
+      <div class="sub" style="margin-top:0">匹配模式</div>
+      <div class="seg" id="rsMode">
+        <button data-v="black">黑名单</button>
+        <button data-v="white">白名单</button>
+      </div>
+      <p class="lead" id="rsModeHint" style="margin:8px 0 0"></p>
+      <div id="rsToggles"></div>
+      <div class="sub">引用模板 / 预设</div>
+      <div class="chips" id="rsTplChips"></div>
+      <div class="btnbar" id="rsTplAdd" style="margin-top:6px"></div>
+      <div class="sub">隐藏列表（<span id="rsPkgCount">0</span>）</div>
+      <div class="chips" id="rsPkgChips"></div>
+      <div class="btnbar" style="margin-top:6px">
+        <button class="sm" id="rsAddPkg">从应用列表添加</button>
+        <button class="sm ghost" id="rsManualPkg">手动输入</button>
+      </div>
+      <div class="sub">反向例外（<span id="rsOppCount">0</span>）</div>
+      <p class="lead" style="margin:2px 0 0">白名单模式下强制隐藏；黑名单模式下强制放行。</p>
+      <div class="chips" id="rsOppChips"></div>
+      <div class="btnbar" style="margin-top:6px">
+        <button class="sm" id="rsAddOpp">添加反向例外</button>
+      </div>
+      <div style="height:8px"></div>
+    </div>
+    <div class="foot">
+      <button class="ghost" id="rsCancel">取消</button>
+      <button class="primary" id="rsSave">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模板编辑器 -->
+<div class="sheet" id="tplSheet">
+  <div class="panel">
+    <div class="grab"></div>
+    <div class="head">
+      <div class="t">
+        <b id="tsTitle">模板</b>
+        <span id="tsSub"></span>
+      </div>
+      <button class="sm ghost" id="tsRename">重命名</button>
+      <button class="sm danger" id="tsDelete">删除</button>
+    </div>
+    <div class="body">
+      <div class="chips" id="tsChips"></div>
+      <div class="btnbar">
+        <button class="sm" id="tsAdd">添加包名</button>
+        <button class="sm ghost" id="tsManual">手动输入</button>
+      </div>
+      <div style="height:8px"></div>
+    </div>
+    <div class="foot">
+      <button class="ghost" id="tsCancel">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 应用选择器 -->
+<div class="sheet" id="picker">
+  <div class="panel">
+    <div class="grab"></div>
+    <div class="head">
+      <div class="t"><b id="pkTitle">选择应用</b><span id="pkHint"></span></div>
+      <button class="sm" id="pkAll">全选可见</button>
+      <button class="sm primary" id="pkDone">确定</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="text" id="pkSearch" placeholder="搜索应用名或包名">
+      <select id="pkKind" style="width:auto;flex:none">
         <option value="user">用户应用</option>
         <option value="system">系统应用</option>
         <option value="both">全部</option>
       </select>
     </div>
-    <div class="list" id="pickList"></div>
+    <div class="plist" id="pkList"></div>
+    <div class="foot" style="margin-top:10px">
+      <button class="ghost" id="pkCancel">取消</button>
+    </div>
   </div>
 </div>
 
@@ -217,29 +427,34 @@
 <script>
 "use strict";
 
-/* ---------- KernelSU WebUI 桥 ---------- */
+/* ================= KernelSU WebUI 桥 =================
+ *
+ * 管理器注入的桥对象叫 ksu（WebViewHelper.addJavascriptInterface(…, "ksu")），
+ * 兼容窗口里也认 kernelsu 这个名字。
+ *
+ * 关键点：exec 是 Java 重载方法，JS 侧看到的永远是同一个函数，
+ * 传 1 个参数就走「同步返回 stdout 字符串」的重载——不要再按
+ * Function.length 猜签名（Java 注入方法在 JS 里 length 恒为 0，
+ * 按回调风格解析会把返回的裸字符串错当成 {errno,stdout} 对象，
+ * 结果所有读取都拿到空值：应用列表空白、保存永远失败）。
+ */
 const KS = window.ksu || window.kernelsu || null;
 
-function exec(cmd) {
+function execOut(cmd) {
   return new Promise((resolve) => {
-    if (!KS || typeof KS.exec !== "function") {
-      resolve({ errno: -1, stdout: "", stderr: "未检测到 KernelSU WebUI 接口" });
-      return;
-    }
+    if (!KS || typeof KS.exec !== "function") { resolve(null); return; }
     try {
-      // 旧版是 exec(cmd, callback)，新版是 exec(cmd) 返回 Promise
-      if (KS.exec.length >= 2) {
-        KS.exec(cmd, (errno, stdout, stderr) => resolve({ errno: errno, stdout: stdout, stderr: stderr }));
-        return;
-      }
       const r = KS.exec(cmd);
       if (r && typeof r.then === "function") {
-        r.then((res) => resolve(res || {}), (e) => resolve({ errno: -1, stdout: "", stderr: String(e) }));
+        r.then(
+          (res) => resolve(typeof res === "string" ? res : (res && res.stdout) || ""),
+          () => resolve(null)
+        );
       } else {
-        resolve(r || { errno: 0, stdout: "", stderr: "" });
+        resolve(typeof r === "string" ? r : (r && r.stdout) || "");
       }
     } catch (e) {
-      resolve({ errno: -1, stdout: "", stderr: String(e) });
+      resolve(null);
     }
   });
 }
@@ -249,19 +464,22 @@ function toast(msg) {
   el.textContent = msg;
   el.classList.add("on");
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => el.classList.remove("on"), 2200);
+  toast._t = setTimeout(() => el.classList.remove("on"), 2400);
   if (KS && typeof KS.toast === "function") { try { KS.toast(msg); } catch (e) {} }
 }
 
-/* ---------- BCFG 容器编解码（与 common/BlobCodec.kt 完全一致） ---------- */
+/* ================= BCFG 容器编解码 =================
+ * 与 common/BlobCodec.kt 逐字节一致：
+ * "BCFG" | version:u8 | count:u32le + 每条目 pathLen:u16le|path|mode:u32le|len:u32le|data，
+ * 整段按 "xdcv1" 循环异或。
+ */
 const MAGIC = [0x42, 0x43, 0x46, 0x47];                 // "BCFG"
 const XOR_KEY = [0x78, 0x64, 0x63, 0x76, 0x31];         // "xdcv1"
 const ENTRY_NAME = "hide.json";
 const ENTRY_MODE = 0o644;
 const CFG_PATH = "/data/adb/ksu/cfg/9.cfg";
-/* 同一份 blob 要再发布给 system_server（uid 1000）读：它读不到 /data/adb 下的文件 */
-const MIRROR_DIR = "/data/system/sysfwk";
-const MIRROR_PATH = MIRROR_DIR + "/9.cfg";
+/* 同一份 blob 还要发布给 system_server（uid 1000）读：它读不到 /data/adb 下的文件 */
+const MIRROR_PATH = "/data/system/sysfwk/9.cfg";
 
 function xorBytes(bytes) {
   const out = new Uint8Array(bytes.length);
@@ -322,7 +540,7 @@ function base64ToBytes(b64) {
   return out;
 }
 
-/* ---------- 配置模型 ---------- */
+/* ================= 配置模型 ================= */
 const PRESETS = {
   root: ["com.topjohnwu.magisk", "io.github.huskydg.magisk", "me.weishu.kernelsu", "com.xecpro.kernel",
     "eu.chainfire.supersu", "com.noshufou.android.su", "com.noshufou.android.su.elite", "com.koushikdutta.superuser",
@@ -382,6 +600,7 @@ function normalizeRule(raw) {
 let CFG = null;          // 当前内存里的配置（保留未知字段）
 let PACKAGES = { user: [], system: [] };
 let LABELS = {};
+let PKG_SET = null;      // Set：包名 → 是否系统应用
 
 function normalizeConfig(raw) {
   const cfg = (raw && typeof raw === "object") ? raw : {};
@@ -391,7 +610,7 @@ function normalizeConfig(raw) {
   out.blockActivityLaunch = cfg.blockActivityLaunch !== false;
   out.spoofInstallSource = cfg.spoofInstallSource !== false;
   out.protectEssentialPackages = cfg.protectEssentialPackages !== false;
-  out.defaultRule = normalizeRule(cfg.defaultRule);
+  out.defaultRule = cfg.defaultRule ? normalizeRule(cfg.defaultRule) : null;
   out.templates = {};
   const tpls = (cfg.templates && typeof cfg.templates === "object") ? cfg.templates : {};
   for (const name of Object.keys(tpls)) {
@@ -404,12 +623,12 @@ function normalizeConfig(raw) {
   return out;
 }
 
-/* ---------- 读写设备上的配置 ---------- */
+/* ================= 配置读写 ================= */
 async function readBlobText(path) {
-  const r = await exec("base64 " + path + " 2>/dev/null");
-  const b64 = (r.stdout || "").replace(/\s+/g, "");
+  const out = await execOut("base64 " + path + " 2>/dev/null");
+  const b64 = (out || "").replace(/\s+/g, "");
   if (!b64) return null;
-  return unpackBlob(base64ToBytes(b64));
+  try { return unpackBlob(base64ToBytes(b64)); } catch (e) { return null; }
 }
 
 async function readConfig() {
@@ -424,19 +643,25 @@ async function writeConfig(cfg) {
   const b64 = bytesToBase64(blob);
   const tmp = CFG_PATH + ".new";
 
-  // canonical 是源头，镜像只是发布给 uid 1000 的副本；发布失败不该把「保存」判成失败，
-  // 所以整段用 ( ... || true ) 兜住，退出码以 canonical 的落地结果为准。
-  const publish = "mkdir -p " + MIRROR_DIR + " && cp -f " + CFG_PATH + " " + MIRROR_PATH +
-    " && chmod 0755 " + MIRROR_DIR + " && chmod 0644 " + MIRROR_PATH;
+  // canonical 是源头，镜像是发布给 uid 1000 的副本；发布失败不该把「保存」判成失败。
+  // 成功用哨兵判断：base64 输出经过 bin/ksh 时 errno 不一定能带回来，stdout 里的
+  // __XEC_SAVE_OK__ 才是跨桥最可靠的信号。
+  const publish = "mkdir -p /data/system/sysfwk && cp -f " + CFG_PATH + " " + MIRROR_PATH +
+    " && chmod 0755 /data/system/sysfwk && chmod 0644 " + MIRROR_PATH;
 
   const cmd = "mkdir -p /data/adb/ksu/cfg && printf '%s' '" + b64 + "' | base64 -d > " + tmp +
     " && chmod 0600 " + tmp + " && mv -f " + tmp + " " + CFG_PATH +
-    " && ( ( " + publish + " ) >/dev/null 2>&1 || true )";
-  const r = await exec(cmd);
-  return r.errno === 0 && !(r.stderr || "").trim();
+    " && ( " + publish + " >/dev/null 2>&1 || true )" +
+    " && echo __XEC_SAVE_OK__";
+
+  const out = await execOut(cmd);
+  return (out || "").indexOf("__XEC_SAVE_OK__") >= 0;
 }
 
-/* ---------- 应用列表 ---------- */
+/* ================= 应用列表 =================
+ * 优先走管理器缓存好的 listPackages / getPackagesInfo（不走 shell，带应用标签），
+ * 拿不到再退回 pm list packages（PMS binder 查询，普通应用权限即可）。
+ */
 function parsePackages(out) {
   const list = [];
   for (const line of (out || "").split("\n")) {
@@ -447,31 +672,71 @@ function parsePackages(out) {
 }
 
 async function loadPackages() {
-  const [u, s] = await Promise.all([
-    exec("pm list packages -3 2>/dev/null"),
-    exec("pm list packages -s 2>/dev/null")
-  ]);
-  PACKAGES.user = parsePackages(u.stdout);
-  PACKAGES.system = parsePackages(s.stdout);
-  // 管理器若暴露了带名称的接口就顺手用上，失败不影响功能
-  if (KS && typeof KS.getPackagesInfo === "function") {
+  let got = false;
+
+  if (KS && typeof KS.listPackages === "function") {
     try {
-      const raw = KS.getPackagesInfo();
+      const u = JSON.parse(KS.listPackages("user"));
+      const s = JSON.parse(KS.listPackages("system"));
+      if (Array.isArray(u)) { PACKAGES.user = u.slice().sort(); got = true; }
+      if (Array.isArray(s)) { PACKAGES.system = s.slice().sort(); got = true; }
+    } catch (e) { /* 走 shell 兜底 */ }
+  }
+
+  if (!got) {
+    const [u, s] = await Promise.all([
+      execOut("pm list packages -3 2>/dev/null"),
+      execOut("pm list packages -s 2>/dev/null")
+    ]);
+    PACKAGES.user = parsePackages(u);
+    PACKAGES.system = parsePackages(s);
+  }
+
+  // 去重（系统目录里可能包含升级包，与用户目录重叠）
+  const seen = new Set();
+  PACKAGES.system = PACKAGES.system.filter(p => !PACKAGES.user.includes(p) && !seen.has(p) && seen.add(p));
+
+  PKG_SET = new Set(PACKAGES.user.concat(PACKAGES.system));
+  await loadLabels(PACKAGES.user.concat(PACKAGES.system));
+}
+
+/** 批量拉应用标签；管理器接口字段是 appLabel（不含 label） */
+async function loadLabels(pkgs) {
+  if (!KS || typeof KS.getPackagesInfo !== "function") return;
+  for (let i = 0; i < pkgs.length; i += 150) {
+    const chunk = pkgs.slice(i, i + 150);
+    try {
+      const raw = KS.getPackagesInfo(JSON.stringify(chunk));
       const text = (raw && typeof raw.then === "function") ? await raw : raw;
       const arr = typeof text === "string" ? JSON.parse(text) : text;
-      if (Array.isArray(arr)) {
-        for (const it of arr) {
-          if (it && it.packageName && it.label) LABELS[it.packageName] = it.label;
-        }
+      if (!Array.isArray(arr)) continue;
+      for (const it of arr) {
+        if (it && it.packageName && it.appLabel) LABELS[it.packageName] = it.appLabel;
       }
-    } catch (e) { /* 忽略 */ }
+    } catch (e) { /* 标签拿不到就显示包名 */ }
   }
 }
 
 function labelOf(pkg) { return LABELS[pkg] || pkg; }
 function iconUrl(pkg) { return "ksu://icon/" + pkg; }
+function isUserPkg(pkg) { return PACKAGES.user.includes(pkg); }
 
-/* ---------- 渲染 ---------- */
+function appIcon(pkg, cls) {
+  const img = document.createElement("img");
+  img.className = cls || "";
+  img.src = iconUrl(pkg);
+  img.alt = "";
+  img.loading = "lazy";
+  img.addEventListener("error", () => {
+    const fb = document.createElement("div");
+    fb.className = "ico";
+    fb.textContent = (labelOf(pkg)[0] || "?").toUpperCase();
+    img.replaceWith(fb);
+  });
+  return img;
+}
+
+/* ================= 渲染 ================= */
 function el(tag, cls, text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -479,12 +744,12 @@ function el(tag, cls, text) {
   return n;
 }
 
-function switchRow(title, desc, get, set) {
+function switchRow(title, desc, get, set, cls) {
   const row = el("div", "row");
   const label = el("div", "label");
   label.appendChild(el("b", null, title));
   if (desc) label.appendChild(el("span", null, desc));
-  const sw = el("label", "switch");
+  const sw = el("label", "switch" + (cls ? " " + cls : ""));
   const input = el("input");
   input.type = "checkbox";
   input.checked = !!get();
@@ -499,9 +764,8 @@ function switchRow(title, desc, get, set) {
 function renderGlobals() {
   const box = document.getElementById("globals");
   box.textContent = "";
-  box.appendChild(switchRow("启用隐藏", "关闭后所有 hook 直接放行", () => CFG.enabled, v => CFG.enabled = v));
   box.appendChild(switchRow("Activity 启动保护", "被隐藏的应用无法被目标应用拉起", () => CFG.blockActivityLaunch, v => CFG.blockActivityLaunch = v));
-  box.appendChild(switchRow("安装来源伪造", "由规则决定是否对目标应用生效", () => CFG.spoofInstallSource, v => CFG.spoofInstallSource = v));
+  box.appendChild(switchRow("安装来源伪造", "由各条规则决定是否对目标应用生效", () => CFG.spoofInstallSource, v => CFG.spoofInstallSource = v));
   box.appendChild(switchRow("关键包保护", "白名单模式下豁免系统必需包，避免目标应用崩溃", () => CFG.protectEssentialPackages, v => CFG.protectEssentialPackages = v));
 }
 
@@ -521,106 +785,64 @@ function chipList(values, onRemove, cls) {
   return box;
 }
 
-/** 规则编辑器：默认规则与应用规则共用同一套控件 */
-function ruleEditor(key, rule, onChange) {
-  const wrap = el("div");
+function renderOverview() {
+  document.getElementById("masterSwitch").checked = !!CFG.enabled;
+  document.getElementById("statScope").textContent = Object.keys(CFG.scope).length;
+  let items = 0;
+  if (CFG.defaultRule) items += CFG.defaultRule.packages.length + CFG.defaultRule.templates.length;
+  for (const k of Object.keys(CFG.scope)) items += CFG.scope[k].packages.length + CFG.scope[k].templates.length;
+  document.getElementById("statItems").textContent = items;
+  document.getElementById("statTpl").textContent = Object.keys(CFG.templates).length;
 
-  wrap.appendChild(switchRow("白名单模式", "只隐藏列表内的应用（关键包与系统应用按下面的开关豁免）", () => rule.whitelist, v => { rule.whitelist = v; onChange(); }));
-  wrap.appendChild(switchRow("排除系统应用", "白名单模式下不隐藏系统应用", () => rule.excludeSystemApps, v => { rule.excludeSystemApps = v; onChange(); }));
-  wrap.appendChild(switchRow("伪造安装来源", "让目标应用看到的安装来源不是本机安装器", () => rule.hideInstallSource, v => { rule.hideInstallSource = v; onChange(); }));
-  wrap.appendChild(switchRow("含系统应用来源", "连系统应用的安装来源一起伪造", () => rule.hideSystemInstallSource, v => { rule.hideSystemInstallSource = v; onChange(); }));
-  wrap.appendChild(switchRow("反转启动保护", "对该应用反向控制 Activity 拦截", () => rule.invertActivityGuard, v => { rule.invertActivityGuard = v; onChange(); }));
-  wrap.appendChild(switchRow("隐藏无障碍服务", "让目标应用看不到已安装的无障碍服务", () => rule.hideAccessibility, v => { rule.hideAccessibility = v; onChange(); }));
-  wrap.appendChild(switchRow("隐藏开发者选项", "让目标应用读到开发者选项已关闭、adb 未启用", () => rule.hideDeveloperOptions, v => { rule.hideDeveloperOptions = v; onChange(); }));
-  wrap.appendChild(switchRow("隐藏输入法列表", "让目标应用看不到已启用的输入法", () => rule.hideInputMethods, v => { rule.hideInputMethods = v; onChange(); }));
-
-  wrap.appendChild(el("div", "sub", "引用模板 / 预设"));
-  wrap.appendChild(chipList(rule.templates, v => { rule.templates = rule.templates.filter(x => x !== v); onChange(); }));
-  const tplBar = el("div", "btnbar");
-  for (const name of Object.keys(PRESETS)) {
-    const b = el("button", "sm", "+ " + PRESET_LABEL[name]);
-    b.addEventListener("click", () => {
-      if (!rule.templates.includes(name)) { rule.templates.push(name); onChange(); }
-    });
-    tplBar.appendChild(b);
-  }
-  const custom = Object.keys(CFG.templates);
-  for (const name of custom) {
-    if (PRESETS[name]) continue;
-    const b = el("button", "sm", "+ " + name);
-    b.addEventListener("click", () => {
-      if (!rule.templates.includes(name)) { rule.templates.push(name); onChange(); }
-    });
-    tplBar.appendChild(b);
-  }
-  wrap.appendChild(tplBar);
-
-  wrap.appendChild(el("div", "sub", "隐藏列表（" + rule.packages.length + "）"));
-  wrap.appendChild(chipList(rule.packages, v => { rule.packages = rule.packages.filter(x => x !== v); onChange(); }));
-  const addBtn = el("button", "sm", "从应用列表添加");
-  addBtn.addEventListener("click", () => {
-    openPicker(rule.packages, (picked) => {
-      for (const p of picked) if (!rule.packages.includes(p)) rule.packages.push(p);
-      onChange();
-    });
-  });
-  const manualBtn = el("button", "sm ghost", "手动输入");
-  manualBtn.addEventListener("click", () => {
-    const v = prompt("输入包名");
-    if (v && v.trim() && !rule.packages.includes(v.trim())) { rule.packages.push(v.trim()); onChange(); }
-  });
-  const bars = el("div", "btnbar");
-  bars.style.marginTop = "8px";
-  bars.appendChild(addBtn);
-  bars.appendChild(manualBtn);
-  wrap.appendChild(bars);
-
-  wrap.appendChild(el("div", "sub", "反向例外（" + rule.oppositePackages.length + "）"));
-  wrap.appendChild(chipList(rule.oppositePackages, v => { rule.oppositePackages = rule.oppositePackages.filter(x => x !== v); onChange(); }));
-  const oppBtn = el("button", "sm", "添加反向例外");
-  oppBtn.addEventListener("click", () => {
-    openPicker(rule.oppositePackages, (picked) => {
-      for (const p of picked) if (!rule.oppositePackages.includes(p)) rule.oppositePackages.push(p);
-      onChange();
-    });
-  });
-  const oppBar = el("div", "btnbar");
-  oppBar.style.marginTop = "8px";
-  oppBar.appendChild(oppBtn);
-  wrap.appendChild(oppBar);
-
-  return wrap;
+  const diag = document.getElementById("diag");
+  diag.textContent = "";
+  const bridgeOk = !!(KS && typeof KS.exec === "function");
+  const pkgCount = PACKAGES.user.length + PACKAGES.system.length;
+  const line1 = el("div", null,
+    bridgeOk ? "✔ 管理器桥接正常（ksu.exec 可用）" : "✘ 未检测到 KernelSU 桥：请从管理器的模块页打开本界面");
+  line1.style.color = bridgeOk ? "var(--ok)" : "var(--danger)";
+  const line2 = el("div", null,
+    pkgCount > 0 ? "✔ 已读取 " + PACKAGES.user.length + " 个用户应用 / " + PACKAGES.system.length + " 个系统应用"
+                 : "… 应用列表尚未读取到");
+  line2.style.color = pkgCount > 0 ? "var(--ok)" : "var(--dim)";
+  const line3 = el("div", null,
+    "镜像同步状态见保存结果；引擎每 2 秒轮询配置变更");
+  line3.style.color = "var(--dim)";
+  diag.appendChild(line1);
+  diag.appendChild(line2);
+  diag.appendChild(line3);
 }
 
-let renderTick = 0;
-function rerender() { renderTick++; renderAll(); }
-
+/* ---------- 规则页 ---------- */
 function renderDefaultRule() {
-  const box = document.getElementById("defaultRule");
+  const box = document.getElementById("defaultSlot");
   box.textContent = "";
   const hint = document.getElementById("defaultHint");
   const rule = CFG.defaultRule;
-  hint.textContent = rule ? "（对所有应用生效）" : "（未设置）";
+  hint.textContent = rule ? "（生效中）" : "（未设置）";
   if (!rule) {
     box.appendChild(el("div", "empty", "没有默认规则：只有下面单独配置过的应用会看到隐藏效果。"));
     const b = el("button", "sm primary", "创建默认规则");
-    b.addEventListener("click", () => { CFG.defaultRule = emptyRule(); renderAll(); });
+    b.addEventListener("click", () => {
+      CFG.defaultRule = emptyRule();
+      renderAll();
+      openRuleEditor("默认规则", "对所有应用生效", CFG.defaultRule, null);
+    });
     box.appendChild(b);
     return;
   }
-  const det = el("details", "rule");
-  det.open = true;
-  const sum = el("summary");
-  sum.appendChild(el("span", "name", "默认规则"));
-  sum.appendChild(el("span", "tag", (rule.packages.length + rule.templates.length) + " 项"));
-  det.appendChild(sum);
-  const body = el("div", "body");
-  body.appendChild(ruleEditor(rule, () => { renderAll(); }));
-  const del = el("button", "sm danger", "删除默认规则");
-  del.addEventListener("click", () => { CFG.defaultRule = null; renderAll(); });
-  body.appendChild(del);
-  det.appendChild(body);
-  box.appendChild(det);
+  const card = el("div", "appcard");
+  card.appendChild(el("div", "ico", "⚙"));
+  const meta = el("div", "meta");
+  meta.appendChild(el("b", null, "默认规则 · " + (rule.whitelist ? "白名单" : "黑名单")));
+  meta.appendChild(el("span", null,
+    "列表 " + rule.packages.length + " 项 · 模板 " + rule.templates.length + " 个 · 例外 " + rule.oppositePackages.length + " 项"));
+  card.appendChild(meta);
+  card.appendChild(el("span", "tag", "编辑"));
+  card.addEventListener("click", () => {
+    openRuleEditor("默认规则", "对所有应用生效", CFG.defaultRule, () => { CFG.defaultRule = null; renderAll(); });
+  });
+  box.appendChild(card);
 }
 
 function renderScope() {
@@ -634,73 +856,49 @@ function renderScope() {
   }
   for (const pkg of keys) {
     const rule = CFG.scope[pkg];
-    const det = el("details", "rule");
-    const sum = el("summary");
-    const meta = el("span", "name", labelOf(pkg));
-    sum.appendChild(meta);
-    sum.appendChild(el("span", "tag", rule.whitelist ? "白名单" : "黑名单"));
-    det.appendChild(sum);
-    const body = el("div", "body");
-    body.appendChild(el("div", "sub", pkg));
-    body.appendChild(ruleEditor(rule, () => { renderAll(); }));
-    const del = el("button", "sm danger", "移除该应用");
-    del.addEventListener("click", () => { delete CFG.scope[pkg]; renderAll(); });
-    const bar = el("div", "btnbar");
-    bar.style.marginTop = "8px";
-    bar.appendChild(del);
-    body.appendChild(bar);
-    det.appendChild(body);
-    box.appendChild(det);
+    const card = el("div", "appcard");
+    card.appendChild(appIcon(pkg));
+    const meta = el("div", "meta");
+    meta.appendChild(el("b", null, labelOf(pkg)));
+    meta.appendChild(el("span", null,
+      pkg + " · 列表 " + (rule.packages.length + rule.templates.length) + " 项"));
+    card.appendChild(meta);
+    card.appendChild(el("span", "tag " + (rule.whitelist ? "wl" : "bl"), rule.whitelist ? "白名单" : "黑名单"));
+    card.addEventListener("click", () => {
+      openRuleEditor(labelOf(pkg), pkg, rule, () => { delete CFG.scope[pkg]; renderAll(); });
+    });
+    box.appendChild(card);
   }
 }
 
+/* ---------- 模板页 ---------- */
 function renderTemplates() {
   const box = document.getElementById("tplList");
   box.textContent = "";
   const names = Object.keys(CFG.templates).sort();
   document.getElementById("tplCount").textContent = "（" + names.length + "）";
   if (!names.length) {
-    box.appendChild(el("div", "empty", "还没有自定义模板。模板是一组包名，规则里按名字引用即可复用。"));
+    box.appendChild(el("div", "empty", "还没有自定义模板。可从下方内置预设一键复制。"));
   }
   for (const name of names) {
     const t = CFG.templates[name];
-    const det = el("details", "rule");
-    const sum = el("summary");
-    sum.appendChild(el("span", "name", name));
-    sum.appendChild(el("span", "tag", t.packages.length + " 个包"));
-    det.appendChild(sum);
-    const body = el("div", "body");
-    body.appendChild(chipList(t.packages, v => { t.packages = t.packages.filter(x => x !== v); renderAll(); }));
-    const bar = el("div", "btnbar");
-    bar.style.marginTop = "8px";
-    const add = el("button", "sm", "添加包名");
-    add.addEventListener("click", () => {
-      openPicker(t.packages, (picked) => { for (const p of picked) if (!t.packages.includes(p)) t.packages.push(p); renderAll(); });
-    });
-    const del = el("button", "sm danger", "删除模板");
-    del.addEventListener("click", () => { delete CFG.templates[name]; renderAll(); });
-    const rename = el("button", "sm ghost", "重命名");
-    rename.addEventListener("click", () => {
-      const v = prompt("模板名", name);
-      if (!v || !v.trim() || v === name) return;
-      CFG.templates[v.trim()] = CFG.templates[name];
-      delete CFG.templates[name];
-      renderAll();
-    });
-    bar.appendChild(add);
-    bar.appendChild(rename);
-    bar.appendChild(del);
-    body.appendChild(bar);
-    det.appendChild(body);
-    box.appendChild(det);
+    const card = el("div", "appcard");
+    card.appendChild(el("div", "ico", "T"));
+    const meta = el("div", "meta");
+    meta.appendChild(el("b", null, name));
+    meta.appendChild(el("span", null, t.packages.length + " 个包 · " + shortList(t.packages)));
+    card.appendChild(meta);
+    card.appendChild(el("span", "tag", "编辑"));
+    card.addEventListener("click", () => openTemplateEditor(name));
+    box.appendChild(card);
   }
 
   const presetBox = document.getElementById("presetChips");
   presetBox.textContent = "";
   for (const name of Object.keys(PRESETS)) {
     const chip = el("span", "chip preset");
-    chip.appendChild(el("span", null, name + " · " + PRESETS[name].length));
-    const add = el("b", null, "→模板");
+    chip.appendChild(el("span", null, name + " · " + PRESET_LABEL[name] + " · " + PRESETS[name].length));
+    const add = el("b", null, "复制→");
     add.addEventListener("click", () => {
       CFG.templates[name] = { packages: PRESETS[name].slice() };
       toast("已复制预设 " + name + " 为模板");
@@ -709,98 +907,392 @@ function renderTemplates() {
     chip.appendChild(add);
     presetBox.appendChild(chip);
   }
-  const essBox = el("div", "chips");
+
+  const essBox = document.getElementById("essentialChips");
+  essBox.textContent = "";
   for (const name of ESSENTIAL) essBox.appendChild(el("span", "chip essential", name));
-  presetBox.appendChild(el("div", "empty", "关键包（白名单模式下自动豁免）："));
-  presetBox.appendChild(essBox);
+}
+
+function shortList(pkgs) {
+  if (!pkgs.length) return "空";
+  return pkgs.slice(0, 3).map(labelOf).join("、") + (pkgs.length > 3 ? " 等" : "");
 }
 
 function renderAll() {
   if (!CFG) return;
   renderGlobals();
+  renderOverview();
   renderDefaultRule();
   renderScope();
   renderTemplates();
 }
 
-/* ---------- 应用选择器 ---------- */
-let pickState = null;
+/* ================= 规则编辑器 ================= */
+const rsState = { rule: null, onDelete: null };
 
-function openPicker(selected, onDone) {
-  pickState = { selected: new Set(selected || []), onDone: onDone };
-  document.getElementById("pickSearch").value = "";
-  document.getElementById("sheet").classList.add("on");
-  renderPicker();
+function openRuleEditor(title, subtitle, rule, onDelete) {
+  rsState.rule = rule;
+  rsState.onDelete = onDelete || null;
+  document.getElementById("rsTitle").textContent = title;
+  document.getElementById("rsSub").textContent = subtitle || "";
+  document.getElementById("rsDelete").style.display = onDelete ? "" : "none";
+  document.getElementById("ruleSheet").classList.add("on");
+  renderRuleEditor();
+}
+
+function closeRuleEditor() {
+  document.getElementById("ruleSheet").classList.remove("on");
+  rsState.rule = null;
+}
+
+function renderRuleEditor() {
+  const rule = rsState.rule;
+  if (!rule) return;
+
+  const modeSeg = document.getElementById("rsMode");
+  for (const b of modeSeg.querySelectorAll("button")) {
+    b.classList.toggle("on", (b.dataset.v === "white") === rule.whitelist);
+  }
+  document.getElementById("rsModeHint").textContent = rule.whitelist
+    ? "白名单：只有「隐藏列表」内的应用对该应用可见（关键包与系统应用可豁免）。"
+    : "黑名单：「隐藏列表」内的应用对该应用不可见，其余全部可见。";
+
+  const toggles = document.getElementById("rsToggles");
+  toggles.textContent = "";
+  toggles.appendChild(switchRow("排除系统应用", "白名单模式下不隐藏系统应用", () => rule.excludeSystemApps, v => { rule.excludeSystemApps = v; }));
+  toggles.appendChild(switchRow("伪造安装来源", "让目标应用看到的安装来源是应用商店", () => rule.hideInstallSource, v => { rule.hideInstallSource = v; }));
+  toggles.appendChild(switchRow("含系统应用来源", "连系统应用的安装来源一起伪造", () => rule.hideSystemInstallSource, v => { rule.hideSystemInstallSource = v; }));
+  toggles.appendChild(switchRow("反转启动保护", "对该应用反向控制 Activity 拦截", () => rule.invertActivityGuard, v => { rule.invertActivityGuard = v; }));
+  toggles.appendChild(switchRow("隐藏无障碍服务", "目标应用看不到已安装的无障碍服务", () => rule.hideAccessibility, v => { rule.hideAccessibility = v; }));
+  toggles.appendChild(switchRow("隐藏开发者选项", "目标应用读到开发者选项已关闭、adb 未启用", () => rule.hideDeveloperOptions, v => { rule.hideDeveloperOptions = v; }));
+  toggles.appendChild(switchRow("隐藏输入法列表", "目标应用看不到已启用的输入法", () => rule.hideInputMethods, v => { rule.hideInputMethods = v; }));
+
+  const tplChips = document.getElementById("rsTplChips");
+  tplChips.textContent = "";
+  if (rule.templates.length) {
+    for (const name of rule.templates) {
+      const chip = el("span", "chip tpl");
+      chip.appendChild(el("span", null, name));
+      const x = el("b", null, "×");
+      x.addEventListener("click", () => { rule.templates = rule.templates.filter(t => t !== name); renderRuleEditor(); });
+      chip.appendChild(x);
+      tplChips.appendChild(chip);
+    }
+  } else {
+    tplChips.appendChild(el("div", "empty", "（未引用模板）"));
+  }
+
+  const tplAdd = document.getElementById("rsTplAdd");
+  tplAdd.textContent = "";
+  for (const name of Object.keys(PRESETS)) {
+    if (rule.templates.includes(name)) continue;
+    const b = el("button", "sm", "+ " + name);
+    b.addEventListener("click", () => { rule.templates.push(name); renderRuleEditor(); });
+    tplAdd.appendChild(b);
+  }
+  for (const name of Object.keys(CFG.templates)) {
+    if (PRESETS[name] || rule.templates.includes(name)) continue;
+    const b = el("button", "sm", "+ " + name);
+    b.addEventListener("click", () => { rule.templates.push(name); renderRuleEditor(); });
+    tplAdd.appendChild(b);
+  }
+
+  document.getElementById("rsPkgCount").textContent = rule.packages.length;
+  const pkgChips = document.getElementById("rsPkgChips");
+  pkgChips.textContent = "";
+  if (rule.packages.length) {
+    for (const p of rule.packages) {
+      const chip = el("span", "chip");
+      chip.appendChild(el("span", null, labelOf(p)));
+      const x = el("b", null, "×");
+      x.addEventListener("click", () => { rule.packages = rule.packages.filter(t => t !== p); renderRuleEditor(); });
+      chip.appendChild(x);
+      pkgChips.appendChild(chip);
+    }
+  } else {
+    pkgChips.appendChild(el("div", "empty", "（空）从应用列表添加，或手动输入包名"));
+  }
+
+  document.getElementById("rsOppCount").textContent = rule.oppositePackages.length;
+  const oppChips = document.getElementById("rsOppChips");
+  oppChips.textContent = "";
+  if (rule.oppositePackages.length) {
+    for (const p of rule.oppositePackages) {
+      const chip = el("span", "chip opp");
+      chip.appendChild(el("span", null, labelOf(p)));
+      const x = el("b", null, "×");
+      x.addEventListener("click", () => { rule.oppositePackages = rule.oppositePackages.filter(t => t !== p); renderRuleEditor(); });
+      chip.appendChild(x);
+      oppChips.appendChild(chip);
+    }
+  } else {
+    oppChips.appendChild(el("div", "empty", "（空）"));
+  }
+}
+
+/* ================= 模板编辑器 ================= */
+const tsState = { name: null };
+
+function openTemplateEditor(name) {
+  tsState.name = name;
+  document.getElementById("tplSheet").classList.add("on");
+  renderTemplateEditor();
+}
+
+function closeTemplateEditor() {
+  document.getElementById("tplSheet").classList.remove("on");
+  tsState.name = null;
+}
+
+function renderTemplateEditor() {
+  const t = CFG.templates[tsState.name];
+  if (!t) { closeTemplateEditor(); return; }
+  document.getElementById("tsTitle").textContent = tsState.name;
+  document.getElementById("tsSub").textContent = t.packages.length + " 个包";
+  const chips = document.getElementById("tsChips");
+  chips.textContent = "";
+  if (t.packages.length) {
+    for (const p of t.packages) {
+      const chip = el("span", "chip");
+      chip.appendChild(el("span", null, labelOf(p)));
+      const x = el("b", null, "×");
+      x.addEventListener("click", () => { t.packages = t.packages.filter(q => q !== p); renderTemplateEditor(); renderAll(); });
+      chip.appendChild(x);
+      chips.appendChild(chip);
+    }
+  } else {
+    chips.appendChild(el("div", "empty", "（空）添加包名后可在规则里引用。"));
+  }
+}
+
+/* ================= 应用选择器 ================= */
+let pickState = null;   // { selected:Set, multi:boolean, onDone, rendered:number }
+const PAGE_SIZE = 80;
+
+function openPicker(selected, opts) {
+  pickState = {
+    selected: new Set(selected || []),
+    multi: !opts || opts.multi !== false,
+    onDone: (opts && opts.onDone) || null,
+    rendered: 0,
+  };
+  document.getElementById("pkTitle").textContent =
+    (opts && opts.title) || "选择应用";
+  document.getElementById("pkAll").style.display = pickState.multi ? "" : "none";
+  document.getElementById("pkDone").style.display = pickState.multi ? "" : "none";
+  document.getElementById("pkSearch").value = "";
+  document.getElementById("pkKind").value = (opts && opts.kind) || "user";
+  document.getElementById("pkHint").textContent =
+    PACKAGES.user.length + " 用户 / " + PACKAGES.system.length + " 系统";
+  document.getElementById("picker").classList.add("on");
+  renderPicker(true);
 }
 
 function closePicker() {
-  document.getElementById("sheet").classList.remove("on");
+  document.getElementById("picker").classList.remove("on");
   pickState = null;
 }
 
-function renderPicker() {
-  if (!pickState) return;
-  const kind = document.getElementById("pickKind").value;
-  const q = document.getElementById("pickSearch").value.trim().toLowerCase();
-  const list = document.getElementById("pickList");
-  list.textContent = "";
-
+function filteredPackages() {
+  const kind = document.getElementById("pkKind").value;
+  const q = document.getElementById("pkSearch").value.trim().toLowerCase();
   let all = [];
   if (kind === "user") all = PACKAGES.user.slice();
   else if (kind === "system") all = PACKAGES.system.slice();
   else all = PACKAGES.user.concat(PACKAGES.system);
-
   if (q) {
     all = all.filter(p => p.toLowerCase().includes(q) || (LABELS[p] || "").toLowerCase().includes(q));
   }
-  all = all.slice(0, 400);
+  return all;
+}
 
-  if (!all.length) {
-    list.appendChild(el("div", "empty", "没有匹配的应用（运行 pm list packages 可能被拒绝）"));
+function renderPicker(reset) {
+  if (!pickState) return;
+  const list = document.getElementById("pkList");
+  if (reset) { list.textContent = ""; pickState.rendered = 0; }
+
+  const all = filteredPackages();
+  const end = Math.min(all.length, pickState.rendered + PAGE_SIZE);
+
+  if (pickState.rendered === 0 && !all.length) {
+    list.appendChild(el("div", "empty", "没有匹配的应用。若列表持续为空，说明管理器桥接异常——请从 XECKernel Pro 管理器的模块页打开本界面。"));
     return;
   }
 
-  for (const pkg of all) {
-    const item = el("div", "item" + (pickState.selected.has(pkg) ? " sel" : ""));
-    const img = el("img");
-    img.src = iconUrl(pkg);
-    img.alt = "";
-    img.addEventListener("error", () => {
-      const fb = el("div", "ico", pkg.slice(0, 1).toUpperCase());
-      img.replaceWith(fb);
-    });
+  for (let i = pickState.rendered; i < end; i++) {
+    const pkg = all[i];
+    const user = isUserPkg(pkg);
+    const item = el("div", "pitem" + (pickState.selected.has(pkg) ? " sel" : ""));
+    item.appendChild(appIcon(pkg));
     const meta = el("div", "meta");
     meta.appendChild(el("b", null, labelOf(pkg)));
     meta.appendChild(el("span", null, pkg));
-    const mark = el("div", "mark", pickState.selected.has(pkg) ? "✓" : "");
-    item.appendChild(img);
     item.appendChild(meta);
-    item.appendChild(mark);
+    if (!user) item.appendChild(el("span", "tag sys", "系统"));
+    item.appendChild(el("div", "mark", pickState.selected.has(pkg) ? "✓" : ""));
     item.addEventListener("click", () => {
+      if (!pickState.multi) {
+        const done = pickState.onDone;
+        closePicker();
+        done([pkg]);
+        return;
+      }
       if (pickState.selected.has(pkg)) pickState.selected.delete(pkg);
       else pickState.selected.add(pkg);
       item.classList.toggle("sel");
-      mark.textContent = pickState.selected.has(pkg) ? "✓" : "";
+      item.querySelector(".mark").textContent = pickState.selected.has(pkg) ? "✓" : "";
     });
     list.appendChild(item);
   }
+  pickState.rendered = end;
+
+  if (end < all.length && !list.querySelector(".more")) {
+    const more = el("div", "empty more", "上滑加载更多…");
+    list.appendChild(more);
+  } else if (end >= all.length) {
+    const more = list.querySelector(".more");
+    if (more) more.remove();
+  }
 }
 
-/* ---------- 事件绑定 ---------- */
+document.getElementById("pkList").addEventListener("scroll", () => {
+  const list = document.getElementById("pkList");
+  if (!pickState) return;
+  if (list.scrollTop + list.clientHeight >= list.scrollHeight - 120) {
+    renderPicker(false);
+  }
+});
+
+/* ================= 事件绑定 ================= */
 function bind() {
-  document.getElementById("pickSearch").addEventListener("input", renderPicker);
-  document.getElementById("pickKind").addEventListener("change", renderPicker);
-  document.getElementById("pickCancel").addEventListener("click", closePicker);
-  document.getElementById("pickAll").addEventListener("click", () => {
-    if (!pickState) return;
-    const kind = document.getElementById("pickKind").value;
-    const q = document.getElementById("pickSearch").value.trim().toLowerCase();
-    let all = kind === "user" ? PACKAGES.user.slice() : kind === "system" ? PACKAGES.system.slice() : PACKAGES.user.concat(PACKAGES.system);
-    if (q) all = all.filter(p => p.toLowerCase().includes(q));
-    for (const p of all) pickState.selected.add(p);
-    renderPicker();
+  // 标签页
+  for (const b of document.querySelectorAll("nav button")) {
+    b.addEventListener("click", () => {
+      for (const x of document.querySelectorAll("nav button")) x.classList.toggle("on", x === b);
+      for (const p of document.querySelectorAll(".pane")) p.classList.toggle("on", p.id === "pane-" + b.dataset.pane);
+      renderAll();
+    });
+  }
+
+  // 主开关
+  document.getElementById("masterSwitch").addEventListener("change", (e) => {
+    CFG.enabled = e.target.checked;
+    renderGlobals();
+    renderOverview();
   });
-  document.getElementById("pickDone").addEventListener("click", () => {
+
+  // 规则编辑器
+  for (const b of document.querySelectorAll("#rsMode button")) {
+    b.addEventListener("click", () => {
+      if (!rsState.rule) return;
+      rsState.rule.whitelist = b.dataset.v === "white";
+      renderRuleEditor();
+      renderAll();
+    });
+  }
+  document.getElementById("rsCancel").addEventListener("click", closeRuleEditor);
+  document.getElementById("rsSave").addEventListener("click", () => {
+    closeRuleEditor();
+    renderAll();
+  });
+  document.getElementById("rsDelete").addEventListener("click", () => {
+    const del = rsState.onDelete;
+    closeRuleEditor();
+    if (del) del();
+  });
+  document.getElementById("rsAddPkg").addEventListener("click", () => {
+    openPicker(rsState.rule ? rsState.rule.packages : [], {
+      title: "添加到隐藏列表", multi: true,
+      onDone: (picked) => {
+        for (const p of picked) if (!rsState.rule.packages.includes(p)) rsState.rule.packages.push(p);
+        renderRuleEditor();
+      },
+    });
+  });
+  document.getElementById("rsManualPkg").addEventListener("click", () => {
+    const v = prompt("输入包名");
+    if (v && v.trim() && rsState.rule && !rsState.rule.packages.includes(v.trim())) {
+      rsState.rule.packages.push(v.trim());
+      renderRuleEditor();
+    }
+  });
+  document.getElementById("rsAddOpp").addEventListener("click", () => {
+    openPicker(rsState.rule ? rsState.rule.oppositePackages : [], {
+      title: "添加反向例外", multi: true, kind: "both",
+      onDone: (picked) => {
+        for (const p of picked) if (!rsState.rule.oppositePackages.includes(p)) rsState.rule.oppositePackages.push(p);
+        renderRuleEditor();
+      },
+    });
+  });
+
+  // 模板编辑器
+  document.getElementById("tsCancel").addEventListener("click", closeTemplateEditor);
+  document.getElementById("tsAdd").addEventListener("click", () => {
+    const t = CFG.templates[tsState.name];
+    openPicker(t.packages, {
+      title: "添加到模板 " + tsState.name, multi: true,
+      onDone: (picked) => {
+        for (const p of picked) if (!t.packages.includes(p)) t.packages.push(p);
+        renderTemplateEditor(); renderAll();
+      },
+    });
+  });
+  document.getElementById("tsManual").addEventListener("click", () => {
+    const v = prompt("输入包名");
+    const t = CFG.templates[tsState.name];
+    if (v && v.trim() && t && !t.packages.includes(v.trim())) {
+      t.packages.push(v.trim());
+      renderTemplateEditor(); renderAll();
+    }
+  });
+  document.getElementById("tsRename").addEventListener("click", () => {
+    const v = prompt("模板名", tsState.name);
+    if (!v || !v.trim() || v.trim() === tsState.name) return;
+    CFG.templates[v.trim()] = CFG.templates[tsState.name];
+    delete CFG.templates[tsState.name];
+    renderAll();
+    openTemplateEditor(v.trim());
+  });
+  document.getElementById("tsDelete").addEventListener("click", () => {
+    delete CFG.templates[tsState.name];
+    closeTemplateEditor();
+    renderAll();
+  });
+
+  // 添加作用域应用（单选）
+  document.getElementById("addScope").addEventListener("click", () => {
+    openPicker([], {
+      title: "选择要定制规则的应用", multi: false,
+      onDone: (picked) => {
+        const pkg = picked[0];
+        if (!pkg) return;
+        if (!CFG.scope[pkg]) CFG.scope[pkg] = emptyRule();
+        renderAll();
+        openRuleEditor(labelOf(pkg), pkg, CFG.scope[pkg], () => { delete CFG.scope[pkg]; renderAll(); });
+      },
+    });
+  });
+
+  // 新建模板
+  document.getElementById("addTpl").addEventListener("click", () => {
+    const v = prompt("模板名（英文/数字）");
+    if (!v || !v.trim()) return;
+    CFG.templates[v.trim()] = { packages: [] };
+    renderAll();
+    openTemplateEditor(v.trim());
+  });
+
+  // 选择器
+  document.getElementById("pkSearch").addEventListener("input", () => renderPicker(true));
+  document.getElementById("pkKind").addEventListener("change", () => renderPicker(true));
+  document.getElementById("pkCancel").addEventListener("click", closePicker);
+  document.getElementById("pkAll").addEventListener("click", () => {
+    if (!pickState) return;
+    for (const p of filteredPackages()) pickState.selected.add(p);
+    renderPicker(true);
+  });
+  document.getElementById("pkDone").addEventListener("click", () => {
     if (!pickState) return;
     const done = pickState.onDone;
     const picked = Array.from(pickState.selected);
@@ -808,31 +1300,17 @@ function bind() {
     done(picked);
   });
 
-  document.getElementById("addScope").addEventListener("click", () => {
-    openPicker([], (picked) => {
-      for (const pkg of picked) if (!CFG.scope[pkg]) CFG.scope[pkg] = emptyRule();
-      renderAll();
-    });
-  });
-
-  document.getElementById("addTpl").addEventListener("click", () => {
-    const v = prompt("模板名（英文/数字）");
-    if (!v || !v.trim()) return;
-    CFG.templates[v.trim()] = { packages: [] };
-    renderAll();
-  });
-
+  // 保存 / 重读
   document.getElementById("reload").addEventListener("click", () => { load(true); });
-
   document.getElementById("save").addEventListener("click", async () => {
     setStatus("保存中…", null);
     const ok = await writeConfig(CFG);
     if (ok) {
       setStatus("已生效", "ok");
-      toast("已保存，2 秒内自动生效");
+      toast("已保存，引擎将在 2 秒内热加载");
     } else {
       setStatus("保存失败", "bad");
-      toast("写入失败：请确认管理器已获得 root");
+      toast("写入失败：请确认已授予管理器 root，并从模块页打开本界面");
     }
   });
 }
@@ -843,7 +1321,7 @@ function setStatus(text, cls) {
   s.className = "pill" + (cls ? " " + cls : "");
 }
 
-/* ---------- 启动 ---------- */
+/* ================= 启动 ================= */
 async function load(init) {
   setStatus("读取中…", null);
   let raw = null;
@@ -856,15 +1334,20 @@ async function load(init) {
     setStatus("已读取配置", "ok");
   } else if (err) {
     setStatus("读取失败", "bad");
+  } else if (!KS || typeof KS.exec !== "function") {
+    setStatus("无桥接", "bad");
   } else {
-    setStatus("使用默认配置", null);
+    setStatus("使用默认配置", "warn");
     toast("设备上没有 9.cfg，将按默认配置开始");
   }
 
   CFG = normalizeConfig(raw);
   renderAll();
 
-  if (init) { loadPackages().then(renderPicker); }
+  if (init) {
+    await loadPackages();
+    renderAll();
+  }
 }
 
 bind();
