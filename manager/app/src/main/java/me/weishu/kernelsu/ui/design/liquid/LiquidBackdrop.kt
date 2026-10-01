@@ -15,11 +15,13 @@ package me.weishu.kernelsu.ui.design.liquid
 
 import android.graphics.RuntimeShader
 import android.os.Build
-import androidx.compose.animation.core.withFrameNanos
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.Spacer
@@ -134,6 +136,8 @@ fun LiquidMeshBackground(
         }
     }
     Spacer(modifier = modifier.drawBehind { drawLiquidMesh(time.value, colors, shader) })
+}
+
 /**
  * 网格绘制：三个高斯色团沿利萨茹轨迹游动。
  * 深色档做加法辉光，浅色档做向色团的柔和混合；无 AGSL 时退化为分层径向渐变。
