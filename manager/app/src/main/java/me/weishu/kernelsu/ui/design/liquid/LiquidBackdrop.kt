@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
 import top.yukonga.miuix.kmp.shader.isRuntimeShaderSupported
 
 /** 卡片玻璃的采样源。null = 模糊关闭 / 设备不支持 → 卡体走降级档。 */
