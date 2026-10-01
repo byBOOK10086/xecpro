@@ -85,19 +85,26 @@ fun XGlassSurface(
  *
  * ```
  * Card(
- *     modifier = modifier.xGlassBody(backdrop = backdrop, shape = Xc.shapes.md),
+ *     modifier = modifier.xGlassBody(shape = Xc.shapes.md),
  *     // 必要：miuix Card 的底色画在 modifier 链内侧，不清空就会盖住玻璃与亮边
  *     colors = CardDefaults.defaultColors(color = Color.Transparent),
  * ) { ... }
  * ```
  *
- * @param backdrop 页面级 `rememberBlurBackdrop` 的产物。**当前实现会忽略它**，原因见函数体
- *   里的「自采样成环」说明：卡体正处在采样源的录制子树内部，不能真去采样。保留形参只是
- *   为了不动 40 多处调用点，等采样源重构（让页面级 backdrop 不再包含卡体自己）后放开即可。
- *   原本 `null` 的语义（设备不支持 / 用户关掉模糊 / 预览 → 不透明实色 + 亮边）保持不变。
- * @param tint 玻璃上覆色。默认沿用 `glassTint`；语义色卡片可传同色系的低透明度版本，
- *   例如状态卡的 `Xc.colors.success.copy(alpha = 0.22f)` —— 传不透明的 `successTint`
- *   会把折射整个遮死。
+ * ## 采样源（v30109 重构）
+ *
+ * 卡体处在页面级 backdrop（`rememberBlurBackdrop`）的录制子树内部——采样它必然
+ * 渲染成环：RenderThread 在 `prepareTreeImpl` 里无限递归，进程原生 SIGSEGV，
+ * 表现为「点开就退、连首帧都看不到」（v30086 的修复点，历史教训见 git blame）。
+ *
+ * 因此卡体**不采样页面级 backdrop**，统一采样 [LocalLiquidBackdrop]——一层
+ * 纯程序化绘制的液态网格渐变（`ui/design/liquid/LiquidBackdrop.kt`），不挂在任何
+ * 真实节点上、不含内容子树，任何位置的卡体采样它都是安全的兄弟关系，且折射
+ * 有真实的色彩起伏可折。传进来的 `backdrop` 形参**刻意忽略**（调用点多在传
+ * 页面级 backdrop，若真采样就是成环事故），保留形参只为不动 40+ 处调用点。
+ *
+ * `LocalLiquidBackdrop` 为 null（用户关掉模糊 / 设备不支持 / 预览）→ 退回第三档：
+ * 不透明实色 + 亮边，与旧观感一致。
  */
 @Composable
 @Suppress("UNUSED_PARAMETER")
@@ -112,27 +119,9 @@ internal fun Modifier.xGlassBody(
     innerHighlight: Boolean = true,
     glassEnabled: Boolean = true,
 ): Modifier = this.xGlassLayer(
-    // ⚠️ 强制 null —— v30086「进不去 / 首帧闪退」的修复点。
-    //
-    // 卡体位于页面级 backdrop 的**录制子树内部**：
-    //     Box(Modifier.layerBackdrop(backdrop)) { LazyColumn { ...卡片... } }
-    // `rememberBlurBackdrop` 的录制块是 `{ drawRect(surfaceColor); drawContent() }`，
-    // 也就是「渲染这层纹理 = 再画一遍整棵子树」。卡体在那一遍里又去 `drawBackdrop(backdrop)`
-    // 采样同一层纹理 —— 渲染这层要求先画卡体，画卡体又要求先渲染这层，递归没有出口，
-    // RenderThread 在 `RenderNode::prepareTreeImpl` 里无限递归，进程直接被打成原生
-    // SIGSEGV（`stack pointer is not in a rw map; likely due to stack overflow.`）。
-    // 表现为「点开就退、连首帧都看不到」，不是 ANR，也没有 Java 栈。
-    //
-    // 判据：消费者在采样源的录制节点**子树内 ⇒ 崩**；是它的**兄弟 ⇒ 安全**。
-    // 顶栏（`BlurredBar` 挂在 `Scaffold(topBar = ...)`）、底栏、弹层、对话框都是兄弟，
-    // 所以 [XGlassSurface] / `XGlassBar` 不受影响 —— 只有卡体需要降级。
-    // 仓库里同一个坑已有两处文字记录：`ui/component/dialog/DownloadDialog.kt`
-    // （玻璃弹窗必须交给根层宿主，就地画必成环）与 `ui/MainActivity.kt`（对话框不放进采样 Box）。
-    //
-    // 传 null 即走第三档：不透明实色 + 亮边，与 v30084 的 `.xGlassRim(...)` 观感一致。
-    // **要恢复卡体真玻璃，请重构采样源（让页面级 backdrop 不再包含卡体本身），
-    // 而不是把这里的 null 改回去。**
-    backdrop = null,
+    // 采样源来自 LocalLiquidBackdrop（程序化网格，永不包含卡体自己）；
+    // 这里绝不能接调用点传入的页面级 backdrop——卡体在它的录制子树内，必成环。
+    backdrop = me.weishu.kernelsu.ui.design.liquid.LocalLiquidBackdrop.current,
     shape = shape,
     tint = tint,
     blurRadius = blurRadius,

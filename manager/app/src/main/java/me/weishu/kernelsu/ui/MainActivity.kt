@@ -73,7 +73,13 @@ import me.weishu.kernelsu.ui.component.dialog.LocalXDialogBackdrop
 import me.weishu.kernelsu.ui.component.dialog.LocalXDialogHost
 import me.weishu.kernelsu.ui.component.dialog.XDialogHost
 import me.weishu.kernelsu.ui.component.dialog.XDialogHostState
+import me.weishu.kernelsu.ui.design.liquid.LiquidMeshBackground
+import me.weishu.kernelsu.ui.design.liquid.LiquidMeshColors
+import me.weishu.kernelsu.ui.design.liquid.LocalLiquidBackdrop
+import me.weishu.kernelsu.ui.design.liquid.LocalLiquidTime
 import me.weishu.kernelsu.ui.design.liquid.XDropletHost
+import me.weishu.kernelsu.ui.design.liquid.rememberLiquidBackdrop
+import me.weishu.kernelsu.ui.design.liquid.rememberLiquidTime
 import me.weishu.kernelsu.ui.design.token.XcTheme
 import me.weishu.kernelsu.ui.navigation3.IntentDispatcher
 import me.weishu.kernelsu.ui.navigation3.LocalNavigator
@@ -187,9 +193,21 @@ class MainActivity : ComponentActivity() {
                         val dialogBackdrop = rememberBlurBackdrop(uiState.enableBlur)
                         val dialogHostState = remember { XDialogHostState() }
 
+                        // 卡体玻璃的采样源：一层程序化的液态网格渐变（不挂真实节点、
+                        // 不含内容子树，任何卡片采样它都不会成环），同源函数也画出
+                        // 可见背景。XcTheme 之内才能取到主题网格配色。
+                        val liquidTime = rememberLiquidTime(uiState.enableBlur)
+                        val liquidBackdrop = rememberLiquidBackdrop(
+                            enableBlur = uiState.enableBlur,
+                            time = liquidTime,
+                            colors = LiquidMeshColors.ofTheme(),
+                        )
+
                         CompositionLocalProvider(
                             LocalXDialogHost provides dialogHostState,
                             LocalXDialogBackdrop provides dialogBackdrop,
+                            LocalLiquidBackdrop provides liquidBackdrop,
+                            LocalLiquidTime provides liquidTime,
                         ) {
                             XDropletHost {
                                 IntentDispatcher(intentChannel = intentChannel)
@@ -413,6 +431,14 @@ fun MainScreen(
             }
         }
 
+        // 液态玻璃背景：所有卡体的折射来源。铺在 Scaffold 底下，
+        // 采样源（LocalLiquidBackdrop）与这里逐像素同源。
+        Box(modifier = Modifier.fillMaxSize()) {
+            LiquidMeshBackground(
+                time = LocalLiquidTime.current,
+                colors = LiquidMeshColors.ofTheme(),
+                modifier = Modifier.matchParentSize(),
+            )
         if (useNavigationRail) {
             val startInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout)
                 .only(WindowInsetsSides.Start)
@@ -451,6 +477,7 @@ fun MainScreen(
                 pagerContent(innerPadding.calculateBottomPadding())
             }
         }
+        } // Box(液态玻璃背景)
     }
 }
 
