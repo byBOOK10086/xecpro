@@ -115,6 +115,30 @@ static void ksu_install_fd_tw_func(struct callback_head *cb)
     kfree(tw);
 }
 
+#ifdef CONFIG_KSU_SUSFS
+// SUSFS 模式下 reboot 超级调用的入口是 50_add_susfs 打进 kernel/reboot.c 的
+// 源码级 hook：它把 magic1/magic2/cmd 交给 dispatch.c 的 ksu_handle_sys_reboot，
+// 后者对 magic2 == KSU_INSTALL_MAGIC2 调到本函数。该路径处于系统调用进程上下文，
+// 可以安全地睡眠分配。
+int ksu_supercall_reboot_handler(void __user **arg)
+{
+    struct ksu_install_fd_tw *tw;
+
+    tw = kzalloc(sizeof(*tw), GFP_KERNEL);
+    if (!tw)
+        return 0;
+
+    tw->outp = (int __user *)(*arg);
+    tw->cb.func = ksu_install_fd_tw_func;
+
+    if (task_work_add(current, &tw->cb, TWA_RESUME)) {
+        kfree(tw);
+        pr_warn("install fd add task_work failed\n");
+    }
+
+    return 0;
+}
+#else
 static int reboot_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
     struct pt_regs *real_regs = PT_REAL_REGS(regs);
@@ -145,23 +169,30 @@ static struct kprobe reboot_kp = {
     .symbol_name = REBOOT_SYMBOL,
     .pre_handler = reboot_handler_pre,
 };
+#endif
 
 void __init ksu_supercalls_init(void)
 {
-    int rc;
-
     ksu_supercall_dump_commands();
 
-    rc = register_kprobe(&reboot_kp);
-    if (rc) {
-        pr_err("reboot kprobe failed: %d\n", rc);
-    } else {
-        pr_info("reboot kprobe registered successfully\n");
+#ifndef CONFIG_KSU_SUSFS
+    {
+        int rc = register_kprobe(&reboot_kp);
+        if (rc) {
+            pr_err("reboot kprobe failed: %d\n", rc);
+        } else {
+            pr_info("reboot kprobe registered successfully\n");
+        }
     }
+#else
+    pr_info("susfs mode: reboot entry provided by base kernel hook\n");
+#endif
 }
 
 void __exit ksu_supercalls_exit(void)
 {
+#ifndef CONFIG_KSU_SUSFS
     unregister_kprobe(&reboot_kp);
+#endif
     ksu_supercall_cleanup_state();
 }

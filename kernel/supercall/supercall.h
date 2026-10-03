@@ -26,4 +26,11 @@ bool ksu_is_su_session_fd(const struct file *filp);
 
 void ksu_supercalls_init(void);
 void ksu_supercalls_exit(void);
+
+// Reboot-super-call install-fd entry. Called from the SUSFS-mode
+// ksu_handle_sys_reboot() router in supercall/dispatch.c, which the
+// 50_add_susfs hook in kernel/reboot.c drives for both the ksud
+// (magic2 == KSU_INSTALL_MAGIC2) and the susfs client (magic2 ==
+// SUSFS_MAGIC) command paths.
+int ksu_supercall_reboot_handler(void __user **arg);
 #endif // __KSU_H_SUPERCALL

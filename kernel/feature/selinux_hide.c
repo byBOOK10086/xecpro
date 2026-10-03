@@ -29,9 +29,18 @@
 #include "policy/feature.h"
 #include "hook/lsm_hook.h"
 
+#ifdef CONFIG_KSU_SUSFS
+// 50_add_susfs 打进基线内核 security/selinux/{hooks,selinuxfs}.c 的 hook
+// 通过 extern 声明跨编译单元引用下列符号，因此 SUSFS 模式下它们必须保持
+// 外部链接；LKM 模式维持 static。
+#define KSU_SUSFS_LINKAGE
+#else
+#define KSU_SUSFS_LINKAGE static
+#endif
+
 static DEFINE_MUTEX(selinux_hide_mutex);
-static bool ksu_selinux_hide_enabled __read_mostly = true;
-static bool ksu_selinux_hide_running __read_mostly = false;
+KSU_SUSFS_LINKAGE bool ksu_selinux_hide_enabled __read_mostly = true;
+KSU_SUSFS_LINKAGE bool ksu_selinux_hide_running __read_mostly = false;
 
 enum sel_inos {
     SEL_ROOT_INO = 2,
@@ -62,12 +71,12 @@ typedef ssize_t (*write_op_fn)(struct file *, char *, size_t);
 static write_op_fn *selinux_write_op;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
-static int security_context_to_sid_with_policy(struct selinux_policy *policy, const char *scontext, u32 scontext_len,
-                                               u32 *sid, u32 def_sid, gfp_t gfp_flags);
-static int security_sid_to_context_with_policy(struct selinux_policy *policy, u32 sid, char **scontext,
-                                               u32 *scontext_len);
-static void security_compute_av_user_with_policy(struct selinux_policy *policy, u32 ssid, u32 tsid, u16 tclass,
-                                                 struct av_decision *avd);
+KSU_SUSFS_LINKAGE int security_context_to_sid_with_policy(struct selinux_policy *policy, const char *scontext, u32 scontext_len,
+                                                          u32 *sid, u32 def_sid, gfp_t gfp_flags);
+KSU_SUSFS_LINKAGE int security_sid_to_context_with_policy(struct selinux_policy *policy, u32 sid, char **scontext,
+                                                          u32 *scontext_len);
+KSU_SUSFS_LINKAGE void security_compute_av_user_with_policy(struct selinux_policy *policy, u32 ssid, u32 tsid, u16 tclass,
+                                                            struct av_decision *avd);
 static void (*security_dump_masked_av_fn)(struct policydb *policydb, struct context *scontext, struct context *tcontext,
                                           u16 tclass, u32 permissions, const char *reason) = NULL;
 static void (*context_struct_compute_av_fn)(struct policydb *policydb, struct context *scontext,
@@ -244,10 +253,10 @@ call_orig:
     return ((setprocattr_fn)selinux_setprocattr_hook.original)(name, value, size);
 }
 
-static DEFINE_STATIC_KEY_FALSE(fake_status_initialize_key);
-static struct page *fake_status = NULL;
+KSU_SUSFS_LINKAGE DEFINE_STATIC_KEY_FALSE(fake_status_initialize_key);
+KSU_SUSFS_LINKAGE struct page *fake_status = NULL;
 
-static void initialize_fake_status()
+KSU_SUSFS_LINKAGE void initialize_fake_status()
 {
     mutex_lock(&selinux_state.status_lock);
     if (fake_status)
@@ -626,7 +635,7 @@ out:
     return rc;
 }
 
-static int security_context_to_sid_with_policy(struct selinux_policy *policy, const char *scontext, u32 scontext_len,
+KSU_SUSFS_LINKAGE int security_context_to_sid_with_policy(struct selinux_policy *policy, const char *scontext, u32 scontext_len,
                                                u32 *sid, u32 def_sid, gfp_t gfp_flags)
 {
     struct policydb *policydb;
@@ -733,7 +742,7 @@ static int sidtab_entry_to_string(struct policydb *p, struct sidtab *sidtab, str
     return rc;
 }
 
-static int security_sid_to_context_with_policy(struct selinux_policy *policy, u32 sid, char **scontext,
+KSU_SUSFS_LINKAGE int security_sid_to_context_with_policy(struct selinux_policy *policy, u32 sid, char **scontext,
                                                u32 *scontext_len)
 {
     struct policydb *policydb;
@@ -1106,7 +1115,7 @@ static void context_struct_compute_av(struct policydb *policydb, struct context 
     type_attribute_bounds_av(policydb, scontext, tcontext, tclass, avd);
 }
 
-static void __nocfi security_compute_av_user_with_policy(struct selinux_policy *policy, u32 ssid, u32 tsid, u16 tclass,
+KSU_SUSFS_LINKAGE void __nocfi security_compute_av_user_with_policy(struct selinux_policy *policy, u32 ssid, u32 tsid, u16 tclass,
                                                          struct av_decision *avd)
 {
     struct policydb *policydb;

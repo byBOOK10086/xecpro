@@ -19,6 +19,9 @@
 #include "hook/syscall_event_bridge.h"
 #include "feature/adb_root.h"
 
+#ifndef CONFIG_KSU_SUSFS
+// SUSFS 模式下 execve 入口由 50_add_susfs 的 fs/exec.c hook 提供，
+// 下面这组 pt_regs 版 hook 只在 LKM 模式编译与注册。
 static int ksu_handle_init_mark_tracker(const char __user **filename_user)
 {
     char path[64];
@@ -64,6 +67,10 @@ long __nocfi ksu_hook_faccessat(int orig_nr, const struct pt_regs *regs)
     return ksu_handle_faccessat_sucompat(orig_nr, (struct pt_regs *)regs);
 }
 
+#endif /* !CONFIG_KSU_SUSFS */
+
+// 两种模式共用：SUSFS 模式由 sucompat.c 的 ksu_handle_execveat() 链式调用
+// ksu_handle_execveat_ksud()，后者借本 static key 判断是否停止 ksud exec 探测。
 DEFINE_STATIC_KEY_TRUE(ksud_execve_key);
 
 void ksu_stop_ksud_execve_hook()
@@ -71,6 +78,7 @@ void ksu_stop_ksud_execve_hook()
     static_branch_disable(&ksud_execve_key);
 }
 
+#ifndef CONFIG_KSU_SUSFS
 static long __nocfi ksu_hook_execve_common(int orig_nr, const struct pt_regs *regs, bool execveat)
 {
     const char __user **filename_user =
@@ -121,6 +129,8 @@ long __nocfi ksu_hook_execveat(int orig_nr, const struct pt_regs *regs)
     return ksu_hook_execve_common(orig_nr, regs, true);
 }
 
+// SUSFS 模式下 setresuid 入口由 50_add_susfs 打进 kernel/sys.c 的 hook 提供
+//（3 参签名），本 pt_regs 版（2 参签名）只在 LKM 模式编译与注册。
 long __nocfi ksu_hook_setresuid(int orig_nr, const struct pt_regs *regs)
 {
     uid_t old_uid = current_uid().val;
@@ -132,3 +142,4 @@ long __nocfi ksu_hook_setresuid(int orig_nr, const struct pt_regs *regs)
     ksu_handle_setresuid(old_uid, current_uid().val);
     return ret;
 }
+#endif /* !CONFIG_KSU_SUSFS */

@@ -77,7 +77,8 @@ void seccomp_filter_release(struct task_struct *tsk);
 static bool has_call_to_spin_lock = false;
 #endif
 
-static void disable_seccomp(void)
+// SUSFS 模式下由 setuid_hook 的 zygote 分支调用（声明在 app_profile.h）
+void disable_seccomp(void)
 {
     struct task_struct *fake;
 

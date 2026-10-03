@@ -131,12 +131,17 @@ void __init ksu_syscall_hook_manager_init(void)
     syscall_unregfunc_rp = init_kretprobe("syscall_unregfunc", syscall_unregfunc_handler);
 #endif
 
-    // Register syscall hooks via dispatcher
+    // Register syscall hooks via dispatcher.
+    // SUSFS 模式下 execve/execveat/newfstatat/faccessat/setresuid 的入口由
+    // 50_add_susfs 打进基线内核的源码级 hook 提供，这里必须保持关闭，
+    // 否则与基线 hook 双重触发；仅保留 prctl 超级调用入口。
+#ifndef CONFIG_KSU_SUSFS
     ksu_register_syscall_hook(__NR_setresuid, ksu_hook_setresuid);
     ksu_register_syscall_hook(__NR_execve, ksu_hook_execve);
     ksu_register_syscall_hook(__NR_execveat, ksu_hook_execveat);
     ksu_register_syscall_hook(__NR_newfstatat, ksu_hook_newfstatat);
     ksu_register_syscall_hook(__NR_faccessat, ksu_hook_faccessat);
+#endif
     ksu_register_syscall_hook(__NR_prctl, ksu_hook_prctl);
 
 #ifdef CONFIG_HAVE_SYSCALL_TRACEPOINTS
@@ -169,11 +174,13 @@ void __exit ksu_syscall_hook_manager_exit(void)
     destroy_kretprobe(&syscall_unregfunc_rp);
 #endif
 
+#ifndef CONFIG_KSU_SUSFS
     ksu_unregister_syscall_hook(__NR_setresuid);
     ksu_unregister_syscall_hook(__NR_execve);
     ksu_unregister_syscall_hook(__NR_execveat);
     ksu_unregister_syscall_hook(__NR_newfstatat);
     ksu_unregister_syscall_hook(__NR_faccessat);
+#endif
     ksu_unregister_syscall_hook(__NR_prctl);
 
     ksu_syscall_hook_exit();

@@ -5,6 +5,10 @@
 #include <linux/uaccess.h>
 #include <linux/version.h>
 #include <linux/thread_info.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#include <linux/susfs_def.h>
+#endif
 #include "uapi/supercall.h"
 #include "supercall/internal.h"
 #include "arch.h" // IWYU pragma: keep
@@ -520,6 +524,95 @@ static int do_manage_mark(void __user *arg)
     return 0;
 }
 
+#ifdef CONFIG_KSU_SUSFS
+// SUSFS 命令路由。50_add_susfs 打进基线内核 kernel/reboot.c 的 hook 在
+// magic1 == KSU_INSTALL_MAGIC1 时把请求转到这里：
+//   - magic2 == SUSFS_MAGIC (0xFAFAFAFA)：susfs 客户端（ksu_susfs / ksud / 模块脚本）
+//     的命令，按 feature 转发到基线内核 fs/susfs.c 的实现；
+//   - magic2 == KSU_INSTALL_MAGIC2 (0xCAFEBABE)：ksud/管理器自己的安装 fd 超级调用。
+// 两类 magic 在同一个入口合并，是 susfs4ksu 的标准结构。
+int ksu_handle_sys_reboot(int magic1, int magic2, unsigned int cmd, void __user **arg)
+{
+    if (magic1 != KSU_INSTALL_MAGIC1) {
+        return -EINVAL;
+    }
+
+    // If magic2 is susfs and current process is root
+    if (magic2 == SUSFS_MAGIC && current_uid().val == 0) {
+        switch (cmd) {
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+        case CMD_SUSFS_ADD_SUS_PATH:
+            susfs_add_sus_path(arg);
+            return 0;
+        case CMD_SUSFS_ADD_SUS_PATH_LOOP:
+            susfs_add_sus_path_loop(arg);
+            return 0;
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_PATH
+#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+        case CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS:
+            susfs_set_hide_sus_mnts_for_non_su_procs(arg);
+            return 0;
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
+#ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+        case CMD_SUSFS_ADD_SUS_KSTAT:
+            susfs_add_sus_kstat(arg);
+            return 0;
+        case CMD_SUSFS_UPDATE_SUS_KSTAT:
+            susfs_update_sus_kstat(arg);
+            return 0;
+        case CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY:
+            susfs_add_sus_kstat(arg);
+            return 0;
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_KSTAT
+#ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
+        case CMD_SUSFS_SET_UNAME:
+            susfs_set_uname(arg);
+            return 0;
+#endif // #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
+#ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+        case CMD_SUSFS_ENABLE_LOG:
+            susfs_enable_log(arg);
+            return 0;
+#endif // #ifdef CONFIG_KSU_SUSFS_ENABLE_LOG
+#ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+        case CMD_SUSFS_SET_CMDLINE_OR_BOOTCONFIG:
+            susfs_set_cmdline_or_bootconfig(arg);
+            return 0;
+#endif // #ifdef CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG
+#ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+        case CMD_SUSFS_ADD_OPEN_REDIRECT:
+            susfs_add_open_redirect(arg);
+            return 0;
+#endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+        case CMD_SUSFS_ADD_SUS_MAP:
+            susfs_add_sus_map(arg);
+            return 0;
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_MAP
+        case CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING:
+            susfs_set_avc_log_spoofing(arg);
+            return 0;
+        case CMD_SUSFS_SHOW_ENABLED_FEATURES:
+            susfs_get_enabled_features(arg);
+            return 0;
+        case CMD_SUSFS_SHOW_VARIANT:
+            susfs_show_variant(arg);
+            return 0;
+        case CMD_SUSFS_SHOW_VERSION:
+            susfs_show_version(arg);
+            return 0;
+        default:
+            return -EINVAL;
+        }
+    }
+
+    if (magic2 == KSU_INSTALL_MAGIC2)
+        return ksu_supercall_reboot_handler(arg);
+
+    return -EINVAL;
+}
+#endif // #ifdef CONFIG_KSU_SUSFS
+
 static int do_nuke_ext4_sysfs(void __user *arg)
 {
     struct ksu_nuke_ext4_sysfs_cmd cmd;
@@ -850,9 +943,15 @@ static int do_get_hook_type(void __user *arg)
  * 探测命令。对方按 struct ksu_get_hook_mode_cmd（char mode[16]）读取，拿到的
  * 字符串会决定它把 root 实现归为哪个变体；字符串为空则被当成认不出来。
  *
- * 本仓库没有启用 SUSFS，也没有手动 hook，syscall 拦截走的是 tracepoint
- * （ksu_syscall_hook_manager_init 里 register_trace_prio_sys_enter），因此上报
+ * LKM 模式：没有手动 hook，syscall 拦截走 tracepoint
+ * （ksu_syscall_hook_manager_init 里 register_trace_prio_sys_enter），上报
  * "Tracepoint"。这个取值必须用它认识的写法，不能自造。
+ *
+ * SUSFS 模式（CONFIG_KSU_SUSFS，内置 GKI 内核）：exec/stat/setresuid 等
+ * 入口由 50_add_susfs 打进基线内核的源码级 hook 提供，SUSFS 命令路由在
+ * ksu_handle_sys_reboot()（本文件）。上游对 SUSFS 变体没有单独的 mode 字符串
+ * 约定，因此同样上报 "Tracepoint"（ReZygisk 只靠它识别变体家族，不影响
+ * SUSFS 功能本身）。
  */
 static int do_get_hook_mode(void __user *arg)
 {

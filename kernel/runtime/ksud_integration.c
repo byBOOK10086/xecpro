@@ -19,6 +19,9 @@
 #include <linux/workqueue.h>
 #include <linux/uio.h>
 #include <linux/stat.h>
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/jump_label.h>
+#endif
 
 #include "arch.h"
 #include "klog.h" // IWYU pragma: keep
@@ -55,19 +58,8 @@ static void stop_execve_hook();
 static struct work_struct stop_input_hook_work;
 
 #define MAX_ARG_STRINGS 0x7FFFFFFF
-struct user_arg_ptr {
-#ifdef CONFIG_COMPAT
-    bool is_compat;
-#endif
-    union {
-        const char __user *const __user *native;
-#ifdef CONFIG_COMPAT
-        const compat_uptr_t __user *compat;
-#endif
-    } ptr;
-};
-
-static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
+// struct user_arg_ptr 定义已上移至 runtime/ksud.h（SUSFS 模式的 handler 需要）。
+const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr)
 {
     const char __user *native;
 
@@ -459,7 +451,11 @@ static void ksu_install_rc_hook(struct file *file)
     file->f_op = &fops_proxy;
 }
 
+#ifdef CONFIG_KSU_SUSFS
+void ksu_handle_sys_read(unsigned int fd)
+#else
 static void ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr, size_t *count_ptr)
+#endif
 {
     struct file *file = fget(fd);
     if (!file) {
@@ -468,6 +464,40 @@ static void ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr, size_t *
     ksu_install_rc_hook(file);
     fput(file);
 }
+
+#ifdef CONFIG_KSU_SUSFS
+// SUSFS 模式的入口（50_add_susfs 提供的基线 hook）：
+//   - fs/read_write.c 的 SYSCALL_DEFINE3(read) 在 ksu_is_init_rc_hook_enabled
+//     开启时调用 ksu_handle_sys_read(fd)；
+//   - fs/stat.c 的 vfs_fstat 在同一开关下调用 ksu_handle_vfs_fstat()。
+// 两个 static key 定义为默认开启（DEFINE_STATIC_KEY_TRUE）。
+DEFINE_STATIC_KEY_TRUE(ksu_is_init_rc_hook_enabled);
+DEFINE_STATIC_KEY_TRUE(ksu_is_input_hook_enabled);
+
+void ksu_handle_vfs_fstat(int fd, loff_t *kstat_size_ptr)
+{
+    loff_t orig_size = *kstat_size_ptr;
+    size_t extra = 0;
+    bool is_rc = false;
+    struct file *file = fget(fd);
+
+    if (file) {
+        if (is_init_rc(file)) {
+            pr_info("stat init.rc");
+            load_module_rc_once();
+            is_rc = true;
+        }
+        fput(file);
+    }
+
+    if (is_rc) {
+        extra = ksu_rc_len + module_rc_len;
+        *kstat_size_ptr = orig_size + extra;
+        pr_info("adding rc len: %lld -> %lld (static=%zu module=%zu)", orig_size, *kstat_size_ptr,
+                ksu_rc_len, module_rc_len);
+    }
+}
+#endif /* CONFIG_KSU_SUSFS */
 
 static unsigned int volumedown_pressed_count = 0;
 
@@ -482,11 +512,22 @@ int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *v
         int val = *value;
         pr_info("KEY_VOLUMEDOWN val: %d\n", val);
         if (val) {
+#ifdef CONFIG_KSU_SUSFS
+            // - We cannot call static_branch_disable() here as we are within the
+            //   spinlock section, which is not sleepable.
+            // - So if volumedown is enough, just do nothing until it gets disabled
+            //   by on_post_fs_data() / ksu_is_safe_mode().
+            if (is_volumedown_enough(volumedown_pressed_count))
+                return 0;
+            // key pressed, count it
+            volumedown_pressed_count += 1;
+#else
             // key pressed, count it
             volumedown_pressed_count += 1;
             if (is_volumedown_enough(volumedown_pressed_count)) {
                 ksu_stop_input_hook_runtime();
             }
+#endif
         }
     }
 
@@ -559,6 +600,9 @@ void ksu_execveat_hook_ksud(const struct pt_regs *regs)
     ksu_execve_hook_ksud_common(filename_user, argv_user);
 }
 
+#ifndef CONFIG_KSU_SUSFS
+// SUSFS 模式下 read/fstat 由基线内核 hook（ksu_handle_sys_read 单参版 +
+// ksu_handle_vfs_fstat）接管，这里的 pt_regs 版本只在 LKM 模式编译。
 static long (*orig_sys_read)(const struct pt_regs *regs);
 static long ksu_sys_read(const struct pt_regs *regs)
 {
@@ -609,6 +653,46 @@ static long ksu_sys_fstat(const struct pt_regs *regs)
 
     return ret;
 }
+#endif /* !CONFIG_KSU_SUSFS */
+
+#ifdef CONFIG_KSU_SUSFS
+static void stop_init_rc_hook(void)
+{
+    if (static_key_enabled(&ksu_is_init_rc_hook_enabled)) {
+        static_branch_disable(&ksu_is_init_rc_hook_enabled);
+        pr_info("ksu_init_rc_hook is disabled\n");
+    }
+}
+
+// SUSFS 模式：入口 hook 由基线内核提供（static key 默认开启），停止方式是
+// 关 static key 而不是注销 kprobe。
+void ksu_stop_input_hook_runtime(void)
+{
+    static bool input_hook_stopped = false;
+    if (input_hook_stopped) {
+        return;
+    }
+    input_hook_stopped = true;
+    if (static_key_enabled(&ksu_is_input_hook_enabled)) {
+        static_branch_disable(&ksu_is_input_hook_enabled);
+        pr_info("ksu_input_hook is disabled\n");
+    }
+}
+
+// ksud: module support
+void __init ksu_ksud_init()
+{
+    // SUSFS 模式下不再挂 read/fstat 系统调用表补丁与 input kprobe，
+    // 否则会与 50_add_susfs 的源码级 hook 双重触发。
+}
+
+void __exit ksu_ksud_exit()
+{
+    if (module_rc_buf) {
+        free_module_rc();
+    }
+}
+#else /* !CONFIG_KSU_SUSFS */
 
 static int input_handle_event_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
@@ -671,3 +755,4 @@ void __exit ksu_ksud_exit()
         free_module_rc();
     }
 }
+#endif /* CONFIG_KSU_SUSFS */
