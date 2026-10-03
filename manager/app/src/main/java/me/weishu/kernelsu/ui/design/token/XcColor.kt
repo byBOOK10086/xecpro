@@ -91,7 +91,9 @@ private val XcDarkBase = XcColors(
     backdropScrim = Color(0xCC0B0F10),
     surface = Color(0xFF131A1C),
     surfaceMuted = Color(0xFF1A2225),
-    glassTint = Color(0x8C131A1C),
+    // 玻璃上覆色必须淡（40%）：玻璃的质感来自"透出网格背景的色彩"，
+    // 覆色过重（旧值 55%）会把采样到的色彩全部压成一块灰板（v30118 事故）。
+    glassTint = Color(0x66131A1C),
     glassRim = Color(0xFF263033),
     text = Color(0xFFE7EDEE),
     textSecondary = Color(0xFFBAC6C8),
@@ -110,7 +112,7 @@ private val XcLightBase = XcColors(
     backdropScrim = Color(0xE6F2F5F6),
     surface = Color(0xFFFFFFFF),
     surfaceMuted = Color(0xFFEDF1F2),
-    glassTint = Color(0x8CFFFFFF),
+    glassTint = Color(0x73FFFFFF),
     glassRim = Color(0xFFDCE3E5),
     text = Color(0xFF161D1F),
     textSecondary = Color(0xFF485356),
@@ -132,7 +134,7 @@ private val XcAmoled = XcDarkBase.copy(
     backdropScrim = Color(0xF2000000),
     surface = Color(0xFF0A0E0F),
     surfaceMuted = Color(0xFF111819),
-    glassTint = Color(0x6B0A0E0F),
+    glassTint = Color(0x4D0A0E0F),
     glassRim = Color(0xFF2E3A3C),
 )
 

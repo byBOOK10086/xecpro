@@ -175,10 +175,10 @@ fun DrawScope.drawLiquidMesh(time: Float, colors: LiquidMeshColors, shader: Runt
         ),
     )
     val centers = blobCenters(t, size.width, size.height)
-    val blobs = listOf(colors.blobA to 0.30f, colors.blobB to 0.24f, colors.blobC to 0.20f)
+    val blobs = listOf(colors.blobA to 0.45f, colors.blobB to 0.36f, colors.blobC to 0.30f)
     centers.forEachIndexed { index, center ->
         val (color, alpha) = blobs[index]
-        val radius = maxOf(size.width, size.height) * 0.55f
+        val radius = maxOf(size.width, size.height) * 0.80f
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
@@ -211,6 +211,9 @@ private fun blobCenters(t: Float, w: Float, h: Float): List<Offset> = listOf(
 
 // AGSL：单 pass 网格。色团在长宽比较正的空间里走利萨茹轨迹，
 // 深色档加法辉光、浅色档向色团混合（mix 权重压低，避免冲掉前景可读性）。
+// **色团坐标必须乘 asp**：q.x 的取值范围是 [0, asp]（竖屏 ≈0.45），
+// 不乘的话利萨茹振幅 ±0.26~0.34 会让色团大部分时间游走在屏幕外，
+// 背景退化成一块近黑的平色、玻璃全跟着变灰板（v30118 事故的根因）。
 private const val MESH_SKSL = """
 uniform float2 uRes;
 uniform float uTime;
@@ -225,19 +228,19 @@ half4 main(float2 fragCoord) {
     float asp = uRes.x / uRes.y;
     float2 q = float2(uv.x * asp, uv.y);
     float t = uTime;
-    float2 cA = float2(0.30 * sin(t * 0.55 + 0.8), 0.26 * sin(t * 0.42 + 2.1));
-    float2 cB = float2(0.34 * sin(t * 0.33 + 3.6), 0.24 * sin(t * 0.61 + 0.4));
-    float2 cC = float2(0.26 * sin(t * 0.47 + 5.0), 0.30 * sin(t * 0.35 + 4.2));
-    float wA = exp(-dot(q - cA, q - cA) / 0.55);
-    float wB = exp(-dot(q - cB, q - cB) / 0.75);
-    float wC = exp(-dot(q - cC, q - cC) / 0.45);
+    float2 cA = float2(asp * (0.5 + 0.30 * sin(t * 0.55 + 0.8)), 0.5 + 0.26 * sin(t * 0.42 + 2.1));
+    float2 cB = float2(asp * (0.5 + 0.34 * sin(t * 0.33 + 3.6)), 0.5 + 0.24 * sin(t * 0.61 + 0.4));
+    float2 cC = float2(asp * (0.5 + 0.26 * sin(t * 0.47 + 5.0)), 0.5 + 0.30 * sin(t * 0.35 + 4.2));
+    float wA = exp(-dot(q - cA, q - cA) / 0.90);
+    float wB = exp(-dot(q - cB, q - cB) / 1.20);
+    float wC = exp(-dot(q - cC, q - cC) / 0.70);
     half3 rgb = uBase;
     if (uDark > 0.5) {
-        rgb += uA * (wA * 0.50) + uB * (wB * 0.38) + uC * (wC * 0.30);
+        rgb += uA * (wA * 0.85) + uB * (wB * 0.65) + uC * (wC * 0.50);
     } else {
-        rgb = mix(rgb, uA, wA * 0.28);
-        rgb = mix(rgb, uB, wB * 0.20);
-        rgb = mix(rgb, uC, wC * 0.16);
+        rgb = mix(rgb, uA, wA * 0.45);
+        rgb = mix(rgb, uB, wB * 0.34);
+        rgb = mix(rgb, uC, wC * 0.28);
     }
     return half4(clamp(rgb, half3(0.0), half3(1.0)), 1.0);
 }
