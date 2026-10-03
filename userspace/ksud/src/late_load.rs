@@ -81,6 +81,14 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
 
     utils::install(None, None).context("Failed to install ksud")?;
 
+    // Reload the user's KPM modules from /data/adb/kpm. The late-load path
+    // never runs on_post_data_fs, so without this every .kpm the user placed
+    // is lost on each reboot (Magica/late-load activations).
+    #[cfg(target_arch = "aarch64")]
+    if let Err(e) = crate::kpm::booted_load() {
+        warn!("KPM booted_load failed: {e}");
+    }
+
     // Provision the bundled built-in modules exactly like the init_boot path
     // (on_post_data_fs) does. Late-load activates the kernel without a patched
     // init_boot, so without this the built-in modules (TEE/TS, Zygisk, ...)
@@ -96,6 +104,10 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
     // Drop Zygisk Next's failure leftovers before its stage scripts run, so a
     // previously failed daemon start cannot keep Zygisk disabled this boot.
     crate::module::clear_zygisk_failure_markers();
+
+    // SUSFS baseline (kernel-support probe; no-op on kernels without SUSFS).
+    #[cfg(target_arch = "aarch64")]
+    crate::susfs::provision_baseline();
 
     // 5. Handle module updates
     if let Err(e) = handle_updated_modules() {

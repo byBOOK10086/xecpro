@@ -35,6 +35,10 @@ fn provision_builtin_modules() {
     if crate::module::load_builtin_sepolicy_rule().is_err() {
         warn!("load built-in sepolicy.rule failed");
     }
+
+    // SUSFS baseline (kernel-support probe; no-op on kernels without SUSFS).
+    #[cfg(target_arch = "aarch64")]
+    crate::susfs::provision_baseline();
 }
 
 /// Run the built-in modules' `<stage>.sh` scripts.
@@ -132,6 +136,10 @@ pub fn on_post_data_fs() -> Result<()> {
     // failed daemon start on a previous boot cannot keep Zygisk disabled here.
     // Runs before the module set is enumerated / the preinit rc is refreshed.
     crate::module::clear_zygisk_failure_markers();
+
+    // SUSFS baseline (kernel-support probe; no-op on kernels without SUSFS).
+    #[cfg(target_arch = "aarch64")]
+    crate::susfs::provision_baseline();
 
     if let Err(e) = handle_updated_modules() {
         warn!("handle updated modules failed: {e}");

@@ -1,6 +1,8 @@
 #![allow(clippy::unreadable_literal)]
 use libc::SYS_reboot;
 
+use crate::defs;
+
 const SUSFS_MAX_VERSION_BUFSIZE: usize = 16;
 const SUSFS_ENABLED_FEATURES_SIZE: usize = 8192;
 const SUSFS_MAX_VARIANT_BUFSIZE: usize = 16;
@@ -16,6 +18,8 @@ const CMD_SUSFS_ENABLE_LOG: u32 = 0x555a0;
 const CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING: u32 = 0x60010;
 const CMD_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS: u32 = 0x55561;
 const CMD_SUSFS_ADD_OPEN_REDIRECT: u32 = 0x555c0;
+const CMD_SUSFS_ADD_SUS_PATH: u32 = 0x55550;
+const CMD_SUSFS_ADD_SUS_PATH_LOOP: u32 = 0x55553;
 const SUSFS_MAGIC: u32 = 0xFAFAFAFA;
 
 #[repr(C)]
@@ -92,6 +96,14 @@ struct SusfsKstat {
 
 #[repr(C)]
 struct SusfsMap {
+    target_pathname: [u8; 256],
+    err: i32,
+}
+
+/// Mirrors `struct st_sus_path` from susfs `susfs_defs.h` — field order and
+/// sizes must match the kernel-side declaration exactly (passed by pointer).
+#[repr(C)]
+struct SusfsSusPath {
     target_pathname: [u8; 256],
     err: i32,
 }
@@ -279,20 +291,102 @@ pub fn hide_sus_mnts_for_non_su_procs(enabled: bool) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[allow(clippy::unnecessary_wraps, clippy::missing_const_for_fn)]
-pub fn add_sus_path(path: &str) -> anyhow::Result<()> {
-    // SusFS SUS path is managed via Magisk module scripts on the manager side.
-    // The kernel path list is populated by the generated post-fs-data script,
-    // so we return success here to keep the CLI contract consistent.
-    let _ = path;
+/// Copy a path into a fixed-size NUL-padded kernel buffer.
+fn copy_path_into(dst: &mut [u8; 256], path: &str) -> anyhow::Result<()> {
+    let bytes = path.as_bytes();
+    anyhow::ensure!(
+        bytes.len() < dst.len(),
+        "path too long for susfs: {path}"
+    );
+    dst[..bytes.len()].copy_from_slice(bytes);
     Ok(())
 }
 
-#[allow(clippy::unnecessary_wraps, clippy::missing_const_for_fn)]
-pub fn add_sus_path_loop(path: &str) -> anyhow::Result<()> {
-    let _ = path;
+pub fn add_sus_path(path: &str) -> anyhow::Result<()> {
+    let mut cmd = SusfsSusPath {
+        target_pathname: [0; 256],
+        err: ERR_CMD_NOT_SUPPORTED,
+    };
+    copy_path_into(&mut cmd.target_pathname, path)?;
+
+    unsafe {
+        libc::syscall(
+            SYS_reboot,
+            KSU_INSTALL_MAGIC1,
+            SUSFS_MAGIC,
+            CMD_SUSFS_ADD_SUS_PATH,
+            &mut cmd,
+        )
+    };
+
+    if cmd.err != 0 {
+        anyhow::bail!("Failed to add sus path {path}: err={}", cmd.err);
+    }
     Ok(())
 }
+
+/// Like [`add_sus_path`] but also follows the path across bind mounts.
+pub fn add_sus_path_loop(path: &str) -> anyhow::Result<()> {
+    let mut cmd = SusfsSusPath {
+        target_pathname: [0; 256],
+        err: ERR_CMD_NOT_SUPPORTED,
+    };
+    copy_path_into(&mut cmd.target_pathname, path)?;
+
+    unsafe {
+        libc::syscall(
+            SYS_reboot,
+            KSU_INSTALL_MAGIC1,
+            SUSFS_MAGIC,
+            CMD_SUSFS_ADD_SUS_PATH_LOOP,
+            &mut cmd,
+        )
+    };
+
+    if cmd.err != 0 {
+        anyhow::bail!("Failed to add sus path loop {path}: err={}", cmd.err);
+    }
+    Ok(())
+}
+
+/// Boot-time baseline hiding for kernels that actually ship SUSFS.
+///
+/// The bundled `susfs4ksu` module's scripts handle the bootloader-state
+/// spoofing; this covers the root solution's own footprint so a SUSFS-enabled
+/// kernel hides XEC's paths from non-su callers by default. The probe is a
+/// no-op on kernels without SUSFS (the reboot vector just returns EINVAL), so
+/// it is safe to call on every boot path.
+pub fn provision_baseline() {
+    if !get_susfs_status() {
+        log::info!("SUSFS: kernel does not provide it, skip baseline");
+        return;
+    }
+    log::info!("SUSFS: kernel support detected, applying baseline");
+
+    // /data/adb is added with the loop variant so hiding follows the dir
+    // across mount namespaces and bind mounts.
+    for (path, loop_variant) in [
+        (defs::ADB_DIR, true),
+        (defs::WORKING_DIR, false),
+        (defs::MODULE_DIR, false),
+        (defs::DAEMON_PATH, false),
+        (defs::BUILTIN_MODULE_DIR, false),
+    ] {
+        let result = if loop_variant {
+            add_sus_path_loop(path)
+        } else {
+            add_sus_path(path)
+        };
+        if let Err(e) = result {
+            log::warn!("SUSFS: baseline add {path} failed: {e:#}");
+        }
+    }
+
+    if let Err(e) = hide_sus_mnts_for_non_su_procs(true) {
+        log::warn!("SUSFS: hide sus mnts for non-su procs failed: {e:#}");
+    }
+}
+
 
 pub fn add_open_redirect(target: &str, redirected: &str, uid_scheme: u32) -> anyhow::Result<()> {
     let mut cmd = SusfsOpenRedirect {

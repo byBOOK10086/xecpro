@@ -177,14 +177,32 @@ fn load_all_modules() -> Result<()> {
         return Ok(());
     }
 
-    for entry in dir.read_dir()? {
-        let p = entry?.path();
+    // Deterministic order so boot behavior is reproducible.
+    let mut modules: Vec<std::path::PathBuf> = dir
+        .read_dir()?
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|p| {
+            p.extension()
+                .is_some_and(|ex| ex == OsStr::new("kpm"))
+        })
+        .collect();
+    modules.sort();
 
-        if let Some(ex) = p.extension()
-            && ex == OsStr::new("kpm")
-        {
-            load_module(p, None)?;
+    // One broken .kpm must not block the rest: previously the first failure
+    // propagated and every later module silently never loaded after a reboot.
+    let mut loaded = 0usize;
+    let mut failed = 0usize;
+    for path in modules {
+        match load_module(&path, None) {
+            Ok(()) => loaded += 1,
+            Err(e) => {
+                failed += 1;
+                log::warn!("KPM: load {} failed: {e:#}", path.display());
+            }
         }
     }
+    log::info!("KPM: boot load finished: {loaded} ok, {failed} failed");
+
     Ok(())
 }

@@ -57,7 +57,6 @@ const BUILTIN_MODULES: &[(&str, &str)] = &[
     ("TA_enhanced", "1.cfg"),
     ("susfs4ksu", "2.cfg"),
     ("SelinuxFix", "3.cfg"),
-    ("zygisksu", "4.cfg"),
 ];
 
 const BUILTIN_MAGIC: &[u8; 4] = b"BCFG";
@@ -249,46 +248,17 @@ fn foreach_active_module(f: impl FnMut(&Path) -> Result<()>) -> Result<()> {
     foreach_module(Active, f)
 }
 
-/// Whether the user has installed their own Zygisk provider (Zygisk Next,
-/// ReZygisk, ...) as a regular module under `/data/adb/modules`.
-///
-/// Presence counts regardless of enable state: a disabled user module means
-/// "the user manages Zygisk themselves" (e.g. switched it off on purpose), not
-/// "the built-in may take over" — otherwise the built-in would re-enable
-/// Zygisk behind the user's back on every toggle.
-fn user_zygisk_module_present() -> bool {
-    let Ok(dir) = std::fs::read_dir(defs::MODULE_DIR) else {
-        return false;
-    };
-    dir.flatten().any(|entry| {
-        // "ygisk" covers `zygisksu`, `Zygisk-Next` and `rezygisk` spellings.
-        entry.file_name().to_string_lossy().contains("ygisk")
-            && entry.path().join("module.prop").exists()
-    })
-}
-
 /// Iterate decrypted built-in modules under the tmpfs runtime dir. These
 /// execute like normal modules but are never enumerated by the manager panel
 /// or `adb ls modules/`, and the encrypted on-disk store is not readable.
-///
-/// The bundled Zygisk module yields entirely when the user runs their own
-/// Zygisk module: two identical zygiskd daemons race for the same socket at
-/// every post-fs-data, the loser aborts and drops `disable` + `.abort_msg`
-/// into its module dir, which the manager panel then renders as "off" no
-/// matter how often the user re-enables it.
 fn foreach_builtin_module(mut f: impl FnMut(&Path) -> Result<()>) -> Result<()> {
     let modules_dir = Path::new(defs::BUILTIN_MODULE_DIR);
     let Ok(dir) = std::fs::read_dir(modules_dir) else {
         return Ok(());
     };
-    let yield_zygisk = user_zygisk_module_present();
     for entry in dir.flatten() {
         let path = entry.path();
         if !path.is_dir() {
-            continue;
-        }
-        if yield_zygisk && entry.file_name().to_string_lossy() == "zygisksu" {
-            info!("user-installed Zygisk module detected, built-in zygisksu yields");
             continue;
         }
         f(&path)?;
