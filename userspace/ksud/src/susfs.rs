@@ -294,10 +294,7 @@ pub fn hide_sus_mnts_for_non_su_procs(enabled: bool) -> anyhow::Result<()> {
 /// Copy a path into a fixed-size NUL-padded kernel buffer.
 fn copy_path_into(dst: &mut [u8; 256], path: &str) -> anyhow::Result<()> {
     let bytes = path.as_bytes();
-    anyhow::ensure!(
-        bytes.len() < dst.len(),
-        "path too long for susfs: {path}"
-    );
+    anyhow::ensure!(bytes.len() < dst.len(), "path too long for susfs: {path}");
     dst[..bytes.len()].copy_from_slice(bytes);
     Ok(())
 }
@@ -386,7 +383,6 @@ pub fn provision_baseline() {
         log::warn!("SUSFS: hide sus mnts for non-su procs failed: {e:#}");
     }
 }
-
 
 pub fn add_open_redirect(target: &str, redirected: &str, uid_scheme: u32) -> anyhow::Result<()> {
     let mut cmd = SusfsOpenRedirect {

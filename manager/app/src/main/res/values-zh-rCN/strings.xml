@@ -190,6 +190,8 @@ XEC（3228636402）
     <string name="settings_module_check_update">检查模块更新</string>
     <string name="grant_root_failed">获取 Root 失败！</string>
     <string name="home_daemon_missing">守护组件缺失（/data/adb/xudc）：内置模块不会生效，请重新安装完整包并重启</string>
+    <string name="home_susfs_status">SUSFS</string>
+    <string name="home_susfs_unsupported">未启用（内核未打 SUSFS 补丁）</string>
     <string name="home_pr_build_warning">当前为 PR 调试构建，请勿在生产环境中使用！</string>
     <string name="home_pr_kernel_warning">当前内核包含 PR 签名支持，这不是一个生产内核！</string>
     <string name="action">执行</string>

@@ -22,6 +22,7 @@ import me.weishu.kernelsu.ui.screen.home.HomeUiState
 import me.weishu.kernelsu.ui.screen.home.SystemInfo
 import me.weishu.kernelsu.ui.screen.home.getManagerVersion
 import me.weishu.kernelsu.ui.util.checkNewVersion
+import me.weishu.kernelsu.ui.util.getKsuDaemonPath
 import me.weishu.kernelsu.ui.util.getSELinuxStatusRaw
 import me.weishu.kernelsu.ui.util.getRootShell
 import me.weishu.kernelsu.ui.util.module.LatestVersionInfo
@@ -59,6 +60,16 @@ class HomeViewModel(
             val shell = getRootShell()
             ShellUtils.fastCmd(shell, "test -e /data/adb/xudc && echo -n ok").trim() == "ok"
         }.getOrDefault(false)
+        // SUSFS 状态探测：susfs 的 reboot 向量只在 root 进程内有效，走守护 CLI。
+        // "unsupport" = 内核没打 SUSFS 补丁；null = 探测不了（无 root / shell 失败）→ UI 隐藏该行。
+        val susfsVersion: String? = if (isRootAvailable) runCatching {
+            val shell = getRootShell()
+            ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} susfs version").trim().ifEmpty { null }
+        }.getOrNull() else null
+        val susfsVariant: String? = if (susfsVersion != null && susfsVersion != "unsupport") runCatching {
+            val shell = getRootShell()
+            ShellUtils.fastCmd(shell, "${getKsuDaemonPath()} susfs variant").trim().ifEmpty { null }
+        }.getOrNull() else null
         val managerVersion = getManagerVersion(ksuApp)
 
         return HomeUiState(
@@ -77,6 +88,8 @@ class HomeViewModel(
             isSafeMode = Natives.isSafeMode,
             isLateLoadMode = Natives.isLateLoadMode,
             isDaemonPresent = isDaemonPresent,
+            susfsVersion = susfsVersion,
+            susfsVariant = susfsVariant,
             checkUpdateEnabled = settingsRepo.checkUpdate,
             latestVersionInfo = LatestVersionInfo(),
             currentManagerVersionCode = managerVersion.versionCode,

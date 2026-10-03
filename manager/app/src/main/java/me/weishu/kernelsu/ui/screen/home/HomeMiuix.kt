@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.VolunteerActivism
@@ -178,6 +179,8 @@ fun HomePagerMiuix(
                         InfoCard(
                             systemInfo = state.systemInfo,
                             downloadCount = state.latestVersionInfo.downloadCount,
+                            susfsVersion = state.susfsVersion,
+                            susfsVariant = state.susfsVariant,
                             modifier = Modifier.fillMaxWidth(),
                             backdrop = backdrop,
                         )
@@ -539,6 +542,8 @@ private fun SupportLinks(
 private fun InfoCard(
     systemInfo: SystemInfo,
     downloadCount: Long = 0,
+    susfsVersion: String? = null,
+    susfsVariant: String? = null,
     modifier: Modifier = Modifier,
     backdrop: LayerBackdrop? = null,
 ) {
@@ -647,6 +652,21 @@ private fun InfoCard(
                     title = stringResource(R.string.home_selinux_status),
                     content = selinuxDisplay,
                 )
+                // SUSFS 行：null = 探测不到（无 root / shell 失败）→ 整行隐藏；
+                // "unsupport" = 内核没打 SUSFS 补丁，明确告知用户而不是静默。
+                if (susfsVersion != null) {
+                    InfoText(
+                        icon = Icons.Filled.Shield,
+                        title = stringResource(R.string.home_susfs_status),
+                        content = if (susfsVersion == "unsupport") {
+                            stringResource(R.string.home_susfs_unsupported)
+                        } else if (susfsVariant != null) {
+                            "$susfsVersion · $susfsVariant"
+                        } else {
+                            susfsVersion
+                        },
+                    )
+                }
                 InfoText(
                     icon = Icons.Filled.FilterList,
                     title = stringResource(R.string.home_seccomp_status),
@@ -785,6 +805,8 @@ private fun previewHomeScreenState(
     isSafeMode = isSafeMode,
     isLateLoadMode = isLateLoadMode,
     isDaemonPresent = ksuVersion != null,
+    susfsVersion = null,
+    susfsVariant = null,
     checkUpdateEnabled = false,
     latestVersionInfo = LatestVersionInfo(),
     currentManagerVersionCode = 10000,

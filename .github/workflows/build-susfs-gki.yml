@@ -1,0 +1,184 @@
+name: Build SUSFS GKI Kernel
+
+# 为指定 KMI 构建打了 SUSFS 补丁的 GKI 内核（Image.gz，可选重打包 boot.img）。
+#
+# 背景：SUSFS 的全部内核代码都在基础内核补丁里（susfs4ksu 的 fs/susfs.c 与
+# VFS hook，见 ReSukiSU / SukiSU-Ultra / KernelSU-Next 的 ko —— 三者的内核模块
+# 都不含 susfs 代码）。测试者用的原厂 GKI 内核没有 SUSFS，所以 ksud 的 susfs
+# 接口与内置 susfs4ksu 模块在其上必然空转；本工作流产出可直接刷入的
+# SUSFS GKI 内核，补上这条唯一的缺口。
+#
+# 手动触发，不在发版链路里：内核全量构建耗时 40-80 分钟/KMI。
+# 出货物：
+#   - Image.gz（SUSFS 补丁 + LTO 关闭）
+#   - 可选：把官方 GKI boot.img 的内核替换为上述 Image.gz 后的 boot.img
+#     （需要传入官方 boot.img 的直链；GKI 2.0 官方镜像来自 ci.android.com）
+#
+# 刷入方式：管理器"安装 GKI 内核"流程或 fastboot boot/boot 分区（Image 需
+# 自行打包）；boot.img 产物可直接 fastboot flash boot。
+
+on:
+  workflow_dispatch:
+    inputs:
+      kmi:
+        description: 'KMI version'
+        required: true
+        type: choice
+        options:
+          - android12-5.10
+          - android13-5.10
+          - android13-5.15
+          - android14-5.15
+          - android14-6.1
+          - android15-6.6
+          - android16-6.12
+          - android17-6.18
+        default: 'android15-6.6'
+      susfs_branch:
+        description: 'susfs4ksu 分支（默认 gki-<KMI>，可填 -dev 后缀分支名）'
+        required: false
+        default: ''
+        type: string
+      boot_img_url:
+        description: '官方 GKI boot.img 直链（可选；留空只产出 Image.gz）'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  build-susfs-gki:
+    name: SUSFS GKI ${{ inputs.kmi }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ylarod/ddk-min:${{ inputs.kmi }}-20260828
+      options: --privileged
+
+    steps:
+      - name: Apply SUSFS patches to GKI source
+        run: |
+          set -e
+          KMI="${{ inputs.kmi }}"
+          BRANCH="${{ inputs.susfs_branch }}"
+          [ -n "$BRANCH" ] || BRANCH="gki-$KMI"
+
+          KDIR="/opt/ddk/src/$KMI"
+          [ -d "$KDIR" ] || { echo "::error::GKI source missing at $KDIR"; exit 1; }
+
+          git clone --depth=1 "https://gitlab.com/simonpunk/susfs4ksu.git" -b "$BRANCH" /tmp/susfs
+          # susfs4ksu 的补丁布局：50_add_susfs_in_gki-<KMI>.patch + 裸的
+          # fs/susfs.c 与 include/linux/susfs*.h（patch 只改既有文件的挂钩点）
+          cp /tmp/susfs/kernel_patches/fs/* "$KDIR/fs/"
+          cp /tmp/susfs/kernel_patches/include/linux/* "$KDIR/include/linux/"
+          PATCH_FILE=$(ls /tmp/susfs/kernel_patches/50_add_susfs_in_gki-$KMI*.patch | head -n1)
+          [ -f "$PATCH_FILE" ] || { echo "::error::susfs patch for $KMI not found"; exit 1; }
+          cp "$PATCH_FILE" "$KDIR/"
+
+          cd "$KDIR"
+          patch -p1 < "$(basename "$PATCH_FILE")"
+          # 被 .rej 打断后续构建没有意义：有拒绝就立刻失败，输出里能看到是哪段
+          if ls ./*.rej fs/*.rej >/dev/null 2>&1; then
+            echo "::error::susfs patch has rejects for $KMI"
+            exit 1
+          fi
+          echo "SUSFS patches applied to $KDIR"
+
+      - name: Configure kernel (gki_defconfig + SUSFS)
+        run: |
+          set -e
+          KMI="${{ inputs.kmi }}"
+          KDIR="/opt/ddk/src/$KMI"
+          ODIR="/tmp/kdir-$KMI"
+          cd "$KDIR"
+          make O="$ODIR" ARCH=arm64 gki_defconfig
+          # SUSFS 全家桶 + 关 LTO（构建提速且与 LKM 构建一致）
+          scripts/config --file "$ODIR/.config" \
+            -e KSU_SUSFS \
+            -e KSU_SUSFS_SUS_MOUNT \
+            -e KSU_SUSFS_SUS_PATH \
+            -e KSU_SUSFS_SUS_KSTAT \
+            -e KSU_SUSFS_SUS_MAP \
+            -e KSU_SUSFS_SPOOF_UNAME \
+            -e KSU_SUSFS_ENABLE_LOG \
+            -e KSU_SUSFS_HIDE_SUS_MNTS_FOR_NON_SU_PROCS \
+            -e KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT \
+            -e KSU_SUSFS_AUTO_ADD_SUS_BUILTIN_DEFAULT \
+            -e KSU_SUSFS_OPEN_REDIRECT \
+            -d LTO_CLANG -e LTO_NONE -d LTO_CLANG_THIN -d LTO_CLANG_FULL -d THINLTO
+          make O="$ODIR" ARCH=arm64 olddefconfig
+          # 断言配置真的进去了（scripts/config 对未知符号静默忽略）
+          grep -q '^CONFIG_KSU_SUSFS=y' "$ODIR/.config" || {
+            echo "::error::CONFIG_KSU_SUSFS did not land in .config"
+            exit 1
+          }
+
+      - name: Build Image.gz
+        run: |
+          set -e
+          KMI="${{ inputs.kmi }}"
+          KDIR="/opt/ddk/src/$KMI"
+          ODIR="/tmp/kdir-$KMI"
+          cd "$KDIR"
+          make O="$ODIR" ARCH=arm64 CC=clang -j"$(nproc)" Image.gz
+          mkdir -p /github/workspace/out
+          cp "$ODIR/arch/arm64/boot/Image.gz" /github/workspace/out/Image.gz-"$KMI"
+          ls -la /github/workspace/out/
+
+      - name: Repack boot.img (optional)
+        if: ${{ inputs.boot_img_url != '' }}
+        run: |
+          set -e
+          KMI="${{ inputs.kmi }}"
+          curl -fL --retry 3 -o /tmp/stock-boot.img "${{ inputs.boot_img_url }}"
+          git clone --depth=1 https://github.com/LineageOS/android_system_tools_mkbootimg.git /tmp/mkbootimg
+          python3 /tmp/mkbootimg/unpack_bootimg.py --boot_img /tmp/stock-boot.img --out /tmp/boot-unpack
+          # aosp main 的 unpack_bootimg 会把头部全部字段写进 bootimg.json；
+          # 只替换 --kernel，其余参数逐字回填，保证和官方镜像一致。
+          python3 - "$KMI" <<'PY'
+import json, pathlib, subprocess, sys
+
+out = pathlib.Path('/tmp/boot-unpack')
+kmi = sys.argv[1]
+kernel = pathlib.Path(f'/github/workspace/out/Image.gz-{kmi}')
+jf = out / 'bootimg.json'
+if not jf.exists():
+    sys.exit('bootimg.json missing: this unpack_bootimg version is too old for repack')
+
+j = json.loads(jf.read_text())
+cmd = ['python3', '/tmp/mkbootimg/mkbootimg.py',
+       '--kernel', str(kernel)]
+flag_map = {
+    'header_version': '--header_version',
+    'cmdline': '--cmdline',
+    'base': '--base',
+    'kernel_offset': '--kernel_offset',
+    'ramdisk_offset': '--ramdisk_offset',
+    'second_offset': '--second_offset',
+    'tags_offset': '--tags_offset',
+    'pagesize': '--pagesize',
+    'dtb_offset': '--dtb_offset',
+    'os_version': '--os_version',
+}
+for key, flag in flag_map.items():
+    if key in j and j[key] not in (None, ''):
+        cmd += [flag, str(j[key])]
+# ramdisk / dtb / second 原样沿用官方镜像
+for path, flag in (
+    (out / 'ramdisk', '--ramdisk'),
+    (out / 'dtb', '--dtb'),
+    (out / 'second', '--second'),
+):
+    if path.is_file():
+        cmd += [flag, str(path)]
+
+dest = f'/github/workspace/out/boot-susfs-{kmi}.img'
+cmd += ['-o', dest]
+subprocess.run(cmd, check=True)
+print('repacked ->', dest)
+PY
+          ls -la /github/workspace/out/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: susfs-gki-${{ inputs.kmi }}
+          path: /github/workspace/out/

@@ -182,10 +182,7 @@ fn load_all_modules() -> Result<()> {
         .read_dir()?
         .flatten()
         .map(|entry| entry.path())
-        .filter(|p| {
-            p.extension()
-                .is_some_and(|ex| ex == OsStr::new("kpm"))
-        })
+        .filter(|p| p.extension().is_some_and(|ex| ex == OsStr::new("kpm")))
         .collect();
     modules.sort();
 

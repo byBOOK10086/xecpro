@@ -21,6 +21,8 @@ data class HomeUiState(
     val isSafeMode: Boolean,
     val isLateLoadMode: Boolean,
     val isDaemonPresent: Boolean,
+    val susfsVersion: String?,
+    val susfsVariant: String?,
     val checkUpdateEnabled: Boolean,
     val latestVersionInfo: LatestVersionInfo,
     val currentManagerVersionCode: Long,

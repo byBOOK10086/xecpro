@@ -37,7 +37,7 @@ import java.util.zip.ZipFile
  */
 private const val TAG = "KsuCli"
 
-private fun getKsuDaemonPath(): String {
+internal fun getKsuDaemonPath(): String {
     return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libksud.so"
 }
 
