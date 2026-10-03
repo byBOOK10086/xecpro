@@ -85,8 +85,13 @@ jobs:
           [ -f "$PATCH_FILE" ] || { echo "::error::susfs patch for $KMI not found"; exit 1; }
 
           cd "$KDIR"
+          # ddk-min 镜像里的 GKI 源码树自带历史残留的 .rej/.orig（实测
+          # android15-6.6 镜像含 mm/rmap.c.rej，与 susfs 补丁无关）。先清掉，
+          # 让下面的检查只对本次补丁产生的拒绝负责。
+          find . -name '*.rej' -o -name '*.orig' | head -20 | xargs -r rm -f
           patch -p1 < "$PATCH_FILE"
-          # 被 .rej 打断后续构建没有意义：有拒绝就立刻失败，输出里能看到是哪段
+          # patch 在 set -e 下 hunk 失败会直接非零退出；这里兜底再扫一遍
+          # 新产生的 .rej，输出里能看到是哪段
           REJS=$(find . -name '*.rej' | head -20)
           if [ -n "$REJS" ]; then
             echo "::error::susfs patch has rejects for $KMI"
