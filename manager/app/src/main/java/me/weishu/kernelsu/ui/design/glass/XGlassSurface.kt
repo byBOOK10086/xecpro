@@ -18,12 +18,15 @@ import me.weishu.kernelsu.ui.component.liquid.InnerShadow
 import me.weishu.kernelsu.ui.component.liquid.innerShadow
 import me.weishu.kernelsu.ui.component.liquid.lens
 import me.weishu.kernelsu.ui.component.liquid.vibrancy
+import me.weishu.kernelsu.ui.design.liquid.LocalLiquidTilt
 import me.weishu.kernelsu.ui.design.token.Xc
+import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurColors
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.blur
 import top.yukonga.miuix.kmp.blur.drawBackdrop
+import top.yukonga.miuix.kmp.blur.noiseDither
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.shader.isRuntimeShaderSupported
 
@@ -55,6 +58,7 @@ fun XGlassSurface(
     rimColor: Color = Xc.colors.glassRim,
     rim: Boolean = true,
     innerHighlight: Boolean = true,
+    dispersion: Float = 0.20f,
     glassEnabled: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -68,6 +72,7 @@ fun XGlassSurface(
             rimColor = rimColor,
             rim = rim,
             innerHighlight = innerHighlight,
+            dispersion = dispersion,
             glassEnabled = glassEnabled,
         ),
         content = content,
@@ -117,6 +122,7 @@ internal fun Modifier.xGlassBody(
     rimColor: Color = Xc.colors.glassRim,
     rim: Boolean = true,
     innerHighlight: Boolean = true,
+    dispersion: Float = 0.20f,
     glassEnabled: Boolean = true,
 ): Modifier = this.xGlassLayer(
     // 采样源来自 LocalLiquidBackdrop（程序化网格，永不包含卡体自己）；
@@ -129,6 +135,7 @@ internal fun Modifier.xGlassBody(
     rimColor = rimColor,
     rim = rim,
     innerHighlight = innerHighlight,
+    dispersion = dispersion,
     glassEnabled = glassEnabled,
 )
 
@@ -152,11 +159,14 @@ private fun Modifier.xGlassLayer(
     rimColor: Color,
     rim: Boolean,
     innerHighlight: Boolean,
+    dispersion: Float,
     glassEnabled: Boolean,
 ): Modifier {
     val surface = Xc.colors.surface
     val shaderSupported = remember { isRuntimeShaderSupported() }
     val active = glassEnabled && backdrop != null
+    // 镜面高光的光源跟随设备倾斜：State 在绘制期读，倾斜变化自动重跑 effect 管线。
+    val tilt = LocalLiquidTilt.current
 
     // 三档降级里，后两档都不能直接用半透明的 tint（会透出窗口黑底，面板塌成黑框），
     // 需要先合成成不透明实色。算一次，两档共用。
@@ -172,9 +182,21 @@ private fun Modifier.xGlassLayer(
                     // 折射要在控件边界外取样，padding 小于折射量时边缘会被裁掉，
                     // 表现为"折射只在中段出现、贴边消失"。
                     padding = maxOf(28.dp.toPx(), refractPx)
+                    noiseDither(BlurDefaults.NoiseCoefficient)
                     vibrancy()
                     blur(blurRadius.toPx(), blurRadius.toPx())
-                    lens(refractionHeight = refractPx, refractionAmount = refractPx)
+                    lens(
+                        refractionHeight = refractPx,
+                        refractionAmount = refractPx,
+                        // iPhone 还原三开关：
+                        // depthEffect = 引力透镜剖面——弯折压在最外几像素，内侧只有
+                        // 轻微放大尾巴，边缘"卷"起来的感觉来自这里；
+                        // chromaticAberration = 色散光谱边纹（iOS 控制中心玻璃的特征）；
+                        // tilt = 镜面高光的光源随倾斜漂移。
+                        depthEffect = true,
+                        chromaticAberration = dispersion,
+                        tilt = tilt,
+                    )
                 },
                 onDrawSurface = {
                     drawRect(tint)
@@ -316,6 +338,7 @@ fun XGlassBar(
         blurRadius = 10.dp,
         refraction = 28.dp,
         innerHighlight = false,
+        dispersion = 0.24f,
         glassEnabled = glassEnabled,
         content = content,
     )

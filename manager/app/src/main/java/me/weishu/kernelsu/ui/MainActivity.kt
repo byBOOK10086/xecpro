@@ -76,7 +76,9 @@ import me.weishu.kernelsu.ui.component.dialog.XDialogHostState
 import me.weishu.kernelsu.ui.design.liquid.LiquidMeshBackground
 import me.weishu.kernelsu.ui.design.liquid.LiquidMeshColors
 import me.weishu.kernelsu.ui.design.liquid.LocalLiquidBackdrop
+import me.weishu.kernelsu.ui.design.liquid.LocalLiquidTilt
 import me.weishu.kernelsu.ui.design.liquid.LocalLiquidTime
+import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
 import me.weishu.kernelsu.ui.design.liquid.XDropletHost
 import me.weishu.kernelsu.ui.design.liquid.rememberLiquidBackdrop
 import me.weishu.kernelsu.ui.design.liquid.rememberLiquidTime
@@ -203,12 +205,16 @@ class MainActivity : ComponentActivity() {
                             time = liquidTime,
                             colors = LiquidMeshColors.ofTheme(),
                         )
+                        // 重力传感器倾斜态：根层只注册一个监听，镜面高光的光源方向
+                        // 由玻璃层在绘制期读取（LocalLiquidTilt）。
+                        val liquidTilt = rememberDeviceTilt()
 
                         CompositionLocalProvider(
                             LocalXDialogHost provides dialogHostState,
                             LocalXDialogBackdrop provides dialogBackdrop,
                             LocalLiquidBackdrop provides liquidBackdrop,
                             LocalLiquidTime provides liquidTime,
+                            LocalLiquidTilt provides liquidTilt,
                         ) {
                             XDropletHost {
                                 IntentDispatcher(intentChannel = intentChannel)

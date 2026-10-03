@@ -22,8 +22,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -35,6 +33,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.sensor.DeviceTilt
 import top.yukonga.miuix.kmp.shader.isRenderEffectSupported
 import top.yukonga.miuix.kmp.shader.isRuntimeShaderSupported
 
@@ -44,6 +43,14 @@ val LocalLiquidBackdrop = compositionLocalOf<LayerBackdrop?> { null }
 /** 网格动画相位（0..1，约 24s 一循环）。给的是 [State]，消费方在绘制期读值，避免逐帧重组。 */
 val LocalLiquidTime: androidx.compose.runtime.ProvidableCompositionLocal<State<Float>> =
     compositionLocalOf { mutableStateOf(0.35f) }
+
+/**
+ * 设备倾斜态（重力传感器，miuix `rememberDeviceTilt` 产出，根层提供一份避免每卡一个监听）。
+ * 镜片内核用它驱动镜面高光的光源方向——iOS 26 液态玻璃"倾斜手机高光跟着动"的核心。
+ * null = 预览 / 平台无传感器 → 高光退回固定光源。
+ */
+val LocalLiquidTilt: androidx.compose.runtime.ProvidableCompositionLocal<State<DeviceTilt>?> =
+    compositionLocalOf { null }
 
 /** 网格配色。从主题令牌取色，深浅档给出不同混合策略。 */
 class LiquidMeshColors(

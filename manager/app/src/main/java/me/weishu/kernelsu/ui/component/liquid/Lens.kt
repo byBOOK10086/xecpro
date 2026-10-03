@@ -8,17 +8,21 @@ package me.weishu.kernelsu.ui.component.liquid
 import android.graphics.RuntimeShader
 import android.os.Build
 import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.runtime.State
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.util.fastCoerceAtMost
 import top.yukonga.miuix.kmp.blur.BackdropEffectScope
 import top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.blur.runtimeShaderEffect
+import top.yukonga.miuix.kmp.blur.sensor.DeviceTilt
 
 fun BackdropEffectScope.lens(
     refractionHeight: Float,
     refractionAmount: Float,
     depthEffect: Boolean = false,
     chromaticAberration: Float = 0f,
+    tilt: State<DeviceTilt>? = null,
 ) {
     if (!isRuntimeShaderSupported()) return
     if (refractionHeight <= 0f || refractionAmount <= 0f) return
@@ -48,6 +52,9 @@ fun BackdropEffectScope.lens(
     if (XcGlassKernel.current == XcGlassKernel.Kernel.NEW && xcLensShaderUsable) {
         val halfW = scaledSizeW * 0.5f
         val halfH = scaledSizeH * 0.5f
+        // 光源方向每帧在绘制期算（tilt.value 是绘制期 State 读，变化会触发
+        // updateEffects 重跑），倾斜手机时整圈镜面高光跟着光源走。
+        val light = tiltLightDir(tilt)
         val newKernelApplied =
             runCatching {
                 runtimeShaderEffect(
@@ -81,8 +88,8 @@ fun BackdropEffectScope.lens(
                     setFloatUniform("sampleHi", scaledPadding + scaledSizeW - 1f, scaledPadding + scaledSizeH - 1f)
                     // 色散强度：0 时三通道采样点重合，等价于无色散
                     setFloatUniform("dispersion", chromaticAberration.coerceIn(0f, 0.9f))
-                    // 固定光源方向（上游 LightSourceController 的默认值）
-                    setFloatUniform("lightDir", XC_LENS_LIGHT_X, XC_LENS_LIGHT_Y)
+                    // 光源方向：静止时是上游默认（右上偏上方），随设备倾斜漂移
+                    setFloatUniform("lightDir", light.x, light.y)
                     setFloatUniform("specStrength", XC_LENS_SPEC_STRENGTH)
                     // 贴边高光带宽度上限，与其它像素量一起换算到着色器坐标
                     setFloatUniform("rimBandMax", XC_LENS_RIM_BAND_MAX_PX / sf)
@@ -128,6 +135,23 @@ fun BackdropEffectScope.lens(
     }
 }
 
+/**
+ * 镜面高光的光源方向：静止时用上游默认（右上偏上方）；随设备倾斜漂移，
+ * 符号约定与 miuix `rememberTiltLight` 一致（roll 抬升 x、pitch 压低 y），
+ * 结果归一化成单位向量（内核按 `dot(N, -L)` 取向，假设 L 是单位长）。
+ * 无传感器 / 未提供 tilt 时恒为默认方向。
+ */
+private fun tiltLightDir(tilt: State<DeviceTilt>?): Offset {
+    val t = tilt?.value ?: return Offset(XC_LENS_LIGHT_X, XC_LENS_LIGHT_Y)
+    if (t == DeviceTilt.Zero) return Offset(XC_LENS_LIGHT_X, XC_LENS_LIGHT_Y)
+    val x = XC_LENS_LIGHT_X + XC_TILT_SENSITIVITY * t.roll
+    val y = XC_LENS_LIGHT_Y - XC_TILT_SENSITIVITY * t.pitch
+    val lenSq = x * x + y * y
+    if (lenSq <= 1e-6f) return Offset(XC_LENS_LIGHT_X, XC_LENS_LIGHT_Y)
+    val inv = 1f / kotlin.math.sqrt(lenSq)
+    return Offset(x * inv, y * inv)
+}
+
 private fun BackdropEffectScope.roundedRectCornerRadii(): FloatArray? {
     val cornerShape = shape as? CornerBasedShape ?: return null
     val sizePx = size
@@ -151,6 +175,9 @@ private const val XC_LENS_KEY = "XcLiquidGlassLens"
 
 /** 逆幂折射剖面的衰减指数：用来表达旧内核 `depthEffect = true` 的“法线朝圆心偏移”。 */
 private const val XC_LENS_FALLOFF_DEPTH = 2f
+
+/** 倾斜 → 光源漂移的灵敏度（rad → 方向偏移量，与 miuix rememberTiltLight 的 sensitivity 同量纲）。 */
+private const val XC_TILT_SENSITIVITY = 0.45f
 
 /** 固定光源方向：上游 `LightSourceController` 的默认值 DEFAULT_X / DEFAULT_Y。 */
 private const val XC_LENS_LIGHT_X = 0.866f
