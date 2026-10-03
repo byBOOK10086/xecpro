@@ -30,4 +30,8 @@ jobs:
 
       - name: check
         working-directory: kernel
-        run: make check-format
+        # 钉版本：runner 预装的 clang-format 会随发行版漂移，与本地
+        # `pip install clang-format==23.1.2` 保持一致，避免同码不同判。
+        run: |
+          pip install clang-format==23.1.2
+          make check-format

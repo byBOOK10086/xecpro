@@ -321,8 +321,7 @@ long ksu_handle_execveat_sucompat(const char __user **filename_user, int orig_nr
 
 // init/zygote 阶段的 execve 处理。返回 0 表示已处理（外层结束），
 // 非 0 表示继续后续 sucompat 判定。
-static int ksu_handle_execveat_init(struct filename *filename,
-                                    struct user_arg_ptr *argv_user,
+static int ksu_handle_execveat_init(struct filename *filename, struct user_arg_ptr *argv_user,
                                     struct user_arg_ptr *envp_user)
 {
     int ret;
@@ -369,8 +368,7 @@ static int ksu_handle_execveat_init(struct filename *filename,
 
 // 允许的进程 exec "/system/bin/su"：提权成功后原地改写 struct filename 为
 // ksud 路径。返回 0 表示进入 su 会话（50_ 的调用点据此在 exec 后补装 su fd）。
-int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
-                                 void *argv_user, void *envp_user,
+int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr, void *argv_user, void *envp_user,
                                  int *__never_use_flags)
 {
     struct filename *filename;
@@ -387,8 +385,7 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
     if (IS_ERR_OR_NULL(filename) || !filename->name)
         return -EINVAL;
 
-    if (!ksu_handle_execveat_init(filename, (struct user_arg_ptr *)argv_user,
-                                  (struct user_arg_ptr *)envp_user))
+    if (!ksu_handle_execveat_init(filename, (struct user_arg_ptr *)argv_user, (struct user_arg_ptr *)envp_user))
         return -EINVAL;
 
     if (!(__ksu_is_allow_uid_for_current(current_uid().val)))
@@ -398,7 +395,8 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
         return -EINVAL;
 
     if (current_chrooted()) {
-        pr_err("ksu_handle_execveat_sucompat: su found but NOT allowed! Because current process is running in chrooted environment\n");
+        pr_err(
+            "ksu_handle_execveat_sucompat: su found but NOT allowed! Because current process is running in chrooted environment\n");
         return -EINVAL;
     }
 
@@ -408,8 +406,8 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 #else
         if (filename->uptr)
 #endif
-            pending_sucompat = ksu_sulog_capture_sucompat(filename->uptr,
-                                                          ((struct user_arg_ptr *)argv_user)->ptr.native, GFP_KERNEL);
+            pending_sucompat =
+                ksu_sulog_capture_sucompat(filename->uptr, ((struct user_arg_ptr *)argv_user)->ptr.native, GFP_KERNEL);
 
         ret = escape_with_root_profile();
         ksu_sulog_emit_pending(pending_sucompat, ret, GFP_KERNEL);
@@ -427,8 +425,7 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
     return 0;
 }
 
-int ksu_handle_post_execveat_sucompat(int *fd, struct filename **filename_ptr,
-                                      void *argv_user, void *envp_user,
+int ksu_handle_post_execveat_sucompat(int *fd, struct filename **filename_ptr, void *argv_user, void *envp_user,
                                       int *__never_use_flags, int *retval)
 {
     (void)fd;
@@ -445,8 +442,7 @@ int ksu_handle_post_execveat_sucompat(int *fd, struct filename **filename_ptr,
 
 // 50_ 的 fs/exec.c 在 sdcard 未解密阶段（susfs_is_sdcard_android_data_not_decrypted
 // static key 开启时）走本入口；先做 ksud/init 阶段标记，再走 sucompat。
-int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
-                        void *envp, int *flags)
+int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv, void *envp, int *flags)
 {
     struct filename *filename;
 
@@ -461,8 +457,7 @@ int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
     return ksu_handle_execveat_sucompat(fd, filename_ptr, argv, envp, flags);
 }
 
-int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode,
-                         int *__unused_flags)
+int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode, int *__unused_flags)
 {
     (void)dfd;
     (void)mode;
@@ -474,7 +469,8 @@ int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode,
         return 0;
 
     if (current_chrooted()) {
-        pr_err("ksu_handle_faccessat: su found but NOT allowed! Because current process is running in chrooted environment\n");
+        pr_err(
+            "ksu_handle_faccessat: su found but NOT allowed! Because current process is running in chrooted environment\n");
         return 0;
     }
 
@@ -495,7 +491,8 @@ int ksu_handle_stat(int *dfd, struct filename **filename, int *flags)
         return 0;
 
     if (current_chrooted()) {
-        pr_err("ksu_handle_stat: su found but NOT allowed! Because current process is running in chrooted environment\n");
+        pr_err(
+            "ksu_handle_stat: su found but NOT allowed! Because current process is running in chrooted environment\n");
         return 0;
     }
 

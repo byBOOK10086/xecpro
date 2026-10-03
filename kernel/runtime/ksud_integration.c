@@ -493,8 +493,8 @@ void ksu_handle_vfs_fstat(int fd, loff_t *kstat_size_ptr)
     if (is_rc) {
         extra = ksu_rc_len + module_rc_len;
         *kstat_size_ptr = orig_size + extra;
-        pr_info("adding rc len: %lld -> %lld (static=%zu module=%zu)", orig_size, *kstat_size_ptr,
-                ksu_rc_len, module_rc_len);
+        pr_info("adding rc len: %lld -> %lld (static=%zu module=%zu)", orig_size, *kstat_size_ptr, ksu_rc_len,
+                module_rc_len);
     }
 }
 #endif /* CONFIG_KSU_SUSFS */

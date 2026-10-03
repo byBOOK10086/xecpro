@@ -14,16 +14,12 @@ extern struct static_key_true ksu_su_compat_enabled;
 
 // Handler functions called from the susfs base-kernel hooks (fs/exec.c,
 // fs/open.c, fs/stat.c). Signatures must match the 50_add_susfs externs.
-int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
-                        void *envp, int *flags);
-int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
-                                 void *argv_user, void *envp_user,
+int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv, void *envp, int *flags);
+int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr, void *argv_user, void *envp_user,
                                  int *__never_use_flags);
-int ksu_handle_post_execveat_sucompat(int *fd, struct filename **filename_ptr,
-                                      void *argv_user, void *envp_user,
+int ksu_handle_post_execveat_sucompat(int *fd, struct filename **filename_ptr, void *argv_user, void *envp_user,
                                       int *__never_use_flags, int *retval);
-int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode,
-                         int *__unused_flags);
+int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode, int *__unused_flags);
 int ksu_handle_stat(int *dfd, struct filename **filename, int *flags);
 #else
 extern bool ksu_su_compat_enabled;
