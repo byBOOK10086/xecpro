@@ -37,7 +37,7 @@ import kotlinx.coroutines.withContext
 import android.widget.Toast
 import com.topjohnwu.superuser.ShellUtils
 import me.weishu.kernelsu.R
-import me.weishu.kernelsu.ui.LocalEnableBlur
+import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.design.glass.xGlassBody
 import me.weishu.kernelsu.ui.design.token.Xc
 import me.weishu.kernelsu.ui.design.token.XcNeon
