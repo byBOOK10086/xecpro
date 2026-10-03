@@ -145,6 +145,7 @@ enum class BottomBarDestination(
     SuperUser(R.string.superuser, Icons.Rounded.Security),
     Module(R.string.module, Icons.Rounded.Extension),
     Kpm(R.string.kpm, Icons.Rounded.Memory),
+    Detect(R.string.detection, Icons.Rounded.Verified),
     Setting(R.string.settings, Icons.Rounded.Settings),
     Terminal(R.string.terminal, Icons.Rounded.Code),
 }

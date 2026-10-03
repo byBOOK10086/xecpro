@@ -92,6 +92,7 @@ import me.weishu.kernelsu.ui.screen.colorpalette.ColorPaletteScreen
 import me.weishu.kernelsu.ui.screen.executemoduleaction.ExecuteModuleActionScreen
 import me.weishu.kernelsu.ui.screen.flash.FlashScreen
 import me.weishu.kernelsu.ui.screen.home.HomePager
+import me.weishu.kernelsu.ui.screen.detect.DetectPager
 import me.weishu.kernelsu.ui.screen.install.InstallScreen
 import me.weishu.kernelsu.ui.screen.kpm.KpmPager
 import me.weishu.kernelsu.ui.screen.module.ModulePager
@@ -424,8 +425,9 @@ fun MainScreen(
                         1 -> if (contentReady || isCurrentPage) SuperUserPager(navController, bottomInnerPadding, isCurrentPage)
                         2 -> if (contentReady || isCurrentPage) ModulePager(bottomInnerPadding, isCurrentPage)
                         3 -> if (contentReady || isCurrentPage) KpmPager(bottomInnerPadding, isCurrentPage)
-                        4 -> if (contentReady || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)
-                        5 -> if (contentReady || isCurrentPage) TerminalPager(bottomInnerPadding, isCurrentPage)
+                        4 -> if (contentReady || isCurrentPage) DetectPager(bottomInnerPadding, isCurrentPage)
+                        5 -> if (contentReady || isCurrentPage) SettingPager(navController, bottomInnerPadding, isCurrentPage)
+                        6 -> if (contentReady || isCurrentPage) TerminalPager(bottomInnerPadding, isCurrentPage)
                     }
                 }
             }

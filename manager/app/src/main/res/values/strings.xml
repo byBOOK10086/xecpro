@@ -364,4 +364,23 @@ Hereby announced with gratitude.
     <string name="nav_rail_collapse">Collapse navigation rail</string>
     <string name="settings_navigation_badge">Navigation badge</string>
     <string name="settings_navigation_badge_summary">Show granted app and enabled module counts on the navigation bar</string>
+    <string name="detection">Detection</string>
+    <string name="detect_app_name">KeyChain Integrity Check</string>
+    <string name="detect_checking">Checking…</string>
+    <string name="detect_not_installed">Not installed</string>
+    <string name="detect_installed_fmt">Installed · v%s</string>
+    <string name="detect_install">Install checker</string>
+    <string name="detect_reinstall">Reinstall checker</string>
+    <string name="detect_install_hint">Bundled checker APK, installed silently with root</string>
+    <string name="detect_working">Working…</string>
+    <string name="detect_open">Open checker</string>
+    <string name="detect_open_hint">Launch the integrity check</string>
+    <string name="detect_uninstall">Uninstall checker</string>
+    <string name="detect_uninstall_hint">Remove the checker from this device</string>
+    <string name="detect_install_done">Checker installed</string>
+    <string name="detect_install_failed">Install failed, is root active?</string>
+    <string name="detect_uninstall_done">Checker removed</string>
+    <string name="detect_uninstall_failed">Uninstall failed</string>
+    <string name="detect_about_title">About this checker</string>
+    <string name="detect_about_body">Bundled verification tool: validates key chain integrity, bootloader lock state and environment anomalies. Use it to confirm that the built-in TEE key simulation and boot-state spoofing are actually working.</string>
 </resources>

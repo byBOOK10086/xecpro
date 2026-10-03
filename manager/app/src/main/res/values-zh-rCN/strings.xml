@@ -355,4 +355,23 @@ XEC（3228636402）
     <string name="nav_rail_collapse">收起导航栏</string>
     <string name="settings_navigation_badge">导航栏角标</string>
     <string name="settings_navigation_badge_summary">在导航栏显示已授权应用和已启用模块数量</string>
+    <string name="detection">检测</string>
+    <string name="detect_app_name">密钥链完整性检测</string>
+    <string name="detect_checking">检测中…</string>
+    <string name="detect_not_installed">未安装</string>
+    <string name="detect_installed_fmt">已安装 · v%s</string>
+    <string name="detect_install">安装检测工具</string>
+    <string name="detect_reinstall">重新安装检测工具</string>
+    <string name="detect_install_hint">内置检测 APK，root 静默安装</string>
+    <string name="detect_working">处理中…</string>
+    <string name="detect_open">打开检测工具</string>
+    <string name="detect_open_hint">启动完整性检测</string>
+    <string name="detect_uninstall">卸载检测工具</string>
+    <string name="detect_uninstall_hint">从本机移除检测工具</string>
+    <string name="detect_install_done">检测工具已安装</string>
+    <string name="detect_install_failed">安装失败，请确认 root 已激活</string>
+    <string name="detect_uninstall_done">检测工具已卸载</string>
+    <string name="detect_uninstall_failed">卸载失败</string>
+    <string name="detect_about_title">关于这个检测工具</string>
+    <string name="detect_about_body">内置验机工具：校验密钥链有效性、bootloader 锁定状态与环境异常。用于验证内置 TEE 密钥模拟与回锁伪装是否真实生效。</string>
 </resources>
