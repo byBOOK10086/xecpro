@@ -1,5 +1,9 @@
 #![deny(clippy::all, clippy::pedantic)]
 #![warn(clippy::nursery)]
+// derive(new) 生成的构造器固定写 `field: field`，全在 sepolicy.rs 的派生目标上，
+// 无法在源头修复；也不能往 struct 上加第二个 lint 属性——derive-new 的
+// collect_parent_lint_attrs 会把多个 lint 属性用逗号拼进生成代码，产生
+// "expected item after attributes" 的非法 token。只能 crate 级放行。
 #![allow(
     clippy::module_name_repetitions,
     clippy::cast_possible_truncation,
@@ -8,7 +12,8 @@
     clippy::doc_markdown,
     clippy::too_many_lines,
     clippy::cast_possible_wrap,
-    clippy::large_enum_variant
+    clippy::large_enum_variant,
+    clippy::redundant_field_names
 )]
 
 mod apk_sign;
