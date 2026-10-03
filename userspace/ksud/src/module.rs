@@ -564,6 +564,14 @@ pub fn ensure_builtin_modules() -> Result<()> {
             #[cfg(unix)]
             std::fs::set_permissions(&dest, Permissions::from_mode(mode))?;
         }
+
+        // /dev is tmpfs: freshly written files inherit the tmpfs context, which
+        // the zygote is not allowed to map — the built-in Zygisk daemon hands
+        // these libs to the zygote for injection. Label the whole runtime dir
+        // system_file, same as a regular module dir gets from restorecon().
+        if let Err(e) = restore_syscon(&base) {
+            warn!("label built-in module dir {} failed: {e}", base.display());
+        }
     }
 
     Ok(())

@@ -167,6 +167,9 @@ fun HomePagerMiuix(
                         if (state.showRootWarning) {
                             WarningCard(stringResource(id = R.string.grant_root_failed))
                         }
+                        if (state.showDaemonMissingWarning) {
+                            WarningCard(stringResource(id = R.string.home_daemon_missing))
+                        }
                         StatusCard(
                             state = state,
                             actions = actions,
@@ -781,6 +784,7 @@ private fun previewHomeScreenState(
     isRootAvailable = ksuVersion != null,
     isSafeMode = isSafeMode,
     isLateLoadMode = isLateLoadMode,
+    isDaemonPresent = ksuVersion != null,
     checkUpdateEnabled = false,
     latestVersionInfo = LatestVersionInfo(),
     currentManagerVersionCode = 10000,

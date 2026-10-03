@@ -81,6 +81,22 @@ pub fn run(package_name: &String, kmi: Option<String>, allow_shell: bool) -> Res
 
     utils::install(None, None).context("Failed to install ksud")?;
 
+    // Provision the bundled built-in modules exactly like the init_boot path
+    // (on_post_data_fs) does. Late-load activates the kernel without a patched
+    // init_boot, so without this the built-in modules (TEE/TS, Zygisk, ...)
+    // never materialize and silently do nothing for the whole boot.
+    if let Err(e) = assets::ensure_binaries(true) {
+        warn!("Failed to extract bin assets: {e}");
+    }
+
+    if let Err(e) = crate::module::ensure_builtin_modules() {
+        warn!("ensure built-in modules failed: {e}");
+    }
+
+    // Drop Zygisk Next's failure leftovers before its stage scripts run, so a
+    // previously failed daemon start cannot keep Zygisk disabled this boot.
+    crate::module::clear_zygisk_failure_markers();
+
     // 5. Handle module updates
     if let Err(e) = handle_updated_modules() {
         warn!("handle updated modules failed: {e}");

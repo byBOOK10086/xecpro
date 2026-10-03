@@ -20,6 +20,7 @@ data class HomeUiState(
     val isRootAvailable: Boolean,
     val isSafeMode: Boolean,
     val isLateLoadMode: Boolean,
+    val isDaemonPresent: Boolean,
     val checkUpdateEnabled: Boolean,
     val latestVersionInfo: LatestVersionInfo,
     val currentManagerVersionCode: Long,
@@ -44,6 +45,11 @@ data class HomeUiState(
 
     val showRootWarning: Boolean
         get() = ksuVersion != null && !isRootAvailable
+
+    // 内核已加载但守护组件不在：内置模块的物化/provision 链条断在第一步，
+    // 所有"内置了却没效果"的问题都是这个形态，必须显式暴露而不是静默失败。
+    val showDaemonMissingWarning: Boolean
+        get() = ksuVersion != null && !isDaemonPresent
 
     val showManagerPrBuildWarning: Boolean
         get() = isManager && isManagerPrBuild

@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
+import android.util.Log
 import android.view.Window
 import android.webkit.JavascriptInterface
 import android.widget.Toast
@@ -23,13 +24,21 @@ import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.CompletableFuture
 
+private const val TAG = "XecWebUI"
+
 class WebViewInterface(private val state: WebUIState) {
     private val webView get() = state.webView
     private val modDir get() = state.modDir
 
     @JavascriptInterface
     fun exec(cmd: String): String {
-        return withNewRootShell(true) { ShellUtils.fastCmd(this, cmd) }
+        return try {
+            withNewRootShell(true) { ShellUtils.fastCmd(this, cmd) }
+        } catch (e: Throwable) {
+            // 模块 webui 的静默失败只能靠这里排查：异常必须留在 logcat 里再抛回 JS。
+            Log.e(TAG, "exec failed: $cmd", e)
+            throw e
+        }
     }
 
     @JavascriptInterface
@@ -69,6 +78,10 @@ class WebViewInterface(private val state: WebUIState) {
         }
         val stdout = result.out.joinToString(separator = "\n")
         val stderr = result.err.joinToString(separator = "\n")
+
+        if (result.code != 0) {
+            Log.w(TAG, "exec exit=${result.code}: $finalCommand\n  stderr: ${stderr.take(500)}")
+        }
 
         val jsCode =
             "javascript: (function() { try { ${callbackFunc}(${result.code}, ${
@@ -138,6 +151,7 @@ class WebViewInterface(private val state: WebUIState) {
             }
 
             if (result.code != 0) {
+                Log.w(TAG, "spawn exit=${result.code}: $finalCommand")
                 val emitErrCode =
                     "javascript: (function() { try { var err = new Error(); err.exitCode = ${result.code}; err.message = ${
                         JSONObject.quote(
